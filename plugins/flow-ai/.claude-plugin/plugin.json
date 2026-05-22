@@ -3,8 +3,8 @@
   "description": "Query Flow (flow.bio) — read-only access to pipelines, samples, projects, executions, and data files via the Flow REST API. Authenticates automatically when ~/.config/flow/api-token is present.",
   "version": "0.2.0",
   "author": {
-    "name": "Goodwright",
-    "email": "engineering@goodwright.org"
+    "name": "Goodwright Ltd",
+    "email": "engineering@flow.bio"
   },
   "homepage": "https://github.com/goodwright/flow-skills",
   "repository": "https://github.com/goodwright/flow-skills",
