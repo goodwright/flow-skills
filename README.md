@@ -25,7 +25,7 @@ The skill works unauthenticated, but most resources on Flow are private,
 so an authenticated key dramatically broadens what you can ask about.
 
 1. Sign in to Flow at <https://app.flow.bio>.
-2. Open <https://app.flow.bio/settings>.
+2. Open <https://app.flow.bio/settings> and go to the **Account Management** tab.
 3. In the **API Keys** section, choose:
    - **Key purpose:** *AI Agent* (recommended for use with this skill).
    - **Lifetime:** how long the key should remain valid.
