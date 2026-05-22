@@ -1,0 +1,13 @@
+{
+  "skills": ["flow-ai"],
+  "query": "How many samples do I own on Flow?",
+  "expected_behavior": [
+    "Calls GET /me first to verify authentication, before issuing any owned-scoped query.",
+    "Inspects the response body's `id` field to decide whether the caller is authenticated, NOT the HTTP status code (the API silently returns 200 with nulls for invalid/expired tokens).",
+    "If `/me`'s response `id` is non-null: proceeds to call GET /samples/search with `?owned=true` and the `Authorization: Bearer …` header attached.",
+    "If `/me`'s response `id` is null: refuses to call `/samples/search?owned=true` and tells the user their token is missing, expired, or invalid — does NOT report a count derived from a misleading anonymous query (the API silently filters to `owner=NULL` instead of erroring).",
+    "Reports the count from the response envelope's `count` field (the cross-page total), not the length of the `samples` array on a single page.",
+    "Sets `count` explicitly on the `/samples/search` query (per SKILL.md §5 rule 2), even when only the envelope total is needed.",
+    "Carries the `User-Agent: flow-ai/0.2.0` header on every request."
+  ]
+}

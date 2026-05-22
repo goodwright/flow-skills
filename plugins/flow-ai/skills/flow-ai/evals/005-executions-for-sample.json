@@ -1,0 +1,15 @@
+{
+  "skills": ["flow-ai"],
+  "query": "In what executions has sample 'WT_rep1' been used?",
+  "expected_behavior": [
+    "Recognises 'WT_rep1' as a sample name (not a pk) and resolves it to an id via GET /samples/search with `?name=WT_rep1`.",
+    "Sets `count` explicitly on the discovery call (per SKILL.md §5 rule 2).",
+    "URL-encodes the sample name via `--data-urlencode` rather than string-interpolating it (per SKILL.md §5 rule 3).",
+    "If `/samples/search` returns multiple matches: surfaces the ambiguity to the user (does NOT silently pick the first), or narrows the query before drilling in.",
+    "If `/samples/search` returns zero matches: tells the user no sample with that name was found; does NOT fall back to a different endpoint or invent an id.",
+    "On a single unambiguous match, takes the sample's `id` and calls GET /samples/<id>/executions to list executions the sample appears in. Does NOT use /executions/search instead — the sub-resource is the right tool for this question.",
+    "If `/samples/<id>/executions` returns 404 (private sample inside a public project — known visibility-rule disagreement documented in endpoints/samples.md), flags this to the user rather than treating it as a different sample-not-found error.",
+    "Reports each execution with at least: pipeline name, identifier, status, and created timestamp. Does NOT need to drill into individual `/executions/<id>` records unless the user asks for more detail.",
+    "Does NOT require authentication for this question (the prompt is about a specific named sample, not anything caller-scoped). Auth is allowed but not load-bearing — agent should not refuse if no token is present."
+  ]
+}

@@ -1,0 +1,5 @@
+.DS_Store
+.context/
+.idea/
+.vscode/
+*.swp

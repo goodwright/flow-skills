@@ -1,0 +1,17 @@
+{
+  "name": "flow-skills",
+  "description": "Agent skills for Flow (flow.bio) — a bioinformatics platform built by Goodwright.",
+  "owner": {
+    "name": "Goodwright",
+    "email": "engineering@goodwright.org"
+  },
+  "plugins": [
+    {
+      "name": "flow-ai",
+      "source": "./plugins/flow-ai",
+      "description": "Query Flow's REST API — pipelines, samples, projects, executions, and data files. Read-only.",
+      "category": "data",
+      "tags": ["flow", "bioinformatics", "genomics", "api"]
+    }
+  ]
+}
