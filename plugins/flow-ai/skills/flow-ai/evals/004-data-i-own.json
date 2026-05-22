@@ -1,0 +1,14 @@
+{
+  "skills": ["flow-ai"],
+  "query": "How much data do I own on Flow?",
+  "expected_behavior": [
+    "Calls GET /me first to verify authentication; checks the response body's `id` field is non-null before continuing.",
+    "If `/me`'s `id` is null, tells the user their token is missing, expired, or invalid and stops — does NOT report a size derived from anonymous data.",
+    "Queries GET /data/search with `owned=true` to scope to the caller's data files.",
+    "Disambiguates 'how much' — either reports the file count (envelope `count`) and tells the user that's what it computed, OR sums the `size` field across results to give a byte total, OR asks the user which they meant. Does NOT silently conflate the two.",
+    "If summing sizes, sets `count` to the per-page maximum (100) and paginates through pages to capture all data; reports based on the total, not a single page.",
+    "Surfaces sizes in human-readable form (MB / GB / TB) when reporting a byte total — does NOT report a raw integer of bytes.",
+    "Does NOT surface `absolute_path` to the user (it's a Flow-internal path).",
+    "Carries the `Authorization: Bearer …` header on every request once authenticated."
+  ]
+}

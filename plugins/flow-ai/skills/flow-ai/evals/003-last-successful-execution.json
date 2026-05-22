@@ -1,0 +1,15 @@
+{
+  "skills": ["flow-ai"],
+  "query": "Get me details about my last successful execution on Flow.",
+  "expected_behavior": [
+    "Calls GET /me first to verify authentication; checks the response body's `id` field is non-null before continuing.",
+    "If `/me`'s `id` is null, tells the user their token is missing, expired, or invalid and stops — does NOT return execution data scoped to nobody.",
+    "Queries GET /executions/search with `owned=true` to scope to the caller's executions.",
+    "Adds `status=OK` (the documented successful status enum in endpoints/executions.md) — does NOT search for status='success', 'completed', or other synonyms.",
+    "Sorts by `-created` (descending) to get the most recent first.",
+    "Sets `count` explicitly; a small value (1–10) is appropriate since only the most recent is needed.",
+    "Picks the first result's `id` and follows up with GET /executions/<id> for the detail record.",
+    "Reports user-facing details from the detail response: pipeline name/version, identifier, created/started/finished timestamps, status, and the sample it ran on (if any). Does NOT surface internal-only fields like `absolute_path` or `nextflow_id`.",
+    "Carries the `Authorization: Bearer …` header on every request once authenticated."
+  ]
+}
