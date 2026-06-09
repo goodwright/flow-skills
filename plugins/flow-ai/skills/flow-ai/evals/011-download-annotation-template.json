@@ -1,0 +1,14 @@
+{
+  "skills": ["flow-ai"],
+  "query": "Download the RNA-Seq annotation sheet template so I can fill it in for a multiplexed upload. Save it to ./template.xlsx.",
+  "expected_behavior": [
+    "Resolves the sample type before downloading: calls `GET /samples/types`, matches the user's term ('RNA-Seq') to a type, and sends its `identifier` as `--sample-type`. Surfaces ambiguous matches instead of guessing. Knows the template defaults to `generic` (base columns only) when no sample type is given.",
+    "Treats the template download as a read/helper, not a mutation: it does NOT change remote state, so it needs NO confirmation gate (unlike the uploads).",
+    "Runs the runner preflight before invoking the CLI: prefers `uv` (uvx), then `pipx run`, then a compatible `flowbio` already on PATH (>= the pinned version). Does NOT improvise Python.",
+    "Invokes the pinned flowbio CLI, e.g. `uvx --from \"flowbio==0.7.0\" flowbio samples annotation-template --sample-type <identifier> -o ./template.xlsx --json --no-progress`. Uses `samples annotation-template`, passes `-o`/`--output` for the destination file, and uses `--json`.",
+    "Preserves token discipline: does NOT pass `--token`, does NOT cat/echo/print the token. Relies on the CLI reading `~/.config/flow/api-token` itself. Only forwards `FLOW_API_URL` when the base URL is overridden.",
+    "On success parses the CLI's stdout JSON `{\"output\": \"./template.xlsx\", \"sample_type\": \"<identifier>\"}` and tells the user where the template was written and that they should fill in one row per sample before running a multiplexed upload (UC-4). Does NOT expect the `{\"id\":...}` shape.",
+    "On a non-zero exit reports the failure using the CLI's stderr JSON and the exit code's meaning (4 = sample type not found, 3 = auth, 2 = usage). Never fabricates success.",
+    "Does NOT attempt the out-of-scope forbidden operations while performing the download."
+  ]
+}

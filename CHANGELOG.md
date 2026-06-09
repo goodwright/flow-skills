@@ -7,6 +7,31 @@ The canonical version is `plugins/flow-ai/.claude-plugin/plugin.json#version`.
 The User-Agent string in `plugins/flow-ai/skills/flow-ai/SKILL.md`
 (`flow-ai/<version>`) tracks it. Bump both together on every release.
 
+## [0.5.0] — 2026-06-09
+
+- Added **multiplexed upload** (UC-4): multiplexed reads (single- or paired-end)
+  plus a completed annotation sheet via the on-demand `flowbio` CLI
+  (`flowbio samples upload-multiplexed`). The library validates and uploads the
+  annotation **before** the reads, so an invalid sheet never wastes a reads
+  upload. Warnings are auto-accepted by default and returned for display;
+  `--reject-warnings` makes them fatal. Documented in `endpoints/samples.md`
+  (`POST /upload/multiplexed`) and `examples.md` (Example 20).
+- Added the **annotation-template helper** (UC-5): download the server-generated
+  `.xlsx` annotation sheet for a sample type (`flowbio samples annotation-template`,
+  defaulting to `generic`) to bootstrap a multiplexed upload. It is a read, so it
+  needs no confirmation gate. Documented in `endpoints/samples.md`
+  (`GET /annotation/<sample_type>`) and `examples.md` (Example 21).
+- Recorded that the multiplexed and template commands return JSON shapes
+  distinct from the single-file `{"id": …}` contract
+  (`{"data_ids", "annotation_id", "warnings"}` and `{"output", "sample_type"}`),
+  and that annotation validation errors surface per-row in the error JSON.
+- Bumped the pinned library to **`flowbio==0.7.0`** (the release that ships the
+  `samples upload-multiplexed` and `samples annotation-template` commands)
+  across all upload docs, examples, and evals.
+- Two new evaluations: `010-upload-multiplexed-with-warnings.json` and
+  `011-download-annotation-template.json`.
+- Bumped the User-Agent / canonical version to `flow-ai/0.5.0`.
+
 ## [0.4.0] — 2026-06-09
 
 - Added **demultiplexed sample upload** (single-end and paired-end) via the

@@ -1,6 +1,6 @@
 ---
 name: flow-ai
-description: Use when the user asks about Flow data — pipelines on Flow, samples and projects (lists *and* single-record details), single data files, the executions or data files associated with a sample, file content previews, or downloading a data file — or wants to upload a generic data file or a demultiplexed sample (single- or paired-end) to Flow. Read-and-query plus generic data-file and demultiplexed-sample upload against the Flow REST API at `https://app.flow.bio/api`; uploads run via the on-demand flowbio CLI. Reads are unauthenticated by default; if `~/.config/flow/api-token` exists, the skill authenticates and returns the broader set of resources the caller can access. Uploads always require that token. Does NOT cover bulk multi-file (zip) downloads or mutations not yet documented in the skill.
+description: Use when the user asks about Flow data — pipelines on Flow, samples and projects (lists *and* single-record details), single data files, the executions or data files associated with a sample, file content previews, or downloading a data file — or wants to upload a generic data file, a demultiplexed sample (single- or paired-end), or multiplexed reads with an annotation sheet to Flow (including downloading an annotation-sheet template). Read-and-query plus generic data-file, demultiplexed-sample, and multiplexed upload against the Flow REST API at `https://app.flow.bio/api`; uploads run via the on-demand flowbio CLI. Reads are unauthenticated by default; if `~/.config/flow/api-token` exists, the skill authenticates and returns the broader set of resources the caller can access. Uploads always require that token. Does NOT cover bulk multi-file (zip) downloads or mutations not yet documented in the skill.
 ---
 
 # Flow API — query skill
@@ -22,11 +22,14 @@ skill itself, not improvised at runtime.
 
 The skill is **mostly read-only**, but it can also **upload data to Flow**
 (section 4). Upload support currently covers generic data files
-(`POST /upload`) and demultiplexed samples (`POST /upload/sample`), and more
-upload types will be added to section 4 over time. Uploads change remote state,
-so they are gated behind explicit user confirmation (see section 4.4). Any
-operation not listed in section 4 or the endpoint reference (section 5) remains
-out of scope per the principle above.
+(`POST /upload`), demultiplexed samples (`POST /upload/sample`), and multiplexed
+reads with an annotation sheet (`POST /upload/multiplexed`), plus a read-only
+helper to download an annotation-sheet template (`GET /annotation/<sample_type>`)
+that bootstraps a multiplexed upload. More upload types will be added to
+section 4 over time. Uploads change remote state, so they are gated behind
+explicit user confirmation (see section 4.4); the template download is a read and
+needs none. Any operation not listed in section 4 or the endpoint reference
+(section 5) remains out of scope per the principle above.
 
 The principle is verb-agnostic. Authentication does not change it: the
 same rules apply whether the token file is present or absent. Authentication
@@ -94,6 +97,13 @@ to section 4 over time):
   paired-end reads + metadata), gated behind explicit confirmation. See
   section 4 for the runner/auth/contract machinery and `endpoints/samples.md`
   for the call itself.
+- `POST /upload/multiplexed` — upload **multiplexed reads** (single- or
+  paired-end) plus a completed annotation sheet, gated behind explicit
+  confirmation. See section 4 and `endpoints/samples.md`.
+- `GET /annotation/<sample_type>` — download an **annotation-sheet template**
+  (`.xlsx`) for a sample type, a read-only helper for the multiplexed flow (no
+  confirmation needed). Performed via the flowbio CLI, not curl. See
+  `endpoints/samples.md`.
 
 All of the GET endpoints above accept an optional `Authorization: Bearer …`
 header (see section 3); the upload always requires the token. With auth, list / detail / sub-resource calls broaden to
@@ -112,9 +122,9 @@ requests, admin operations, and endpoints the skill does not document.
 
 - **Base URL.** Read from `FLOW_API_URL`, defaulting to `https://app.flow.bio/api`.
   Example override: `FLOW_API_URL=https://staging.flow.bio/api`.
-- **User-Agent.** Every request must carry `User-Agent: flow-ai/0.4.0`
+- **User-Agent.** Every request must carry `User-Agent: flow-ai/0.5.0`
   so the Flow API can identify AI-agent traffic. The curl flag is
-  `-A "flow-ai/0.4.0"`.
+  `-A "flow-ai/0.5.0"`.
 - **Authentication (optional).** If the file `~/.config/flow/api-token`
   exists, attach the user's token on every request:
   ```bash
@@ -143,11 +153,11 @@ Skeleton invocations:
 
 ```bash
 # Unauthenticated
-curl -s -A "flow-ai/0.4.0" \
+curl -s -A "flow-ai/0.5.0" \
   --get "${FLOW_API_URL:-https://app.flow.bio/api}/pipelines"
 
 # Authenticated (when ~/.config/flow/api-token exists)
-curl -s -A "flow-ai/0.4.0" \
+curl -s -A "flow-ai/0.5.0" \
   -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
   --get "${FLOW_API_URL:-https://app.flow.bio/api}/pipelines"
 ```
@@ -155,12 +165,15 @@ curl -s -A "flow-ai/0.4.0" \
 ## 4. Uploading data
 
 The skill can upload data to Flow. Upload support currently covers a
-**generic data file** (`POST /upload`) and a **demultiplexed sample**
-(`POST /upload/sample`), and more upload types will be added to this section
-over time — an upload type is available only once it is documented here. This
-section holds the cross-cutting upload machinery; the per-resource specifics
-(inputs, local validation, success/error shapes) live in the matching endpoint
-file — generic files → `endpoints/data.md`, demultiplexed samples →
+**generic data file** (`POST /upload`), a **demultiplexed sample**
+(`POST /upload/sample`), and **multiplexed reads + an annotation sheet**
+(`POST /upload/multiplexed`), plus a read-only **annotation-sheet template**
+download (`GET /annotation/<sample_type>`) that bootstraps the multiplexed flow.
+More upload types will be added to this section over time — an upload type is
+available only once it is documented here. This section holds the cross-cutting
+upload machinery; the per-resource specifics (inputs, local validation,
+success/error shapes) live in the matching endpoint file — generic files →
+`endpoints/data.md`, samples / multiplexed / annotation templates →
 `endpoints/samples.md`.
 
 Uploads are **not** done with `curl`. The chunked/resumable upload protocol
@@ -171,21 +184,22 @@ reimplements the protocol in bash, nor improvises Python at runtime.
 ### 4.1 On-demand runner — preflight before the first upload
 
 Installing this plugin does **not** install Python or `flowbio`. The skill
-fetches the CLI on demand, pinned to **`flowbio==0.6.0`** (the release that
-carries the upload methods and the CLI's `data upload` and `samples upload`
-commands). Before the first upload, run this preflight and use the first runner
+fetches the CLI on demand, pinned to **`flowbio==0.7.0`** (the release that
+carries the upload methods and the CLI's `data upload`, `samples upload`,
+`samples upload-multiplexed`, and `samples annotation-template` commands).
+Before the first upload, run this preflight and use the first runner
 that is present:
 
 1. `uv` on `PATH` → run via `uvx` (a.k.a. `uv tool run`):
    ```bash
-   uvx --from "flowbio==0.6.0" flowbio data upload … --json --no-progress
+   uvx --from "flowbio==0.7.0" flowbio data upload … --json --no-progress
    ```
 2. else `pipx` on `PATH`:
    ```bash
-   pipx run --spec "flowbio==0.6.0" flowbio data upload … --json --no-progress
+   pipx run --spec "flowbio==0.7.0" flowbio data upload … --json --no-progress
    ```
 3. else a compatible `flowbio` already on `PATH` (`flowbio --version` reports
-   ≥ `0.6.0`) → call `flowbio data upload …` directly.
+   ≥ `0.7.0`) → call `flowbio data upload …` directly.
 4. else → **stop. Do not attempt the upload.** Return this message:
 
    > Uploading to Flow needs the `flowbio` CLI, which this skill runs on demand
@@ -193,7 +207,7 @@ that is present:
    > your PATH. Install one of:
    >   • `uv`   — https://docs.astral.sh/uv/ (recommended), then re-run; or
    >   • `pipx` — `pip install --user pipx`; or
-   >   • `flowbio` directly — `pip install "flowbio>=0.6.0"`.
+   >   • `flowbio` directly — `pip install "flowbio>=0.7.0"`.
    > Then ask me to upload again.
 
 Never fail opaquely — no bare "command not found", no traceback. The message
@@ -213,13 +227,22 @@ names the missing tool and the next step.
 
 ### 4.3 CLI contract — what to parse
 
-- **Success:** exit `0`, and stdout is exactly `{"id": "<id>"}`. Parse it and
-  report the `id`. Both `data upload` and `samples upload` use this shape — the
-  `id` is a `data_id` for a generic file and a `sample_id` for a sample. Note
-  the key is always `id`, **not** `data_id` / `sample_id`.
+- **Success:** exit `0`, with one machine-readable JSON document on stdout. The
+  shape depends on the command — parse the right one:
+  - `data upload` and `samples upload` → `{"id": "<id>"}`. The `id` is a
+    `data_id` for a generic file and a `sample_id` for a sample. The key is
+    always `id`, **not** `data_id` / `sample_id`.
+  - `samples upload-multiplexed` → `{"data_ids": ["…"], "annotation_id": "…",
+    "warnings": [...]}`. Report the data ids, the annotation id, and any
+    `warnings` (these were auto-accepted unless `--reject-warnings` was set).
+    There is **no** `id` key here.
+  - `samples annotation-template` → `{"output": "<path>", "sample_type": "…"}`.
+    Report where the template was written. No `id` key.
 - **Failure:** non-zero exit; stderr carries `{"message": …, "status_code": …}`
-  when the error came from the server. Report the server `message` verbatim and
-  map the exit code to the cause — never fabricate success:
+  when the error came from the server. Annotation validation failures
+  additionally carry an `errors` array of per-row/field issues
+  (`{"row": …, "message": …}`) — surface those. Report the server `message`
+  verbatim and map the exit code to the cause — never fabricate success:
 
   | Exit | Meaning |
   |------|---------|
@@ -227,8 +250,8 @@ names the missing tool and the next step.
   | `1` | API / runtime error |
   | `2` | Usage / input error (e.g. file not found, bad flags) |
   | `3` | Authentication failed (token missing or expired) |
-  | `4` | Not found |
-  | `5` | Bad request / validation (e.g. spaces in filename, invalid data-type) |
+  | `4` | Not found (e.g. unknown sample type for a template) |
+  | `5` | Bad request / validation (e.g. spaces in filename, invalid data-type, annotation-sheet validation errors) |
 
 ### 4.4 Confirmation gate
 
@@ -243,6 +266,12 @@ upload type:
   whether the sample is single- or paired-end, the sample `name`, the resolved
   sample type, the project and organism (if given), and the metadata
   key/values.
+- **Multiplexed reads** (`POST /upload/multiplexed`): the reads file(s) and
+  whether single- or paired-end, the annotation-sheet path, and whether warnings
+  are auto-accepted (default) or rejected (`--reject-warnings`).
+
+Downloading an annotation-sheet template (`GET /annotation/<sample_type>`) is a
+read — it changes no remote state, so it needs **no** confirmation.
 
 ## 5. Endpoint reference — read on demand
 
@@ -255,7 +284,7 @@ private-sample reachability).
 | User question is about… | Read this file before answering |
 |---|---|
 | Pipeline catalog (`/pipelines`) | `endpoints/pipelines.md` |
-| Samples or sample-related discovery — list, detail, executions, data, plus what metadata attributes / sample types exist on this instance, **or uploading a demultiplexed sample** (`/samples/search`, `/samples/<id>`, `/samples/<id>/executions`, `/samples/<id>/data`, `/samples/metadata`, `/samples/types`, `POST /upload/sample`) | `endpoints/samples.md` |
+| Samples or sample-related discovery — list, detail, executions, data, plus what metadata attributes / sample types exist on this instance, **or uploading a demultiplexed sample, uploading multiplexed reads + an annotation sheet, or downloading an annotation-sheet template** (`/samples/search`, `/samples/<id>`, `/samples/<id>/executions`, `/samples/<id>/data`, `/samples/metadata`, `/samples/types`, `POST /upload/sample`, `POST /upload/multiplexed`, `GET /annotation/<sample_type>`) | `endpoints/samples.md` |
 | Projects list, single project detail, or a project's samples / executions (`/projects/search`, `/projects/<id>`, `/projects/<id>/samples`, `/projects/<id>/executions`) | `endpoints/projects.md` |
 | Resolving an organism name to a pk (`/organisms`) | `endpoints/organisms.md` |
 | The authenticated caller's identity / memberships, or resolving a user name to a pk (`/me`, `/users/search`) | `endpoints/users.md` |
@@ -269,7 +298,7 @@ inline.
 
 ## 6. Reliable querying patterns
 
-1. Always include `-A "flow-ai/0.4.0"` so requests identify as AI traffic.
+1. Always include `-A "flow-ai/0.5.0"` so requests identify as AI traffic.
 2. For paginated endpoints, set `count` explicitly — never rely on the
    implicit default of 10. Cap at 100; the API rejects >100 with HTTP 400
    (not silent clamp).
