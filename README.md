@@ -3,18 +3,21 @@
 Agent skills for [Flow](https://flow.bio), a bioinformatics platform
 built by [Goodwright](https://goodwright.com). This repository is a
 plugin marketplace; today it ships one plugin, **`flow-ai`**, which
-lets an AI agent query Flow's REST API on your behalf.
+lets an AI agent query Flow's REST API — and upload data files — on
+your behalf.
 
 ## What `flow-ai` does
 
-`flow-ai` is a read-only skill. With it, an agent can answer questions
-like:
+`flow-ai` is primarily a read-only skill that can also upload generic
+data files to Flow. With it, an agent can answer questions and run
+uploads like:
 
 - "What pipelines are available on Flow?"
 - "How many samples do I own?"
 - "What was the last successful execution of the RNA-Seq pipeline on
   sample X, and what data files did it produce?"
 - "Download the FASTQ for data file 67890."
+- "Upload counts.tsv to Flow as a data file."
 
 See [`plugins/flow-ai/skills/flow-ai/SKILL.md`](plugins/flow-ai/skills/flow-ai/SKILL.md)
 for the current capabilities.

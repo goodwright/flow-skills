@@ -9,7 +9,7 @@
     {
       "name": "flow-ai",
       "source": "./plugins/flow-ai",
-      "description": "Query Flow's REST API — pipelines, samples, projects, executions, and data files. Read-only.",
+      "description": "Query Flow's REST API — pipelines, samples, projects, executions, and data files — plus generic data-file upload.",
       "category": "data",
       "tags": ["flow", "bioinformatics", "genomics", "api"]
     }

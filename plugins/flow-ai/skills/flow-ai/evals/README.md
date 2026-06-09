@@ -40,7 +40,7 @@ a separate assertion against the agent's tool-call trace.
 
 ## Why these specific scenarios
 
-These five prompts cover the most common user-facing flows the
+These prompts cover the most common user-facing flows the
 skill is designed to support:
 
 - `001-samples-i-own.json` — auth precheck + `?owned=true` on `/samples/search`.
@@ -48,8 +48,12 @@ skill is designed to support:
 - `003-last-successful-execution.json` — auth precheck + `/executions/search` filters + detail drill-down.
 - `004-data-i-own.json` — auth precheck + `/data/search?owned=true` + size aggregation.
 - `005-executions-for-sample.json` — name-to-id discovery + sub-resource navigation.
+- `006-upload-data-file.json` — generic data-file upload: confirmation gate, runner preflight, pinned `uvx` CLI invocation, token discipline, `{"id":...}` / exit-code handling.
+- `007-upload-no-runner.json` — no `uv`/`pipx`/`flowbio` runner found: stop before uploading and return the install message.
 
-The first four exercise the `/me`-precheck pattern introduced as a
+Evals 001-004 exercise the `/me`-precheck pattern introduced as a
 defensive mitigation for the API's silent auth-degrade behaviour.
-Eval 005 is the only one that does not require auth and tests the
-sample-name-resolution discovery chain.
+Eval 005 does not require auth and tests the sample-name-resolution
+discovery chain. Evals 006-007 exercise the data-upload flow added in
+`flow-ai/0.3.0`, covering both the happy path (upload via the
+on-demand flowbio CLI) and the no-runner fallback.
