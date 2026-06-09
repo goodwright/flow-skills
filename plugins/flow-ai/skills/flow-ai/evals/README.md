@@ -50,10 +50,15 @@ skill is designed to support:
 - `005-executions-for-sample.json` — name-to-id discovery + sub-resource navigation.
 - `006-upload-data-file.json` — generic data-file upload: confirmation gate, runner preflight, pinned `uvx` CLI invocation, token discipline, `{"id":...}` / exit-code handling.
 - `007-upload-no-runner.json` — no `uv`/`pipx`/`flowbio` runner found: stop before uploading and return the install message.
+- `008-upload-paired-end-sample.json` — demultiplexed paired-end sample upload: sample-type / required-metadata / organism / project discovery and validation, confirmation gate, `flowbio samples upload` with `--reads1`/`--reads2`, `{"id":...}` / exit-code handling.
+- `009-upload-sample-missing-required-metadata.json` — pre-flight catch: required metadata for the sample type is missing, so the skill names the gap and refuses to upload.
 
 Evals 001-004 exercise the `/me`-precheck pattern introduced as a
 defensive mitigation for the API's silent auth-degrade behaviour.
 Eval 005 does not require auth and tests the sample-name-resolution
 discovery chain. Evals 006-007 exercise the data-upload flow added in
 `flow-ai/0.3.0`, covering both the happy path (upload via the
-on-demand flowbio CLI) and the no-runner fallback.
+on-demand flowbio CLI) and the no-runner fallback. Evals 008-009
+exercise the demultiplexed-sample upload flow added in `flow-ai/0.4.0`,
+covering the happy path (discovery + paired-end upload) and the
+missing-required-metadata pre-flight catch.

@@ -1,6 +1,6 @@
 ---
 name: flow-ai
-description: Use when the user asks about Flow data — pipelines on Flow, samples and projects (lists *and* single-record details), single data files, the executions or data files associated with a sample, file content previews, or downloading a data file — or wants to upload a generic data file to Flow. Read-and-query plus generic data-file upload against the Flow REST API at `https://app.flow.bio/api`; uploads run via the on-demand flowbio CLI. Reads are unauthenticated by default; if `~/.config/flow/api-token` exists, the skill authenticates and returns the broader set of resources the caller can access. Uploads always require that token. Does NOT cover bulk multi-file (zip) downloads or mutations not yet documented in the skill.
+description: Use when the user asks about Flow data — pipelines on Flow, samples and projects (lists *and* single-record details), single data files, the executions or data files associated with a sample, file content previews, or downloading a data file — or wants to upload a generic data file or a demultiplexed sample (single- or paired-end) to Flow. Read-and-query plus generic data-file and demultiplexed-sample upload against the Flow REST API at `https://app.flow.bio/api`; uploads run via the on-demand flowbio CLI. Reads are unauthenticated by default; if `~/.config/flow/api-token` exists, the skill authenticates and returns the broader set of resources the caller can access. Uploads always require that token. Does NOT cover bulk multi-file (zip) downloads or mutations not yet documented in the skill.
 ---
 
 # Flow API — query skill
@@ -22,10 +22,11 @@ skill itself, not improvised at runtime.
 
 The skill is **mostly read-only**, but it can also **upload data to Flow**
 (section 4). Upload support currently covers generic data files
-(`POST /upload`), and more upload types will be added to section 4 over
-time. Uploads change remote state, so they are gated behind explicit user
-confirmation (see section 4.4). Any operation not listed in section 4 or the
-endpoint reference (section 5) remains out of scope per the principle above.
+(`POST /upload`) and demultiplexed samples (`POST /upload/sample`), and more
+upload types will be added to section 4 over time. Uploads change remote state,
+so they are gated behind explicit user confirmation (see section 4.4). Any
+operation not listed in section 4 or the endpoint reference (section 5) remains
+out of scope per the principle above.
 
 The principle is verb-agnostic. Authentication does not change it: the
 same rules apply whether the token file is present or absent. Authentication
@@ -89,6 +90,10 @@ to section 4 over time):
 - `POST /upload` — upload a **generic data file**, gated behind explicit
   confirmation. See section 4 for the runner/auth/contract machinery and
   `endpoints/data.md` for the call itself.
+- `POST /upload/sample` — upload a **demultiplexed sample** (single- or
+  paired-end reads + metadata), gated behind explicit confirmation. See
+  section 4 for the runner/auth/contract machinery and `endpoints/samples.md`
+  for the call itself.
 
 All of the GET endpoints above accept an optional `Authorization: Bearer …`
 header (see section 3); the upload always requires the token. With auth, list / detail / sub-resource calls broaden to
@@ -107,9 +112,9 @@ requests, admin operations, and endpoints the skill does not document.
 
 - **Base URL.** Read from `FLOW_API_URL`, defaulting to `https://app.flow.bio/api`.
   Example override: `FLOW_API_URL=https://staging.flow.bio/api`.
-- **User-Agent.** Every request must carry `User-Agent: flow-ai/0.3.0`
+- **User-Agent.** Every request must carry `User-Agent: flow-ai/0.4.0`
   so the Flow API can identify AI-agent traffic. The curl flag is
-  `-A "flow-ai/0.3.0"`.
+  `-A "flow-ai/0.4.0"`.
 - **Authentication (optional).** If the file `~/.config/flow/api-token`
   exists, attach the user's token on every request:
   ```bash
@@ -138,11 +143,11 @@ Skeleton invocations:
 
 ```bash
 # Unauthenticated
-curl -s -A "flow-ai/0.3.0" \
+curl -s -A "flow-ai/0.4.0" \
   --get "${FLOW_API_URL:-https://app.flow.bio/api}/pipelines"
 
 # Authenticated (when ~/.config/flow/api-token exists)
-curl -s -A "flow-ai/0.3.0" \
+curl -s -A "flow-ai/0.4.0" \
   -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
   --get "${FLOW_API_URL:-https://app.flow.bio/api}/pipelines"
 ```
@@ -150,11 +155,13 @@ curl -s -A "flow-ai/0.3.0" \
 ## 4. Uploading data
 
 The skill can upload data to Flow. Upload support currently covers a
-**generic data file** (`POST /upload`), and more upload types will be added
-to this section over time — an upload type is available only once it is
-documented here. This section holds the cross-cutting upload machinery; the
-per-resource specifics (inputs, local validation, success/error shapes) live
-in the matching endpoint file — generic files → `endpoints/data.md`.
+**generic data file** (`POST /upload`) and a **demultiplexed sample**
+(`POST /upload/sample`), and more upload types will be added to this section
+over time — an upload type is available only once it is documented here. This
+section holds the cross-cutting upload machinery; the per-resource specifics
+(inputs, local validation, success/error shapes) live in the matching endpoint
+file — generic files → `endpoints/data.md`, demultiplexed samples →
+`endpoints/samples.md`.
 
 Uploads are **not** done with `curl`. The chunked/resumable upload protocol
 (retry, backoff, token refresh) is owned by the **flowbio** Python library; the
@@ -165,8 +172,9 @@ reimplements the protocol in bash, nor improvises Python at runtime.
 
 Installing this plugin does **not** install Python or `flowbio`. The skill
 fetches the CLI on demand, pinned to **`flowbio==0.6.0`** (the release that
-carries both `client.data.upload_data` and the CLI). Before the first upload,
-run this preflight and use the first runner that is present:
+carries the upload methods and the CLI's `data upload` and `samples upload`
+commands). Before the first upload, run this preflight and use the first runner
+that is present:
 
 1. `uv` on `PATH` → run via `uvx` (a.k.a. `uv tool run`):
    ```bash
@@ -205,8 +213,10 @@ names the missing tool and the next step.
 
 ### 4.3 CLI contract — what to parse
 
-- **Success:** exit `0`, and stdout is exactly `{"id": "<data_id>"}`. Parse it
-  and report the `id`. Note the key is `id`, **not** `data_id`.
+- **Success:** exit `0`, and stdout is exactly `{"id": "<id>"}`. Parse it and
+  report the `id`. Both `data upload` and `samples upload` use this shape — the
+  `id` is a `data_id` for a generic file and a `sample_id` for a sample. Note
+  the key is always `id`, **not** `data_id` / `sample_id`.
 - **Failure:** non-zero exit; stderr carries `{"message": …, "status_code": …}`
   when the error came from the server. Report the server `message` verbatim and
   map the exit code to the cause — never fabricate success:
@@ -223,9 +233,16 @@ names the missing tool and the next step.
 ### 4.4 Confirmation gate
 
 Uploads change remote state. Before running any upload command, show the user
-exactly what will be uploaded — the file path, the stored `filename` if
-overridden, and the `data_type` if given — and proceed **only on explicit
-confirmation**. Read and discovery calls need no confirmation.
+exactly what will be uploaded and proceed **only on explicit confirmation**.
+Read and discovery calls need no confirmation. What to show depends on the
+upload type:
+
+- **Generic data file** (`POST /upload`): the file path, the stored `filename`
+  if overridden, and the `data_type` if given.
+- **Demultiplexed sample** (`POST /upload/sample`): the reads file(s) and
+  whether the sample is single- or paired-end, the sample `name`, the resolved
+  sample type, the project and organism (if given), and the metadata
+  key/values.
 
 ## 5. Endpoint reference — read on demand
 
@@ -238,7 +255,7 @@ private-sample reachability).
 | User question is about… | Read this file before answering |
 |---|---|
 | Pipeline catalog (`/pipelines`) | `endpoints/pipelines.md` |
-| Samples or sample-related discovery — list, detail, executions, data, plus what metadata attributes / sample types exist on this instance (`/samples/search`, `/samples/<id>`, `/samples/<id>/executions`, `/samples/<id>/data`, `/samples/metadata`, `/samples/types`) | `endpoints/samples.md` |
+| Samples or sample-related discovery — list, detail, executions, data, plus what metadata attributes / sample types exist on this instance, **or uploading a demultiplexed sample** (`/samples/search`, `/samples/<id>`, `/samples/<id>/executions`, `/samples/<id>/data`, `/samples/metadata`, `/samples/types`, `POST /upload/sample`) | `endpoints/samples.md` |
 | Projects list, single project detail, or a project's samples / executions (`/projects/search`, `/projects/<id>`, `/projects/<id>/samples`, `/projects/<id>/executions`) | `endpoints/projects.md` |
 | Resolving an organism name to a pk (`/organisms`) | `endpoints/organisms.md` |
 | The authenticated caller's identity / memberships, or resolving a user name to a pk (`/me`, `/users/search`) | `endpoints/users.md` |
@@ -252,7 +269,7 @@ inline.
 
 ## 6. Reliable querying patterns
 
-1. Always include `-A "flow-ai/0.3.0"` so requests identify as AI traffic.
+1. Always include `-A "flow-ai/0.4.0"` so requests identify as AI traffic.
 2. For paginated endpoints, set `count` explicitly — never rely on the
    implicit default of 10. Cap at 100; the API rejects >100 with HTTP 400
    (not silent clamp).
