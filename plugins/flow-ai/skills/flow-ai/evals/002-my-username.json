@@ -7,6 +7,6 @@
     "If the response's `id` and `username` are null (token missing, expired, or invalid; the API returns HTTP 200 with nulls in that case rather than 401), tells the user their token is invalid rather than reporting `null` or a fabricated username.",
     "Does NOT call /users/search — that endpoint is for looking up OTHER users by name, not for the caller's own identity.",
     "Does not print the contents of the token file at any point (token-discipline rule in SKILL.md §1).",
-    "Carries the `User-Agent: flow-ai/0.4.0` header on the request."
+    "Carries the `User-Agent: flow-ai/0.5.0` header on the request."
   ]
 }

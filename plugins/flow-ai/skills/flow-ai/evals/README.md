@@ -52,6 +52,8 @@ skill is designed to support:
 - `007-upload-no-runner.json` — no `uv`/`pipx`/`flowbio` runner found: stop before uploading and return the install message.
 - `008-upload-paired-end-sample.json` — demultiplexed paired-end sample upload: sample-type / required-metadata / organism / project discovery and validation, confirmation gate, `flowbio samples upload` with `--reads1`/`--reads2`, `{"id":...}` / exit-code handling.
 - `009-upload-sample-missing-required-metadata.json` — pre-flight catch: required metadata for the sample type is missing, so the skill names the gap and refuses to upload.
+- `010-upload-multiplexed-with-warnings.json` — multiplexed reads + annotation-sheet upload: paired-end `flowbio samples upload-multiplexed`, annotation-first validation, warnings auto-accepted (no `--reject-warnings`), and the `{"data_ids", "annotation_id", "warnings"}` / exit-code handling.
+- `011-download-annotation-template.json` — annotation-template helper: resolve the sample type, run `flowbio samples annotation-template -o <path>` (a read, no confirmation gate), and report where the `.xlsx` template was written.
 
 Evals 001-004 exercise the `/me`-precheck pattern introduced as a
 defensive mitigation for the API's silent auth-degrade behaviour.
@@ -61,4 +63,7 @@ discovery chain. Evals 006-007 exercise the data-upload flow added in
 on-demand flowbio CLI) and the no-runner fallback. Evals 008-009
 exercise the demultiplexed-sample upload flow added in `flow-ai/0.4.0`,
 covering the happy path (discovery + paired-end upload) and the
-missing-required-metadata pre-flight catch.
+missing-required-metadata pre-flight catch. Evals 010-011 exercise the
+multiplexed upload flow added in `flow-ai/0.5.0`: the multiplexed reads +
+annotation-sheet upload (with warnings auto-accepted) and the annotation-template
+download helper that bootstraps it.
