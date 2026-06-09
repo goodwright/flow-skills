@@ -1,0 +1,11 @@
+{
+  "skills": ["flow-ai"],
+  "query": "Upload a single-end RNA-Seq sample called brain_rep1 from /tmp/brain_rep1.fastq.gz.",
+  "expected_behavior": [
+    "Resolves the sample type via `GET /samples/types` and discovers which metadata attributes are required for it via `GET /samples/metadata` (global `required`, or a `sample_type_links` entry for the chosen sample-type identifier with `required: true`).",
+    "Detects that the user has not supplied one or more attributes required for that sample type BEFORE running any upload.",
+    "Tells the user exactly which required metadata attribute(s) are missing (by identifier/name) and asks them to supply the value(s); does NOT guess or invent values.",
+    "Does NOT run the flowbio CLI / attempt the upload while required metadata is missing.",
+    "Preserves token discipline and does not attempt any out-of-scope forbidden operation."
+  ]
+}

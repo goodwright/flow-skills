@@ -417,3 +417,80 @@ Single sample-type detail.
 3. Pass the matched `identifier` to
    `/samples/search?sample_types=<identifier>` (comma-separated for
    multiple).
+
+## `POST /upload/sample` — upload a demultiplexed sample
+
+Uploads a single demultiplexed sample (single-end or paired-end reads plus
+metadata). **This is not a `curl` call** — it runs through the flowbio CLI on
+demand. Read **SKILL.md section 4** first: it owns the runner preflight
+(`uv`/`uvx` → `pipx` → existing `flowbio` → stop with an install message), the
+pinned version, token discipline, base-URL handling, and the JSON / exit-code
+contract. This section covers only what is specific to the sample call.
+
+- **Inputs / flags:**
+  - `--name NAME` (required) — the sample name. Must contain no spaces (the
+    server rejects them).
+  - `--sample-type IDENTIFIER` (required) — a sample-type **identifier**.
+    Discover and resolve it via `GET /samples/types` (above) — match the user's
+    term to a `name`/`identifier` and send the `identifier`. Sent as-is and
+    validated **server-side**.
+  - `--reads1 PATH` (required) — the (first) reads file. A single-end sample
+    has only `--reads1`. A generic / non-sequencing file uploaded as a sample
+    also goes here.
+  - `--reads2 PATH` (optional) — the second reads file; supplying it makes the
+    sample **paired-end**. Only valid alongside `--reads1`.
+  - `--project ID` (optional) — a project **id** to assign the sample to.
+    Resolve a project name → id via `GET /projects/search` (must be a project
+    the user owns).
+  - `--organism ID` (optional) — an organism **id**. Resolve a name / latin
+    name → id via `GET /organisms`.
+  - `--metadata KEY=VALUE` (optional, repeatable) — one metadata attribute per
+    flag. Keys are attribute `identifier`s from `GET /samples/metadata`.
+
+- **Discovery + local pre-flight (before running the CLI)** — reuse the
+  existing read endpoints; **discover before uploading, never guess**:
+  - **Sample type** — `GET /samples/types`; resolve the user's term to an
+    `identifier`. Surface ambiguous matches to the user instead of guessing.
+  - **Required metadata** — `GET /samples/metadata`. An attribute is required
+    for the chosen sample type if its global `required` is `true` **OR** a
+    `sample_type_links` entry whose `sample_type_identifier` matches the chosen
+    type has `required: true`. Confirm the user supplied every such attribute
+    **before** uploading; if any is missing, name it (by `identifier`/`name`)
+    and stop. For `has_options` / `regex_validator` attributes, validate what
+    you can locally, but the **server is the final authority** — the skill
+    cannot enumerate an attribute's legal option values today (see the
+    `GET /samples/metadata` notes above).
+  - **Organism** — `GET /organisms`; resolve name / latin name → `id`.
+  - **Project** — `GET /projects/search`; resolve name → `id`.
+  - **Files & names** — confirm `reads1` (and `reads2` if given) exist, and
+    that the reads filenames and the sample `name` contain **no spaces**. Tell
+    the user to rename rather than attempting the upload.
+
+- **Confirmation:** show the user the reads file(s) and whether the sample is
+  single- or paired-end, the sample `name`, the resolved sample type, the
+  project and organism (if given), and the metadata key/values — and upload
+  **only on explicit confirmation** (SKILL.md §4.4).
+
+- **The call** (using whichever runner the preflight selected):
+  ```bash
+  uvx --from "flowbio==0.6.0" flowbio samples upload \
+    --name NAME --sample-type IDENTIFIER \
+    --reads1 PATH [--reads2 PATH] \
+    [--project ID] [--organism ID] [--metadata KEY=VALUE ...] \
+    --json --no-progress
+  ```
+
+- **Success:** exit `0`, stdout `{"id": "<sample_id>"}`. Report the `sample_id`
+  and that the sample is uploaded. (The JSON key is `id`, not `sample_id`.)
+
+- **Errors:** a non-zero exit code carries the cause and the server message
+  arrives on stderr — see **SKILL.md §4.3** for the exit-code table and the
+  JSON error shape. The sample-specific causes to recognise:
+  - **Bad request / validation** (exit `5`) — an invalid `sample_type`, missing
+    required metadata, a value that fails an attribute's `options`/regex, spaces
+    in the sample name or a filename, or an ownership rejection on the project.
+    Report the server field message verbatim.
+  - **Auth** (exit `3`) — the token is missing or expired;
+    `~/.config/flow/api-token` is absent or stale.
+  - **Usage** (exit `2`) — e.g. a local reads file was not found.
+  Never report success on a non-zero exit.
