@@ -1,7 +1,7 @@
 {
   "name": "flow-ai",
-  "description": "Query Flow (flow.bio) — read-only access to pipelines, samples, projects, executions, and data files via the Flow REST API. Authenticates automatically when ~/.config/flow/api-token is present.",
-  "version": "0.2.0",
+  "description": "Query Flow (flow.bio) — pipelines, samples, projects, executions, and data files via the Flow REST API, plus generic data-file upload. Authenticates automatically when ~/.config/flow/api-token is present.",
+  "version": "0.3.0",
   "author": {
     "name": "Goodwright Ltd",
     "email": "engineering@flow.bio"

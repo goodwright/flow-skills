@@ -5,6 +5,7 @@ Covers:
 - `GET /data/<id>` — single data-file detail (type, size, fileset and execution links)
 - `GET /data/<id>/contents` — text-file preview (10 KB chunks)
 - `GET /data/types` — data-type discovery (list of `{identifier, name, …}`)
+- `POST /upload` — **upload a generic data file**
 
 For the file bytes themselves, see `endpoints/downloads.md`.
 
@@ -189,6 +190,62 @@ Note: the search list view returns fewer fields than the detail view (`/data/<id
 2. Match the user's term against `name` (case-insensitive) or `identifier`.
 3. Pass the matched `identifier` to
    `/data/search?data_types=<identifier>` (comma-separated for multiple).
+
+## `POST /upload` — upload a generic data file
+
+Uploads a single generic data file (counts table, BAM, archive, …).
+**This is not a `curl` call** — it runs through the flowbio CLI on demand.
+Read **SKILL.md section 4** first: it owns
+the runner preflight (`uv`/`uvx` → `pipx` → existing `flowbio` → stop with an
+install message), the pinned version, token discipline, base-URL handling, and
+the JSON / exit-code contract. This section covers only what is specific to the
+data-file call.
+
+- **Inputs:**
+  - `path` (required) — the local file to upload.
+  - `--filename NAME` (optional) — override the name the file is stored under
+    on Flow. Defaults to the local file's name. Must contain no spaces.
+  - `--data-type TYPE` (optional) — a `DataType` **identifier**. Discover valid
+    identifiers via `GET /data/types` (above) and match the user's term to an
+    `identifier`. Sent as-is and validated **server-side** — the CLI does not
+    pre-check it.
+  - `--directory` (optional) — treat `path` as an archive (`.zip`/`.tar`/
+    `.tar.gz`) the server unpacks. Only pass this when the file really is an
+    archive the user wants unpacked.
+
+- **Local pre-flight (before running the CLI):**
+  - Confirm the file exists.
+  - Confirm the **stored** filename (the local name, or `--filename` if given)
+    has **no spaces** — the server rejects spaces with a `400`. Tell the user to
+    rename rather than attempting the upload.
+  - If a `data_type` was named, optionally resolve it against `GET /data/types`
+    so an obvious typo is caught before the round-trip (the server is still the
+    authority).
+
+- **Confirmation:** show the user the file path, the stored `filename` (if
+  overridden), and the `data_type` (if any), and upload **only on explicit
+  confirmation** (SKILL.md §4.4).
+
+- **The call** (using whichever runner the preflight selected):
+  ```bash
+  uvx --from "flowbio==0.6.0" flowbio data upload <path> \
+    [--filename NAME] [--data-type TYPE] [--directory] \
+    --json --no-progress
+  ```
+
+- **Success:** exit `0`, stdout `{"id": "<data_id>"}`. Report the `data_id` and
+  that the file is uploaded and ready. (The JSON key is `id`, not `data_id`.)
+
+- **Errors:** a non-zero exit code carries the cause and the server message
+  arrives on stderr — see **SKILL.md §4.3** for the exit-code table and the
+  JSON error shape. The data-file-specific causes to recognise:
+  - **Bad request / validation** — spaces in the filename
+    (`{"filename": ["Spaces in filename"]}`), an invalid `data_type`, or an
+    ownership rejection. Report the server field message verbatim.
+  - **Auth** — the token is missing or expired; `~/.config/flow/api-token` is
+    absent or stale.
+  - **Usage** — e.g. the local file was not found.
+  Never report success on a non-zero exit.
 
 ## Cross-links
 
