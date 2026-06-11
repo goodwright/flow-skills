@@ -1,0 +1,19 @@
+{
+  "skills": ["flow-ai"],
+  "query": "Run the rna-seq pipeline on sample Liver_RNA_1 on Flow.",
+  "expected_behavior": [
+    "Calls GET /me first to verify authentication; checks the response body's `id` is non-null before doing anything that needs the token. Running a pipeline always requires the token (unlike reads).",
+    "Discovers the pipeline by name: GET /pipelines, matches 'rna-seq' to a pipeline `id` rather than guessing the id.",
+    "Resolves the pipeline version via GET /pipelines/<pipeline_id> and picks the default version (the first entry of `versions`, i.e. the most recent) since the user did not specify one.",
+    "Fetches the version schema via GET /pipelines/versions/<version_id> and uses its `schema` to determine the parameters, types, which are required, and their defaults — does NOT invent parameter names.",
+    "Resolves the target sample by name (e.g. GET /samples/search?name=Liver_RNA_1) to a sample id before building the run body.",
+    "Buckets parameters by schema type: string/number/boolean/hidden into `params`, data-type params into `data_params` (Flow data ids), and the samplesheet (csv with takes_samples) into `csv_params` as `{<param>: {rows: [{sample: <id>, values: {...}}]}}`.",
+    "Picks the default Nextflow version (the first entry of the version's `nextflow_versions`) since the user did not specify one.",
+    "Treats the run as a mutation: shows a confirmation summary (pipeline, version, resolved params/data_params/csv_params, Nextflow version, owner) and proceeds ONLY after explicit confirmation. The read/discovery steps need no confirmation.",
+    "Submits with a single curl POST to /pipelines/versions/<version_id>/run with a JSON body, carrying `Authorization: Bearer $(< ~/.config/flow/api-token)`, `-A \"flow-ai/<version>\"`, and Content-Type application/json. Does NOT use the flowbio CLI (which has no run command).",
+    "On success parses the returned execution object and reports the execution `id`, `identifier`, and initial `status`, plus a link to the run in the UI built by stripping a trailing `/api` from the base URL (e.g. https://app.flow.bio/executions/<id>/).",
+    "Does NOT poll by default — it returns the id and link and stops unless the user asked to wait.",
+    "On 403 (token lacks run scope, or `can_run_pipelines` is false) reports the missing capability verbatim and stops; does NOT retry blindly. On 400 reports the server's field error verbatim.",
+    "Does NOT attempt out-of-scope operations (cancel, delete, share, permissions) while running."
+  ]
+}

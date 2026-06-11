@@ -7,6 +7,38 @@ The canonical version is `plugins/flow-ai/.claude-plugin/plugin.json#version`.
 The User-Agent string in `plugins/flow-ai/skills/flow-ai/SKILL.md`
 (`flow-ai/<version>`) tracks it. Bump both together on every release.
 
+## [0.6.0] — 2026-06-10
+
+- Added **running pipelines** (FLOW-613): the skill can now kick off a pipeline
+  execution and, on request, poll it to completion. This is the skill's first
+  `curl`-based mutation (uploads use the flowbio CLI; running is a plain JSON
+  `POST`). The run flow chains `GET /pipelines` → `GET /pipelines/<id>`
+  (versions) → `GET /pipelines/versions/<id>` (run schema) →
+  `POST /pipelines/versions/<id>/run`, then `GET /executions/<id>` for polling.
+  Documented in `endpoints/pipelines.md` ("Running a pipeline", with the full
+  schema→body mapping for every param type — string/number/boolean/hidden/data/csv,
+  modes, and `from_fileset`/`from_execution` autofill) and `examples.md`
+  (Examples 22–23).
+- Added the read endpoints needed to run: `GET /pipelines/<id>` (a pipeline's
+  versions) and `GET /pipelines/versions/<id>` (a version's run schema and
+  available Nextflow versions), documented in `endpoints/pipelines.md`.
+- Added `GET /executions/<id>` — single-execution detail used to poll a run
+  (status, `?log=<offset>` tailing, `include`/`exclude`), documented in
+  `endpoints/executions.md`.
+- **Defaults:** when the user doesn't specify, the skill picks the most-recent
+  pipeline version (`versions[0]`) and the first of the descending-sorted
+  Nextflow versions (`nextflow_versions[0]`). Running **always requires the token** and is gated
+  behind explicit confirmation; the run returns the execution id plus a link to
+  the run in the UI (the web URL derived from the base URL by stripping `/api`).
+  By default it does **not** poll.
+- Cancelling executions remains out of scope.
+- **Backend prerequisite:** the run endpoint must be reachable by `ai-agent`
+  tokens (`@protected(scopes=[AI_AGENT_SCOPE])` on `run_pipeline` plus the
+  AI-scope golden-file entry in `flow-api`) — the analogue of the FLOW-610
+  upload change.
+- Added evals 012–015 covering the run happy path, opt-in polling, the
+  missing-required-param refusal, and the no-run-capability (403) path.
+
 ## [0.5.0] — 2026-06-09
 
 - Added **multiplexed upload** (UC-4): multiplexed reads (single- or paired-end)

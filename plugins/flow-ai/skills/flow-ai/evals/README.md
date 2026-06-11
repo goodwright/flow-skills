@@ -54,6 +54,10 @@ skill is designed to support:
 - `009-upload-sample-missing-required-metadata.json` — pre-flight catch: required metadata for the sample type is missing, so the skill names the gap and refuses to upload.
 - `010-upload-multiplexed-with-warnings.json` — multiplexed reads + annotation-sheet upload: paired-end `flowbio samples upload-multiplexed`, annotation-first validation, warnings auto-accepted (no `--reject-warnings`), and the `{"data_ids", "annotation_id", "warnings"}` / exit-code handling.
 - `011-download-annotation-template.json` — annotation-template helper: resolve the sample type, run `flowbio samples annotation-template -o <path>` (a read, no confirmation gate), and report where the `.xlsx` template was written.
+- `012-run-pipeline-on-sample.json` — run a pipeline: discovery chain (catalog → versions → schema), default version + Nextflow version, sample-name resolution, schema→body bucketing (`params`/`data_params`/`csv_params`), confirmation gate, `curl` POST to `/pipelines/versions/<id>/run`, and reporting the execution id + UI link without polling.
+- `013-run-pipeline-and-poll.json` — run + opt-in polling: resolve a *named* version, run, then poll `GET /executions/<id>` on a ≥60s cadence until terminal, surfacing the log on `ERROR`.
+- `014-run-pipeline-missing-required-param.json` — defensive: a required param has no default and can't be inferred, so the skill names the gap and refuses to submit an incomplete run.
+- `015-run-pipeline-no-capability.json` — defensive: the server returns 403 (`can_run_pipelines` false, or token scope not authorised); the skill reports it verbatim and stops without fabricating a run.
 
 Evals 001-004 exercise the `/me`-precheck pattern introduced as a
 defensive mitigation for the API's silent auth-degrade behaviour.
@@ -66,4 +70,8 @@ covering the happy path (discovery + paired-end upload) and the
 missing-required-metadata pre-flight catch. Evals 010-011 exercise the
 multiplexed upload flow added in `flow-ai/0.5.0`: the multiplexed reads +
 annotation-sheet upload (with warnings auto-accepted) and the annotation-template
-download helper that bootstraps it.
+download helper that bootstraps it. Evals 012-015 exercise the
+pipeline-running flow added in `flow-ai/0.6.0`: the happy path (discovery →
+schema → resolve params → confirm → run → return id + UI link), opt-in polling,
+and two defensive paths (missing required parameter, and a 403 when the caller
+can't run pipelines).
