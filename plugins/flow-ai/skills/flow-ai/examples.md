@@ -24,7 +24,7 @@ The catalog is unpaginated, so a single GET is enough. Project to category
 names and pipeline counts.
 
 ```bash
-curl -s -A "flow-ai/0.6.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/pipelines" | \
+curl -s -A "flow-ai/0.7.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/pipelines" | \
   jq '[.[] | {category: .name, pipelines: [.subcategories[].pipelines[].name]}]'
 ```
 
@@ -41,7 +41,7 @@ are out of scope for v1.
 Identify the rna-seq pipeline from the catalog:
 
 ```bash
-curl -s -A "flow-ai/0.6.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/pipelines" | \
+curl -s -A "flow-ai/0.7.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/pipelines" | \
   jq '[.. | objects | select(.name? | test("rna.?seq"; "i")) | select(.id?)] | .[] | {id, name, description}'
 ```
 
@@ -60,7 +60,7 @@ discovery step is needed to find the organism pk; `name=rna-seq` is the
 practical fallback and usually sufficient.
 
 ```bash
-curl -s -A "flow-ai/0.6.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/samples/search" \
+curl -s -A "flow-ai/0.7.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/samples/search" \
   --data-urlencode "name=rna-seq" \
   --data-urlencode "count=20" | \
   jq '{total: .count, page: .page, samples: [.samples[] | {id, name, organism: .organism.name, sample_type: .sample_type.name, project: .project_name}]}'
@@ -79,7 +79,7 @@ the detail endpoint instead — see Example 9 below.
 ## Example 4: "List public projects"
 
 ```bash
-curl -s -A "flow-ai/0.6.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/projects/search" \
+curl -s -A "flow-ai/0.7.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/projects/search" \
   --data-urlencode "count=100" | \
   jq '{total: .count, page: .page, projects: [.projects[] | {id, name, samples: .sample_count, executions: .execution_count}]}'
 ```
@@ -96,13 +96,13 @@ Two steps. First confirm the sample is reachable via the search endpoint
 executions.
 
 ```bash
-curl -s -A "flow-ai/0.6.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/samples/search" \
+curl -s -A "flow-ai/0.7.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/samples/search" \
   --data-urlencode "name=12345" | \
   jq '.samples[] | {id, name, project_name}'
 ```
 
 ```bash
-curl -s -A "flow-ai/0.6.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/samples/12345/executions" \
+curl -s -A "flow-ai/0.7.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/samples/12345/executions" \
   --data-urlencode "count=50" | \
   jq '{total: .count, page: .page, executions: [.executions[] | {id, identifier, pipeline_name, pipeline_version, status, created}]}'
 ```
@@ -121,7 +121,7 @@ inputs and silently undercounts processed samples (see "raw input
 files vs sample-related data" in `endpoints/samples.md`).
 
 ```bash
-curl -s -A "flow-ai/0.6.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/samples/12345/data" \
+curl -s -A "flow-ai/0.7.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/samples/12345/data" \
   --data-urlencode "count=100" | \
   jq '{total: .count, files: [.data[] | {id, filename, size, pipeline_name}]}'
 ```
@@ -138,7 +138,7 @@ Before downloading anything large, confirm with the user — the file size
 is in the previous response under `.data[].size` (bytes).
 
 ```bash
-curl -s -A "flow-ai/0.6.0" -o sample.fastq.gz \
+curl -s -A "flow-ai/0.7.0" -o sample.fastq.gz \
   "${FLOW_API_URL:-https://app.flow.bio/api}/downloads/67890/sample.fastq.gz"
 ```
 
@@ -158,7 +158,7 @@ Notes:
 ## Example 8: "Show me the first chunk of a public text file"
 
 ```bash
-curl -s -A "flow-ai/0.6.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/data/67890/contents" | \
+curl -s -A "flow-ai/0.7.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/data/67890/contents" | \
   jq '{has_more, contents: (.contents[:2000])}'
 ```
 
@@ -178,7 +178,7 @@ the user gave a name rather than an id, discover the id first via
 `/samples/search?name=<name>` (Example 3).
 
 ```bash
-curl -s -A "flow-ai/0.6.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/samples/12345" | \
+curl -s -A "flow-ai/0.7.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/samples/12345" | \
   jq '{id, name, sample_type, organism: .organism.name, project: .project.name, pubmed,
        metadata: [.metadata | to_entries[] | {attribute: .value.attribute_name, value: .value.value}],
        raw_input_count: ([.filesets[].data[]] | length)}'
@@ -204,7 +204,7 @@ Discover by name first if needed via `/projects/search?name=…`
 (Example 4), then fetch the detail record:
 
 ```bash
-curl -s -A "flow-ai/0.6.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/projects/4567" | \
+curl -s -A "flow-ai/0.7.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/projects/4567" | \
   jq '{id, name, description, owner: .owner.name, papers: [.papers[] | {year, title, journal}]}'
 ```
 
@@ -215,7 +215,7 @@ those numbers.
 ## Example 11: "Tell me about file 67890"
 
 ```bash
-curl -s -A "flow-ai/0.6.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/data/67890" | \
+curl -s -A "flow-ai/0.7.0" --get "${FLOW_API_URL:-https://app.flow.bio/api}/data/67890" | \
   jq '{id, filename, filetype, size, is_binary, is_directory,
        sample: .sample.name, project: .project.name, fileset: .fileset.name,
        pipeline: .execution.pipeline_name, process: .execution.process_name}'
@@ -235,7 +235,7 @@ first:
 ```bash
 YESTERDAY=$(date -d "yesterday 00:00:00" +%s 2>/dev/null || date -v-1d -v0H -v0M -v0S +%s)
 
-curl -s -A "flow-ai/0.6.0" \
+curl -s -A "flow-ai/0.7.0" \
   -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
   --get "${FLOW_API_URL:-https://app.flow.bio/api}/executions/search" \
   --data-urlencode "owned=true" \
@@ -271,7 +271,7 @@ check the response body's `id` field.
 
 ```bash
 # Step 1: verify the token works by calling /me and checking the id
-ME=$(curl -s -A "flow-ai/0.6.0" \
+ME=$(curl -s -A "flow-ai/0.7.0" \
   -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
   "${FLOW_API_URL:-https://app.flow.bio/api}/me")
 MY_ID=$(echo "$ME" | jq -r '.id // empty')
@@ -281,7 +281,7 @@ if [ -z "$MY_ID" ]; then
 fi
 
 # Step 2: only now is it safe to use ?owned=true
-curl -s -A "flow-ai/0.6.0" \
+curl -s -A "flow-ai/0.7.0" \
   -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
   --get "${FLOW_API_URL:-https://app.flow.bio/api}/samples/search" \
   --data-urlencode "owned=true" --data-urlencode "count=20" | \
@@ -311,7 +311,7 @@ the only reliable auth-validity signal today.
 useful fields:
 
 ```bash
-curl -s -A "flow-ai/0.6.0" \
+curl -s -A "flow-ai/0.7.0" \
   "${FLOW_API_URL:-https://app.flow.bio/api}/samples/metadata" | \
   jq '[.[] | {identifier, name, description, has_options, allow_user_terms}]'
 ```
@@ -329,12 +329,12 @@ Two-call recipe: resolve organism name → pk, then filter samples.
 
 ```bash
 # Resolve "human" to an organism pk
-HUMAN_ID=$(curl -s -A "flow-ai/0.6.0" \
+HUMAN_ID=$(curl -s -A "flow-ai/0.7.0" \
   "${FLOW_API_URL:-https://app.flow.bio/api}/organisms" | \
   jq -r '.[] | select(.name | ascii_downcase == "human") | .id')
 
 # Filter samples by that pk
-curl -s -A "flow-ai/0.6.0" \
+curl -s -A "flow-ai/0.7.0" \
   --get "${FLOW_API_URL:-https://app.flow.bio/api}/samples/search" \
   --data-urlencode "organism=$HUMAN_ID" --data-urlencode "count=20" | \
   jq '{total: .count, samples: [.samples[] | {id, name, sample_type}]}'
@@ -353,7 +353,7 @@ where source is brain":
 
 ```bash
 # Step 1: discover whether 'source' exists on this instance
-curl -s -A "flow-ai/0.6.0" \
+curl -s -A "flow-ai/0.7.0" \
   "${FLOW_API_URL:-https://app.flow.bio/api}/samples/metadata" | \
   jq '.[] | select(.identifier == "source")'
 # If no row: tell the user this instance has no 'source' attribute,
@@ -361,7 +361,7 @@ curl -s -A "flow-ai/0.6.0" \
 
 # Step 2: inspect a small sample of records to learn the value
 # vocabulary (no values-discovery endpoint today; this is the workaround)
-curl -s -A "flow-ai/0.6.0" \
+curl -s -A "flow-ai/0.7.0" \
   --get "${FLOW_API_URL:-https://app.flow.bio/api}/samples/search" \
   --data-urlencode "count=10" | \
   jq '[.samples[] | .metadata.source.value] | unique'
@@ -371,7 +371,7 @@ curl -s -A "flow-ai/0.6.0" \
 # search may still under-match.
 
 # Step 3: filter with a well-chosen substring
-curl -s -A "flow-ai/0.6.0" \
+curl -s -A "flow-ai/0.7.0" \
   --get "${FLOW_API_URL:-https://app.flow.bio/api}/samples/search" \
   --data-urlencode "source=Cortex" --data-urlencode "count=20" | \
   jq '{total: .count, samples: [.samples[] | {id, name, source: .metadata.source.value}]}'
@@ -391,7 +391,7 @@ contract; the recipe below is the end-to-end shape.
 ```bash
 # Step 1 (optional): resolve a named data type to its identifier.
 # Skip if the user gave no data type.
-curl -s -A "flow-ai/0.6.0" \
+curl -s -A "flow-ai/0.7.0" \
   "${FLOW_API_URL:-https://app.flow.bio/api}/data/types" | \
   jq '[.[] | {identifier, name}]'
 
@@ -434,7 +434,7 @@ is liver".
 
 ```bash
 # Step 1: resolve the sample type → identifier.
-curl -s -A "flow-ai/0.6.0" \
+curl -s -A "flow-ai/0.7.0" \
   "${FLOW_API_URL:-https://app.flow.bio/api}/samples/types" | \
   jq '[.[] | {identifier, name}]'
 # Match "RNA-Seq" to a row; send its identifier. Ambiguous? ask the user.
@@ -443,18 +443,18 @@ curl -s -A "flow-ai/0.6.0" \
 # Required = global `required` true OR a sample_type_links entry for the
 # chosen identifier with required:true. Confirm the user supplied them all
 # BEFORE uploading; if any is missing, name it and stop.
-curl -s -A "flow-ai/0.6.0" \
+curl -s -A "flow-ai/0.7.0" \
   "${FLOW_API_URL:-https://app.flow.bio/api}/samples/metadata" | \
   jq --arg t "RNA-Seq" '[.[] | select(.required or any(.sample_type_links[];
        .sample_type_identifier == $t and .required)) | {identifier, name}]'
 
 # Step 3: resolve organism name → id.
-HUMAN_ID=$(curl -s -A "flow-ai/0.6.0" \
+HUMAN_ID=$(curl -s -A "flow-ai/0.7.0" \
   "${FLOW_API_URL:-https://app.flow.bio/api}/organisms" | \
   jq -r '.[] | select(.name | ascii_downcase == "human") | .id')
 
 # Step 4: resolve project name → id.
-PROJECT_ID=$(curl -s -A "flow-ai/0.6.0" \
+PROJECT_ID=$(curl -s -A "flow-ai/0.7.0" \
   --get "${FLOW_API_URL:-https://app.flow.bio/api}/projects/search" \
   --data-urlencode "name=Liver Atlas" | \
   jq -r '.projects[0].id')
@@ -549,7 +549,7 @@ uniform. Read the `GET /annotation/<sample_type>` section of
 
 ```bash
 # Step 1: resolve the sample type → identifier (skip for the generic template).
-curl -s -A "flow-ai/0.6.0" \
+curl -s -A "flow-ai/0.7.0" \
   "${FLOW_API_URL:-https://app.flow.bio/api}/samples/types" | \
   jq '[.[] | {identifier, name}]'
 # Match "RNA-Seq" to a row; send its identifier. Ambiguous? ask the user.
@@ -581,31 +581,31 @@ mapping, the confirmation gate, and the error table. The chain:
 
 ```bash
 # Step 0: confirm auth — running always needs the token.
-curl -s -A "flow-ai/0.6.0" \
+curl -s -A "flow-ai/0.7.0" \
   -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
   "${FLOW_API_URL:-https://app.flow.bio/api}/me" | jq '.id'
 # null → token missing/expired; stop and tell the user.
 
 # Step 1: find the pipeline id by name.
-curl -s -A "flow-ai/0.6.0" \
+curl -s -A "flow-ai/0.7.0" \
   -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
   "${FLOW_API_URL:-https://app.flow.bio/api}/pipelines" | \
   jq '[.. | objects | select(.name? | test("rna.?seq"; "i")) | select(.id?)] | .[] | {id, name}'
 
 # Step 2: pick the version — default to the most recent (versions[0]).
-curl -s -A "flow-ai/0.6.0" \
+curl -s -A "flow-ai/0.7.0" \
   -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
   "${FLOW_API_URL:-https://app.flow.bio/api}/pipelines/<pipeline_id>" | \
   jq '{name, default_version: .versions[0], nextflow: .versions[0].nextflow_versions[0]}'
 
 # Step 3: read the version schema to learn the params.
-curl -s -A "flow-ai/0.6.0" \
+curl -s -A "flow-ai/0.7.0" \
   -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
   "${FLOW_API_URL:-https://app.flow.bio/api}/pipelines/versions/<version_id>" | \
   jq '{nextflow_versions, inputs: [.schema.inputs[] | {name, params: (.params|keys)}]}'
 
 # Step 4: resolve the sample name → id (for the samplesheet csv param).
-curl -s -A "flow-ai/0.6.0" \
+curl -s -A "flow-ai/0.7.0" \
   -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
   --get --data-urlencode "name=Liver_RNA_1" \
   "${FLOW_API_URL:-https://app.flow.bio/api}/samples/search" | \
@@ -623,7 +623,7 @@ samplesheet, you usually only need the sample id per row — the server fills
 explicit "yes". Then:
 
 ```bash
-curl -s -A "flow-ai/0.6.0" \
+curl -s -A "flow-ai/0.7.0" \
   -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
   -H "Content-Type: application/json" \
   -X POST \
@@ -654,7 +654,7 @@ hours.
 
 ```bash
 # After the run returns <id>, poll status on a >=60s interval until terminal.
-curl -s -A "flow-ai/0.6.0" \
+curl -s -A "flow-ai/0.7.0" \
   -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
   --get --data-urlencode "include=status" --data-urlencode "include=finished" \
   "${FLOW_API_URL:-https://app.flow.bio/api}/executions/<id>" | \

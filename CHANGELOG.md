@@ -7,6 +7,30 @@ The canonical version is `plugins/flow-ai/.claude-plugin/plugin.json#version`.
 The User-Agent string in `plugins/flow-ai/skills/flow-ai/SKILL.md`
 (`flow-ai/<version>`) tracks it. Bump both together on every release.
 
+## [0.7.0] — 2026-06-19
+
+- Added **metadata value discovery**: the skill can now list the controlled
+  value set for a metadata attribute via `GET /samples/metadata/<identifier>/options`.
+  This closes the gap the docs previously flagged — `GET /samples/metadata`
+  lists attribute *identifiers*, and this endpoint lists the legal *values* for
+  an attribute whose `has_options` is `true`. The intended flow is
+  discover-then-filter: confirm the attribute (`/samples/metadata`) → read its
+  options (`/samples/metadata/<identifier>/options`) → filter
+  `/samples/search?<identifier>=<value>` with an exact option value, avoiding
+  the under-match risk of substring-guessing a value.
+- **Behaviours documented** in `endpoints/samples.md`: public read (auth only
+  broadens the set with the caller's own un-validated terms); the `validated`
+  and `value` (substring) query params; the response envelope
+  `{count, total_count, options}` where `count` is the post-filter total and
+  `total_count` the pre-filter total; the **hard cap of 100 options with no
+  pagination** (detect truncation by comparing `count` to the array length and
+  narrow with `?value=`); and 404 on an unknown identifier. Creating, merging,
+  editing, and deleting options are admin operations and remain out of scope.
+- Updated the stale "no value discovery yet" notes in `endpoints/samples.md` to
+  point at the new endpoint for `has_options=true` attributes, while keeping the
+  free-text (`has_options=false`) sample-records workaround.
+- Added eval 016 covering the discover-then-filter value-discovery flow.
+
 ## [0.6.0] — 2026-06-10
 
 - Added **running pipelines** (FLOW-613): the skill can now kick off a pipeline
