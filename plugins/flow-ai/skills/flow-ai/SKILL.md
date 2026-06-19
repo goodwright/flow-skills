@@ -72,6 +72,7 @@ In-scope endpoints (all `GET`):
 - `GET /pipelines/<id>` — single-pipeline detail (versions list)
 - `GET /pipelines/versions/<id>` — pipeline-version detail (run schema)
 - `GET /samples/metadata`
+- `GET /samples/metadata/<identifier>/options` — controlled value set for one metadata attribute (value discovery)
 - `GET /samples/types`
 - `GET /samples/types/<identifier>`
 - `GET /samples/search`
@@ -137,9 +138,9 @@ requests, admin operations, and endpoints the skill does not document.
 
 - **Base URL.** Read from `FLOW_API_URL`, defaulting to `https://app.flow.bio/api`.
   Example override: `FLOW_API_URL=https://staging.flow.bio/api`.
-- **User-Agent.** Every request must carry `User-Agent: flow-ai/0.6.0`
+- **User-Agent.** Every request must carry `User-Agent: flow-ai/0.7.0`
   so the Flow API can identify AI-agent traffic. The curl flag is
-  `-A "flow-ai/0.6.0"`.
+  `-A "flow-ai/0.7.0"`.
 - **Authentication (optional).** If the file `~/.config/flow/api-token`
   exists, attach the user's token on every request:
   ```bash
@@ -168,11 +169,11 @@ Skeleton invocations:
 
 ```bash
 # Unauthenticated
-curl -s -A "flow-ai/0.6.0" \
+curl -s -A "flow-ai/0.7.0" \
   --get "${FLOW_API_URL:-https://app.flow.bio/api}/pipelines"
 
 # Authenticated (when ~/.config/flow/api-token exists)
-curl -s -A "flow-ai/0.6.0" \
+curl -s -A "flow-ai/0.7.0" \
   -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
   --get "${FLOW_API_URL:-https://app.flow.bio/api}/pipelines"
 ```
@@ -299,7 +300,7 @@ private-sample reachability).
 | User question is about… | Read this file before answering |
 |---|---|
 | Pipeline catalog, a pipeline's versions, a version's run schema, **or running a pipeline** (`/pipelines`, `/pipelines/<id>`, `/pipelines/versions/<id>`, `POST /pipelines/versions/<id>/run`) | `endpoints/pipelines.md` |
-| Samples or sample-related discovery — list, detail, executions, data, plus what metadata attributes / sample types exist on this instance, **or uploading a demultiplexed sample, uploading multiplexed reads + an annotation sheet, or downloading an annotation-sheet template** (`/samples/search`, `/samples/<id>`, `/samples/<id>/executions`, `/samples/<id>/data`, `/samples/metadata`, `/samples/types`, `POST /upload/sample`, `POST /upload/multiplexed`, `GET /annotation/<sample_type>`) | `endpoints/samples.md` |
+| Samples or sample-related discovery — list, detail, executions, data, plus what metadata attributes / sample types exist on this instance and the legal values for a controlled-vocabulary attribute, **or uploading a demultiplexed sample, uploading multiplexed reads + an annotation sheet, or downloading an annotation-sheet template** (`/samples/search`, `/samples/<id>`, `/samples/<id>/executions`, `/samples/<id>/data`, `/samples/metadata`, `/samples/metadata/<identifier>/options`, `/samples/types`, `POST /upload/sample`, `POST /upload/multiplexed`, `GET /annotation/<sample_type>`) | `endpoints/samples.md` |
 | Projects list, single project detail, or a project's samples / executions (`/projects/search`, `/projects/<id>`, `/projects/<id>/samples`, `/projects/<id>/executions`) | `endpoints/projects.md` |
 | Resolving an organism name to a pk (`/organisms`) | `endpoints/organisms.md` |
 | The authenticated caller's identity / memberships, or resolving a user name to a pk (`/me`, `/users/search`) | `endpoints/users.md` |
@@ -313,7 +314,7 @@ inline.
 
 ## 6. Reliable querying patterns
 
-1. Always include `-A "flow-ai/0.6.0"` so requests identify as AI traffic.
+1. Always include `-A "flow-ai/0.7.0"` so requests identify as AI traffic.
 2. For paginated endpoints, set `count` explicitly — never rely on the
    implicit default of 10. Cap at 100; the API rejects >100 with HTTP 400
    (not silent clamp).
@@ -348,7 +349,10 @@ inline.
      pass `identifier` to `/data/search?data_types=<identifier>`.
    - For metadata attributes: `GET /samples/metadata` → confirm the
      identifier exists on this instance, then use it on
-     `/samples/search?<identifier>=<value>`.
+     `/samples/search?<identifier>=<value>`. For a controlled-vocabulary
+     attribute (`has_options=true`), also call
+     `GET /samples/metadata/<identifier>/options` to discover the legal
+     values before filtering, rather than guessing the value.
 
    Discovery costs one extra round-trip and removes the entire class
    of "filter silently ignored" bugs from your query path. Metadata

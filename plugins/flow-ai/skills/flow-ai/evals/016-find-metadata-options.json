@@ -1,0 +1,15 @@
+{
+  "skills": ["flow-ai"],
+  "query": "What are the valid values for the 'tissue' metadata attribute on Flow, and find me the human samples whose tissue is cortex?",
+  "expected_behavior": [
+    "Calls GET /samples/metadata first to confirm a 'tissue' attribute exists on this instance and reads its `has_options` flag — does NOT assume the identifier exists or guess its values.",
+    "Because tissue has `has_options=true`, calls GET /samples/metadata/tissue/options to list the controlled value set — does NOT fall back to scraping `/samples/search` records to infer values for a controlled-vocabulary attribute.",
+    "Reports the legal `value`s from the `options` array; if `count` exceeds the returned array length (the 100-item cap), narrows with `?value=cortex` rather than claiming the returned list is exhaustive.",
+    "Resolves the user's term 'cortex' to a matching option `value` from the options response before filtering — surfaces the candidate matches if more than one option contains the substring.",
+    "Resolves the organism: calls GET /organisms, matches 'human' by name/latin_name, and uses its `id`.",
+    "Filters GET /samples/search with both `organism=<human_id>` and `tissue=<matched option value>`, URL-encoding the value via --data-urlencode and setting `count` explicitly.",
+    "Reports the sample count from the response envelope's `count` field (cross-page total), not the length of one page's `samples` array.",
+    "Treats the options endpoint as read-only: does NOT attempt to create, merge, edit, or delete options (admin operations out of scope).",
+    "Carries the `User-Agent: flow-ai/0.7.0` header on every request; attaches `Authorization: Bearer …` only if the token file is present."
+  ]
+}

@@ -58,6 +58,7 @@ skill is designed to support:
 - `013-run-pipeline-and-poll.json` — run + opt-in polling: resolve a *named* version, run, then poll `GET /executions/<id>` on a ≥60s cadence until terminal, surfacing the log on `ERROR`.
 - `014-run-pipeline-missing-required-param.json` — defensive: a required param has no default and can't be inferred, so the skill names the gap and refuses to submit an incomplete run.
 - `015-run-pipeline-no-capability.json` — defensive: the server returns 403 (`can_run_pipelines` false, or token scope not authorised); the skill reports it verbatim and stops without fabricating a run.
+- `016-find-metadata-options.json` — value discovery: confirm a controlled-vocabulary attribute via `GET /samples/metadata` (`has_options=true`), list its legal values via `GET /samples/metadata/<identifier>/options` (handling the 100-item cap), resolve the user's term to an exact option, then filter `/samples/search` by that value plus organism.
 
 Evals 001-004 exercise the `/me`-precheck pattern introduced as a
 defensive mitigation for the API's silent auth-degrade behaviour.
@@ -74,4 +75,7 @@ download helper that bootstraps it. Evals 012-015 exercise the
 pipeline-running flow added in `flow-ai/0.6.0`: the happy path (discovery →
 schema → resolve params → confirm → run → return id + UI link), opt-in polling,
 and two defensive paths (missing required parameter, and a 403 when the caller
-can't run pipelines).
+can't run pipelines). Eval 016 exercises the metadata value-discovery flow added
+in `flow-ai/0.7.0`: listing a controlled-vocabulary attribute's legal values via
+`GET /samples/metadata/<identifier>/options` and using an exact option value to
+filter `/samples/search`.

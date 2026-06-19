@@ -1,6 +1,6 @@
 # Samples endpoints
 
-Covers the seven sample-related endpoints:
+Covers the eight sample-related endpoints:
 
 - `GET /samples/search` — list / filter
 - `GET /samples/<id>` — single-sample detail; inlines the sample's
@@ -9,6 +9,8 @@ Covers the seven sample-related endpoints:
 - `GET /samples/<id>/data` — **every** data file related to the sample
   (raw inputs **plus** pipeline-produced outputs)
 - `GET /samples/metadata` — metadata attribute schema for this instance (discovery)
+- `GET /samples/metadata/<identifier>/options` — controlled value set for one
+  attribute (value discovery)
 - `GET /samples/types` — sample-type enum (discovery)
 - `GET /samples/types/<identifier>` — single sample-type detail
 
@@ -141,16 +143,19 @@ authentication, also returns the caller's owned and shared samples.
   same query without your candidate filter — if they match, the
   filter was ignored.
 
-- **No value discovery yet.** `GET /samples/metadata` lists the
-  legal *identifiers* but not what values an attribute takes on
-  actual samples. For free-text attributes (`has_options=false`),
-  values may follow instance-specific conventions that substring
-  search alone cannot reliably target — e.g. `?source=brain` may
-  miss samples whose `source` is `"Temporal Cortex"` or
-  `"Hippocampus"`. **Workaround:** fetch a
-  small sample of records via `/samples/search?count=10` and
-  inspect their `metadata.<id>.value` fields to learn the value
-  vocabulary, *then* construct a substring filter.
+- **Value discovery depends on the attribute kind.** `GET /samples/metadata`
+  lists the legal *identifiers*; to learn the *values* an attribute takes:
+  - **Controlled-vocabulary attributes (`has_options=true`)** — call
+    `GET /samples/metadata/<identifier>/options` (documented below) for the
+    legal value set, then filter `/samples/search?<identifier>=<value>` with an
+    exact option value. This is the precise path.
+  - **Free-text attributes (`has_options=false`)** — there are no options;
+    values may follow instance-specific conventions that substring search alone
+    cannot reliably target — e.g. `?source=brain` may miss samples whose
+    `source` is `"Temporal Cortex"` or `"Hippocampus"`. **Workaround:** fetch a
+    small sample of records via `/samples/search?count=10` and inspect their
+    `metadata.<id>.value` fields to learn the value vocabulary, *then* construct
+    a substring filter.
 
 - **Response envelope:** `{"count": int, "page": int, "samples": [...]}`.
   Envelope `count` is the **total matching samples across all pages**,
@@ -362,16 +367,76 @@ instances, so always discover at runtime.
   a metadata-scoped question — never guess at identifiers.
 - Identifiers vary by instance. The skill never asserts that a
   specific identifier exists; it teaches discovery.
-- `has_options=true` attributes have a controlled value set —
-  filter values must come from that set. The skill cannot list the
-  legal values today; for now, inspect a sample of records to learn
-  them.
-- `has_options=false` attributes are free-text. Substring matching
+- `has_options=true` attributes have a controlled value set — filter
+  values should come from that set. Call
+  `GET /samples/metadata/<identifier>/options` (below) to list the legal
+  values, then filter `/samples/search?<identifier>=<value>`.
+- `has_options=false` attributes are free-text — they have no options,
+  so the options endpoint returns an empty set for them. Substring matching
   on `/samples/search?<identifier>=<substring>` is the only filter
   mechanism. Values may follow instance-specific conventions
   (e.g. a `source` attribute holding `"Temporal Cortex"`,
   `"Hippocampus"`, etc.) — substring search alone may under-match
   if the user's natural-language term doesn't appear literally.
+
+## `GET /samples/metadata/<identifier>/options`
+
+Lists the controlled value set (the "options") for a single metadata
+attribute. **This is the value-discovery counterpart to
+`GET /samples/metadata`:** that endpoint tells you which attribute
+*identifiers* exist; this one tells you the legal *values* for an
+attribute whose `has_options` is `true`. Use it to turn a vague
+natural-language value into an exact option before filtering
+`/samples/search?<identifier>=<value>`.
+
+- **Auth:** none required. Authentication broadens the result set: an
+  authenticated caller additionally sees their **own** not-yet-validated
+  options (terms they submitted that an admin hasn't validated). Anonymous
+  callers — and authenticated callers, for everyone else's options — see the
+  **validated** (admin-curated) set only. Pass `?validated=true` (below) when
+  you want strictly the curated set regardless of who is calling.
+- **Path param:** `<identifier>` — a metadata attribute `identifier` from
+  `GET /samples/metadata`. Unknown identifier → **HTTP 404**
+  `{"error": "Not found"}`. (An attribute with `has_options=false` exists but
+  has no options, so it returns `200` with an empty `options` array and
+  `count: 0` — not a 404.)
+- **Query params:**
+
+| Name        | Type | Default | Behaviour |
+|-------------|------|---------|-----------|
+| `validated` | str  | (none)  | When present, restricts by validation state. `validated=true` → only validated (admin-curated) options; **any other value** (e.g. `validated=false`) → only un-validated options within the caller's visible set (i.e. the caller's own pending terms). The check is literal `== "true"`. |
+| `value`     | str  | (none)  | Case-insensitive substring (`__icontains`) on the option `value`. Use to narrow a large option set. |
+
+- **No `page` param, and a hard cap of 100.** The `options` array contains at
+  most the **first 100** options (ordered by `value` ascending). There is no
+  pagination — if `count` exceeds 100, the extra options are **silently
+  omitted**. Detect this by comparing `count` to the returned array length; when
+  truncated, narrow with `?value=<substring>` rather than assuming you've seen
+  every option.
+- **Response envelope:** `{"count": int, "total_count": int, "options": [...]}`.
+  - `total_count` — total options visible to the caller **before** the
+    `validated`/`value` filters are applied.
+  - `count` — total options matching **after** the `validated`/`value` filters.
+    This is the cross-set total, **not** the page size, so it may exceed the
+    100-item `options` length (see the cap above).
+  - `options` — array (≤100) of `{id, value, validated}`.
+- **Per-item fields:**
+  - `id` (str — the option's pk; not usually needed for read-only filtering)
+  - `value` (str — the legal value; pass this verbatim to
+    `/samples/search?<identifier>=<value>`)
+  - `validated` (bool — `true` for admin-curated options, `false` for
+    un-validated user-submitted terms)
+- **How to use it (discovery → filter):**
+  1. `GET /samples/metadata` → find the attribute and confirm `has_options=true`.
+  2. `GET /samples/metadata/<identifier>/options` → read the legal `value`s
+     (optionally `?value=<substring>` to find the match for the user's term).
+  3. `GET /samples/search?<identifier>=<value>` with an exact option value.
+     Search matches metadata by substring, so an exact option value filters
+     precisely without the under-match risk that free-text attributes carry.
+
+This endpoint only exposes the read-only listing. Creating, merging,
+editing, or deleting options are admin operations and are out of scope for
+this skill (see SKILL.md section 1).
 
 ## `GET /samples/types`
 
