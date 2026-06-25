@@ -37,7 +37,7 @@ so an authenticated key dramatically broadens what you can ask about.
    - **Lifetime:** how long the key should remain valid.
 4. Click create, then **copy the key immediately** — it's shown only
    once.
-5. Save it to `~/.config/flow/api-token` with restrictive permissions:
+5. Save it to `~/.config/flow/api-token` with restrictive permissions (if on Windows see note further down):
 
    ```sh
    mkdir -p ~/.config/flow
@@ -46,10 +46,17 @@ so an authenticated key dramatically broadens what you can ask about.
    chmod 600 ~/.config/flow/api-token
    ```
 
-<details>
-<summary>**If on Windows**</summary>
+The skill checks for this file on every invocation. When present, it
+attaches `Authorization: Bearer …` to every request. When absent, it
+proceeds unauthenticated. **The skill never prints the token** — it's
+referenced only via `$(< ~/.config/flow/api-token)` inside a `curl -H`
+flag.
 
-Add it to your windows home folder like so:
+### If on Windows
+<details>
+<summary>Click to expand</summary>
+
+Add the token to your windows home folder like so:
   
 ```
   New-Item -ItemType Directory -Force "$env:USERPROFILE\.config\flow"
@@ -60,11 +67,7 @@ Add it to your windows home folder like so:
 ```
 </details>
 
-The skill checks for this file on every invocation. When present, it
-attaches `Authorization: Bearer …` to every request. When absent, it
-proceeds unauthenticated. **The skill never prints the token** — it's
-referenced only via `$(< ~/.config/flow/api-token)` inside a `curl -H`
-flag.
+
 
 ## Install — Claude Code (recommended)
 
