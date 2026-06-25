@@ -46,6 +46,20 @@ so an authenticated key dramatically broadens what you can ask about.
    chmod 600 ~/.config/flow/api-token
    ```
 
+<details>
+<summary>**If on Windows**</summary>
+
+Add it to your windows home folder like so:
+  
+```
+  New-Item -ItemType Directory -Force "$env:USERPROFILE\.config\flow"
+  [System.IO.File]::WriteAllText(
+    "$env:USERPROFILE\.config\flow\api-token",
+    "your-token-here"
+  )
+```
+</details>
+
 The skill checks for this file on every invocation. When present, it
 attaches `Authorization: Bearer …` to every request. When absent, it
 proceeds unauthenticated. **The skill never prints the token** — it's
