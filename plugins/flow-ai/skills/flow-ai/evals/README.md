@@ -76,6 +76,6 @@ pipeline-running flow added in `flow-ai/0.6.0`: the happy path (discovery →
 schema → resolve params → confirm → run → return id + UI link), opt-in polling,
 and two defensive paths (missing required parameter, and a 403 when the caller
 can't run pipelines). Eval 016 exercises the metadata value-discovery flow added
-in `flow-ai/0.7.0`: listing a controlled-vocabulary attribute's legal values via
+in `flow-ai/0.7.1`: listing a controlled-vocabulary attribute's legal values via
 `GET /samples/metadata/<identifier>/options` and using an exact option value to
 filter `/samples/search`.

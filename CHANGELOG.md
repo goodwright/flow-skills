@@ -7,6 +7,16 @@ The canonical version is `plugins/flow-ai/.claude-plugin/plugin.json#version`.
 The User-Agent string in `plugins/flow-ai/skills/flow-ai/SKILL.md`
 (`flow-ai/<version>`) tracks it. Bump both together on every release.
 
+## [0.7.1] — 2026-07-01
+
+- Trimmed the `SKILL.md` frontmatter `description` from 1121 to 988 characters
+  so it fits under the 1024-character limit the plugin installer enforces.
+  Trigger coverage is unchanged — only redundant phrasing was removed.
+- Added a lean CI check (`scripts/validate_skills.py`, run by
+  `.github/workflows/validate-skills.yml`) that fails the build if any skill's
+  `description` exceeds 1024 characters, guarding against a repeat of the
+  install error.
+
 ## [0.7.0] — 2026-06-19
 
 - Added **metadata value discovery**: the skill can now list the controlled

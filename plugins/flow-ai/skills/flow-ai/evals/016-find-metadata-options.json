@@ -10,6 +10,6 @@
     "Filters GET /samples/search with both `organism=<human_id>` and `tissue=<matched option value>`, URL-encoding the value via --data-urlencode and setting `count` explicitly.",
     "Reports the sample count from the response envelope's `count` field (cross-page total), not the length of one page's `samples` array.",
     "Treats the options endpoint as read-only: does NOT attempt to create, merge, edit, or delete options (admin operations out of scope).",
-    "Carries the `User-Agent: flow-ai/0.7.0` header on every request; attaches `Authorization: Bearer …` only if the token file is present."
+    "Carries the `User-Agent: flow-ai/0.7.1` header on every request; attaches `Authorization: Bearer …` only if the token file is present."
   ]
 }

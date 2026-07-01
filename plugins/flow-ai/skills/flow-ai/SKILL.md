@@ -1,6 +1,6 @@
 ---
 name: flow-ai
-description: Use when the user asks about Flow data — pipelines on Flow, samples and projects (lists *and* single-record details), single data files, the executions or data files associated with a sample, file content previews, or downloading a data file — or wants to run a pipeline on Flow (kick off an execution and optionally poll it to completion), or to upload a generic data file, a demultiplexed sample (single- or paired-end), or multiplexed reads with an annotation sheet to Flow (including downloading an annotation-sheet template). Read-and-query plus running pipelines (via curl) and generic data-file, demultiplexed-sample, and multiplexed upload (via the on-demand flowbio CLI) against the Flow REST API at `https://app.flow.bio/api`. Reads are unauthenticated by default; if `~/.config/flow/api-token` exists, the skill authenticates and returns the broader set of resources the caller can access. Running pipelines and uploads always require that token and are gated behind explicit confirmation. Does NOT cover bulk multi-file (zip) downloads, cancelling executions, or mutations not yet documented in the skill.
+description: Use when the user asks about Flow data — pipelines on Flow, samples and projects (lists *and* single-record details), single data files, the executions or data files associated with a sample, file content previews, or downloading a data file — or wants to run a pipeline on Flow (kick off an execution and optionally poll it), or to upload a generic data file, a demultiplexed sample (single- or paired-end), or multiplexed reads with an annotation sheet (including downloading an annotation-sheet template). Reads, queries, and pipeline runs use curl; uploads use the on-demand flowbio CLI, against the Flow REST API at `https://app.flow.bio/api`. Reads are unauthenticated by default; if `~/.config/flow/api-token` exists, the skill authenticates and returns resources the caller can access. Running pipelines and uploads require that token and are gated behind explicit confirmation. Does NOT cover bulk multi-file (zip) downloads, cancelling executions, or undocumented mutations.
 ---
 
 # Flow API — query skill
@@ -138,9 +138,9 @@ requests, admin operations, and endpoints the skill does not document.
 
 - **Base URL.** Read from `FLOW_API_URL`, defaulting to `https://app.flow.bio/api`.
   Example override: `FLOW_API_URL=https://staging.flow.bio/api`.
-- **User-Agent.** Every request must carry `User-Agent: flow-ai/0.7.0`
+- **User-Agent.** Every request must carry `User-Agent: flow-ai/0.7.1`
   so the Flow API can identify AI-agent traffic. The curl flag is
-  `-A "flow-ai/0.7.0"`.
+  `-A "flow-ai/0.7.1"`.
 - **Authentication (optional).** If the file `~/.config/flow/api-token`
   exists, attach the user's token on every request:
   ```bash
@@ -169,11 +169,11 @@ Skeleton invocations:
 
 ```bash
 # Unauthenticated
-curl -s -A "flow-ai/0.7.0" \
+curl -s -A "flow-ai/0.7.1" \
   --get "${FLOW_API_URL:-https://app.flow.bio/api}/pipelines"
 
 # Authenticated (when ~/.config/flow/api-token exists)
-curl -s -A "flow-ai/0.7.0" \
+curl -s -A "flow-ai/0.7.1" \
   -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
   --get "${FLOW_API_URL:-https://app.flow.bio/api}/pipelines"
 ```
@@ -314,7 +314,7 @@ inline.
 
 ## 6. Reliable querying patterns
 
-1. Always include `-A "flow-ai/0.7.0"` so requests identify as AI traffic.
+1. Always include `-A "flow-ai/0.7.1"` so requests identify as AI traffic.
 2. For paginated endpoints, set `count` explicitly — never rely on the
    implicit default of 10. Cap at 100; the API rejects >100 with HTTP 400
    (not silent clamp).
