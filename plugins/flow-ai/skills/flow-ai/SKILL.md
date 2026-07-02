@@ -138,9 +138,9 @@ requests, admin operations, and endpoints the skill does not document.
 
 - **Base URL.** Read from `FLOW_API_URL`, defaulting to `https://app.flow.bio/api`.
   Example override: `FLOW_API_URL=https://staging.flow.bio/api`.
-- **User-Agent.** Every request must carry `User-Agent: flow-ai/0.7.1`
+- **User-Agent.** Every request must carry `User-Agent: flow-ai/0.8.0`
   so the Flow API can identify AI-agent traffic. The curl flag is
-  `-A "flow-ai/0.7.1"`.
+  `-A "flow-ai/0.8.0"`.
 - **Authentication (optional).** If the file `~/.config/flow/api-token`
   exists, attach the user's token on every request:
   ```bash
@@ -169,11 +169,11 @@ Skeleton invocations:
 
 ```bash
 # Unauthenticated
-curl -s -A "flow-ai/0.7.1" \
+curl -s -A "flow-ai/0.8.0" \
   --get "${FLOW_API_URL:-https://app.flow.bio/api}/pipelines"
 
 # Authenticated (when ~/.config/flow/api-token exists)
-curl -s -A "flow-ai/0.7.1" \
+curl -s -A "flow-ai/0.8.0" \
   -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
   --get "${FLOW_API_URL:-https://app.flow.bio/api}/pipelines"
 ```
@@ -314,7 +314,7 @@ inline.
 
 ## 6. Reliable querying patterns
 
-1. Always include `-A "flow-ai/0.7.1"` so requests identify as AI traffic.
+1. Always include `-A "flow-ai/0.8.0"` so requests identify as AI traffic.
 2. For paginated endpoints, set `count` explicitly — never rely on the
    implicit default of 10. Cap at 100; the API rejects >100 with HTTP 400
    (not silent clamp).

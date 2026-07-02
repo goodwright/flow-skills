@@ -7,6 +7,23 @@ The canonical version is `plugins/flow-ai/.claude-plugin/plugin.json#version`.
 The User-Agent string in `plugins/flow-ai/skills/flow-ai/SKILL.md`
 (`flow-ai/<version>`) tracks it. Bump both together on every release.
 
+## [0.8.0] — 2026-07-02
+
+- Added an **opt-in `PreToolUse` hook** (`hooks/flow-read-approve.sh`, wired via
+  `hooks/hooks.json`) that auto-approves the read-only Flow API `curl` calls the
+  skill makes, so users stop getting a permission prompt on every read. It is
+  strictly **read-only**: pipeline runs (`-X POST`), uploads (which go through
+  the `flowbio` CLI), compound/loop-wrapped commands, and any non-flow.bio host
+  keep prompting exactly as before.
+- The hook is **off by default** and makes no decision unless the user sets
+  `FLOW_AI_AUTO_APPROVE_READS=1`. Rationale: a plugin auto-approving its own tool
+  calls is a permission bypass, so consent is gated on an explicit opt-in rather
+  than granted silently on install. Claude Code snapshots hooks at session
+  start, so the opt-in takes effect only after a restart or `/reload-plugins`.
+  Documented under "Reducing permission prompts" in the README.
+- Matching is version-agnostic (keys off the `flow-ai/` User-Agent prefix, not a
+  pinned version), so it survives release bumps with no edits.
+
 ## [0.7.1] — 2026-07-01
 
 - Trimmed the `SKILL.md` frontmatter `description` from 1121 to 988 characters
