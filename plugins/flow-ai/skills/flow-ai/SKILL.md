@@ -63,9 +63,10 @@ does the work.
 **Token discipline.** When a token file is configured (see section 3),
 never `cat`, `head`, `echo`, or otherwise print its contents. Reads and
 uploads never handle the token at all — the flowbio CLI reads the file
-itself (never pass `--token`). The only place the skill references the
-token directly is the pipeline-run `curl` (section 5 and
-`endpoints/pipelines.md`), and there only via shell expansion
+itself (never pass `--token`). The only places the skill references the
+token directly are the two `curl` remnants — the pipeline run
+(`endpoints/pipelines.md`) and an authenticated file download
+(`endpoints/downloads.md`) — and there only via shell expansion
 (`$(< ~/.config/flow/api-token)`) inside a `-H` argument. In every case
 the token must never appear in the agent's transcript.
 
@@ -151,7 +152,7 @@ flowbio api get <PATH> [--param KEY=VALUE …] --json
 
 Substitute your resolved runner for the bare `flowbio` (see the runner
 preflight in section 4.1 — the same machinery serves reads and uploads):
-`uvx --from "flowbio==0.9.0" flowbio api get …`, or the `pipx run` form, or a
+`uvx --from flowbio==0.9.0 flowbio api get …`, or the `pipx run` form, or a
 compatible `flowbio` already on `PATH`. If no runner is found, stop — reads
 need the CLI just as uploads do (section 4.1).
 
@@ -189,10 +190,10 @@ Skeleton invocations (using `uvx` as the resolved runner):
 
 ```bash
 # Reads anonymously, or with the caller's token if ~/.config/flow/api-token exists
-uvx --from "flowbio==0.9.0" flowbio api get /pipelines --json
+uvx --from flowbio==0.9.0 flowbio api get /pipelines --json
 
 # With query params
-uvx --from "flowbio==0.9.0" flowbio api get /samples/search \
+uvx --from flowbio==0.9.0 flowbio api get /samples/search \
   --param name=rna-seq --param count=20 --json | jq '.count'
 ```
 
@@ -227,11 +228,11 @@ there is no curl fallback for reads. Before the first CLI call of a session
 
 1. `uv` on `PATH` → run via `uvx` (a.k.a. `uv tool run`):
    ```bash
-   uvx --from "flowbio==0.9.0" flowbio <command> …
+   uvx --from flowbio==0.9.0 flowbio <command> …
    ```
 2. else `pipx` on `PATH`:
    ```bash
-   pipx run --spec "flowbio==0.9.0" flowbio <command> …
+   pipx run --spec flowbio==0.9.0 flowbio <command> …
    ```
 3. else a compatible `flowbio` already on `PATH` (`flowbio --version` reports
    ≥ `0.9.0`) → call `flowbio <command> …` directly.
