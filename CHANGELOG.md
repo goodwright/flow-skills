@@ -34,6 +34,16 @@ release.
   uploads — there is no `curl` fallback. On a machine with none, reads stop
   with the install message. Pipeline runs and file downloads still use `curl`
   (`api get` is GET-only and returns text, unsuitable for binary downloads).
+- Corrected the `/me` **auth model** across the skill (SKILL §8, `examples.md`,
+  `endpoints/users.md`/`samples.md`, evals): the live API returns **401** for a
+  missing/invalid token on `/me` (not the previously-documented "HTTP 200 with
+  a record of nulls"). Search endpoints still silently treat a bad token as
+  anonymous and return a misleading `owned=true` count, which is why an
+  `owned=true` query is still gated on a successful `/me`.
+- Documented that the `permissions.allow` allowlist must also include
+  `Bash(jq:*)`: reads pipe through `jq`, and Claude Code auto-approves a piped
+  command only when every segment is allowlisted (and offers no one-click "don't
+  ask again" for multi-segment commands).
 
 ## [0.8.0] — 2026-07-02
 

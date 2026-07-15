@@ -2,8 +2,8 @@
   "skills": ["flow-ai"],
   "query": "How much data do I own on Flow?",
   "expected_behavior": [
-    "Calls GET /me first to verify authentication; checks the response body's `id` field is non-null before continuing.",
-    "If `/me`'s `id` is null, tells the user their token is missing, expired, or invalid and stops — does NOT report a size derived from anonymous data.",
+    "Calls GET /me first to verify authentication; treats a 401 (exit 3) as unauthenticated and requires a non-null `id` before continuing.",
+    "If `/me` fails (401) or has no `id`, tells the user their token is missing, expired, or invalid (and how to authenticate) and stops — does NOT report a size derived from anonymous data.",
     "Queries GET /data/search with `owned=true` to scope to the caller's data files.",
     "Disambiguates 'how much' — either reports the file count (envelope `count`) and tells the user that's what it computed, OR sums the `size` field across results to give a byte total, OR asks the user which they meant. Does NOT silently conflate the two.",
     "If summing sizes, sets `count` to the per-page maximum (100) and paginates through pages to capture all data; reports based on the total, not a single page.",

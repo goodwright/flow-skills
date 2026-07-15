@@ -2,8 +2,8 @@
   "skills": ["flow-ai"],
   "query": "Get me details about my last successful execution on Flow.",
   "expected_behavior": [
-    "Calls GET /me first to verify authentication; checks the response body's `id` field is non-null before continuing.",
-    "If `/me`'s `id` is null, tells the user their token is missing, expired, or invalid and stops — does NOT return execution data scoped to nobody.",
+    "Calls GET /me first to verify authentication; treats a 401 (exit 3) as unauthenticated and requires a non-null `id` before continuing.",
+    "If `/me` fails (401) or has no `id`, tells the user their token is missing, expired, or invalid (and how to authenticate) and stops — does NOT return execution data scoped to nobody.",
     "Queries GET /executions/search with `owned=true` to scope to the caller's executions.",
     "Adds `status=OK` (the documented successful status enum in endpoints/executions.md) — does NOT search for status='success', 'completed', or other synonyms.",
     "Sorts by `-created` (descending) to get the most recent first.",

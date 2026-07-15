@@ -3,9 +3,9 @@
   "query": "How many samples do I own on Flow?",
   "expected_behavior": [
     "Calls GET /me first to verify authentication, before issuing any owned-scoped query.",
-    "Inspects the response body's `id` field to decide whether the caller is authenticated, NOT whether the read succeeded (an invalid/expired token still returns a successful read populated with nulls, not an error).",
+    "Treats a failed `/me` as unauthenticated: a missing/invalid token makes `/me` return 401 (exit 3), so a successful `/me` with a non-null `id` is the authenticated signal.",
     "If `/me`'s response `id` is non-null: proceeds to call `flowbio api get /samples/search --param owned=true` — the CLI attaches the token from the token file automatically.",
-    "If `/me`'s response `id` is null: refuses to call `/samples/search?owned=true` and tells the user their token is missing, expired, or invalid — does NOT report a count derived from a misleading anonymous query (the API silently filters to `owner=NULL` instead of erroring).",
+    "If `/me` fails (401 / exit 3) or has no `id`: refuses to call `/samples/search?owned=true` and tells the user their token is missing, expired, or invalid (and how to authenticate) — does NOT report a count from an anonymous `owned=true` query, which does NOT error but silently filters to `owner=NULL`.",
     "Reports the count from the response envelope's `count` field (the cross-page total), not the length of the `samples` array on a single page.",
     "Sets `count` explicitly on the `/samples/search` query (per SKILL.md §6 rule 2), even when only the envelope total is needed.",
     "Issues every read via `flowbio api get … --json` (the CLI resolves the token); does NOT hand-roll curl or attach an `Authorization` header for reads."

@@ -3,7 +3,7 @@
   "query": "Show me the samples I own on Flow.",
   "expected_behavior": [
     "Recognises the request is caller-scoped (needs `owned=true`) and therefore requires authentication.",
-    "Detects that no usable token is available — e.g. `flowbio api get /me --json` returns a record with a null `id` (the read succeeds anonymously rather than erroring), or there is no `~/.config/flow/api-token` file.",
+    "Detects that no usable token is available — `flowbio api get /me --json` fails with 401 (exit 3), or there is no `~/.config/flow/api-token` file.",
     "Does NOT report a result from an anonymous `owned=true` query, which the API silently filters to `owner=NULL` and would return a plausible-but-wrong answer.",
     "Tells the user how to authenticate: create an API key in the Flow web app (Settings -> Account Management -> API Keys, purpose 'AI Agent') and save it to `~/.config/flow/api-token`, or set `FLOW_API_TOKEN`. Points at the README 'Getting a Flow API key' steps.",
     "Preserves token discipline and does not fabricate a token, a count, or a sample list."

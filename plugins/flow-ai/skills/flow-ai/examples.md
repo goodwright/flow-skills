@@ -27,9 +27,10 @@ Every recipe below works in two modes:
   including the caller's owned and shared resources.
 
 No flag changes between the two modes — the CLI reads the token file itself
-if it is there. If a recipe that needs auth (e.g. `owned=true`) fails or
-returns nulls and no token file is present, tell the user how to authenticate
-(SKILL.md §3) rather than silently reporting an anonymous result.
+if it is there. For a caller-scoped recipe (e.g. `owned=true`), verify auth via
+`/me` first (it returns 401 when unauthenticated); if there is no valid token,
+tell the user how to authenticate (SKILL.md §3) rather than silently reporting
+the misleading anonymous result.
 
 ## Example 1: "What pipelines does Flow offer?"
 
@@ -265,8 +266,8 @@ Notes:
 - `created_gt` takes a **Unix timestamp integer** — passing an ISO-8601
   string causes HTTP 500.
 - `owned=true` requires authentication. Always verify auth via `/me`
-  first (see Example 14 — check that `/me` returns a non-null `id`,
-  not just a successful call). Without a valid token the API silently filters
+  first (see Example 14 — a missing/invalid token makes `/me` return 401).
+  The search endpoint itself does NOT error without auth — it silently filters
   to `owner=NULL` and returns a plausible-but-wrong count.
   Same precondition applies to filtering executions by `owned=true`.
 
@@ -278,18 +279,17 @@ documented, regardless of HTTP verb or auth state.
 
 ## Example 14: "What samples do I own?"
 
-**Always verify authentication first via `/me`.** The API silently
-downgrades expired/invalid tokens to anonymous and then
-`owned=true` silently filters to `owner=NULL`, returning a plausible
-but wrong count. A successful call is not a reliable signal either —
-check the response body's `id` field.
+**Always verify authentication first via `/me`.** A missing or invalid token
+makes `/me` return **401** (`api get` exit 3) — but `/samples/search?owned=true`
+does NOT error: it silently treats you as anonymous and filters to
+`owner=NULL`, returning a plausible but wrong count. So gate the `owned=true`
+query on a successful `/me`.
 
 ```bash
-# Step 1: verify the token works by calling /me and checking the id
-ME=$(flowbio api get /me --json)
-MY_ID=$(echo "$ME" | jq -r '.id // empty')
-if [ -z "$MY_ID" ]; then
-  echo "Not authenticated: /me returned no id. Token missing, expired, or invalid."
+# Step 1: verify the token works — /me 401s (exit 3) when it is missing/invalid.
+if ! ME=$(flowbio api get /me --json 2>/dev/null) \
+   || [ -z "$(printf '%s' "$ME" | jq -r '.id // empty')" ]; then
+  echo "Not authenticated: /me failed. Token missing, expired, or invalid."
   exit 1
 fi
 
@@ -299,7 +299,7 @@ flowbio api get /samples/search \
   jq '{total: .count, samples: [.samples[] | {id, name, project: .project_name}]}'
 ```
 
-If `/me` returns nulls, tell the user their token is missing,
+If `/me` fails (401) or returns no `id`, tell the user their token is missing,
 expired, or invalid, and how to authenticate (SKILL.md §3) — don't fall
 through to a misleading `owned=true` query.
 
@@ -311,10 +311,10 @@ already has what you need:
 echo "$ME" | jq '{id, name, memberships: [.memberships[].slug]}'
 ```
 
-Then use `$MY_ID` as appropriate for the question. Note: the API
-does NOT error on an absent or expired token — it returns a record of
-nulls. The non-null-`id` check in the precheck is the only reliable
-auth-validity signal today.
+Then use `$MY_ID` as appropriate for the question. Note: `/me` returns 401
+on a missing/invalid token, but search endpoints like `/samples/search`
+silently treat a bad token as anonymous (no 401) and return a misleading
+`owned=true` count — which is exactly why the `/me` precheck is required.
 
 ## Example 15: "What filters does this instance support?"
 
