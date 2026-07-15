@@ -107,14 +107,17 @@ plus the supporting files it references — no harness-specific glue.
 ## Reducing permission prompts
 
 Flow reads run through the `flowbio` CLI's read-only `api get` command, which
-resolves your token itself. Because these calls carry no embedded secret and
-share a stable command prefix, Claude Code can allowlist them the normal way —
-no plugin-supplied machinery required.
+resolves your token itself. These calls carry no embedded secret and share a
+stable prefix, so — unlike the old token-substituting curl — they can be
+allowlisted through Claude Code's normal `permissions.allow`.
 
-To stop being prompted on every read, add the entry that matches how the CLI
-resolves on your machine (the skill prefers `uvx`, then `pipx`, then a
-`flowbio` already on your `PATH`) to `permissions.allow` in your
-`.claude/settings.json`:
+One wrinkle: the read recipes pipe the result through `jq`
+(`flowbio api get … --json | jq '…'`). Claude Code auto-approves a piped
+command only when **every** segment is allowlisted, and it does **not** offer a
+one-click "don't ask again" for multi-segment commands — so a read keeps
+prompting until you allowlist both the read command *and* `jq`. Add the entries
+that match how the CLI resolves on your machine (the skill prefers `uvx`, then
+`pipx`, then a `flowbio` already on your `PATH`) to `.claude/settings.json`:
 
 ```json
 {
@@ -122,17 +125,16 @@ resolves on your machine (the skill prefers `uvx`, then `pipx`, then a
     "allow": [
       "Bash(flowbio api get:*)",
       "Bash(uvx --from flowbio==0.9.0 flowbio api get:*)",
-      "Bash(pipx run --spec flowbio==0.9.0 flowbio api get:*)"
+      "Bash(pipx run --spec flowbio==0.9.0 flowbio api get:*)",
+      "Bash(jq:*)"
     ]
   }
 }
 ```
 
-These entries must match the command the skill emits byte-for-byte — Claude
-Code prefix-matches the raw string, so the quoting has to agree (the skill
-emits the pinned spec unquoted, e.g. `uvx --from flowbio==0.9.0 …`). Or just
-choose **"don't ask again"** the first time a read prompts — the prefix is
-stable, so that choice sticks.
+The entries must match the command the skill emits byte-for-byte — Claude Code
+prefix-matches the raw string, so the quoting has to agree (the skill emits the
+pinned spec unquoted, e.g. `uvx --from flowbio==0.9.0 …`).
 
 Pipeline runs (`POST`) and file downloads still use `curl` and keep prompting;
 that is deliberate — a run changes remote state and is confirmation-gated, and

@@ -10,28 +10,30 @@ The authenticated caller's user record. Use this to resolve "what is
 my user id?" — needed when a recipe references the caller's pk (e.g.
 `/samples/search?owner=<my_id>`).
 
-For simple ownership questions ("samples I own", "projects I own"),
-the simpler path is `/samples/search?owned=true` — no `/me` lookup
-needed. `/me` becomes useful when:
+For ownership questions ("samples I own", "projects I own"), still use
+`/me` first as an auth gate: `/samples/search?owned=true` silently treats
+a missing or invalid token as anonymous and returns a misleading count (it
+does not 401), so confirm `/me` succeeds before trusting an `owned=true`
+result. `/me` is likewise needed when:
 
 - The intent involves group membership ("samples in groups I'm in") —
   `/me` returns the caller's `memberships`.
 - You need the caller's pk to cross-reference across resources.
 - You want to check whether the caller is an admin (`is_admin`).
 
-- **Auth:** required *in spirit* — but the API does NOT return 401
-  on missing or expired tokens. Instead it returns HTTP 200 with a
-  record of nulls (`{id: null, username: null, name: null, …}`).
-  This is a current API quirk; the agent MUST check the response
-  body, not the HTTP status:
-  - `id` non-null → genuinely authenticated.
-  - `id` null → no valid token; treat as anonymous and tell the user
-    their token is missing, expired, or invalid.
+- **Auth:** required. With a missing, expired, or invalid token, `/me`
+  returns **401** (`flowbio api get` exit `3`) — unlike the search
+  endpoints, which accept a bad token as anonymous and return 200. So a
+  failed `/me` is the reliable "not authenticated" signal:
+  - success with a non-null `id` → genuinely authenticated.
+  - 401 / exit 3 → no valid token; treat as anonymous and tell the user
+    their token is missing, expired, or invalid (and how to authenticate,
+    `SKILL.md` section 3).
 - **Query params:** none.
 - **Response shape:** a single object with:
-  - `id` (str|null — the caller's user pk, **stringified** integer;
-    `null` when the caller is not authenticated, regardless of HTTP
-    status — see Auth note above)
+  - `id` (str — the caller's user pk, **stringified** integer; present on
+    a successful call. An unauthenticated caller gets a 401 instead of a
+    record — see the Auth note above)
   - `username` (str|null)
   - `name` (str — display name)
   - `image` (str | null — avatar URL)
