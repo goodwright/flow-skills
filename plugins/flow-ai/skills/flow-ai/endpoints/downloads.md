@@ -10,9 +10,12 @@ Direct single-file download for a public Data row.
   callers — none of those apply here.)
 
 **With authentication:** any Data the caller has access to is
-downloadable through this endpoint. The same `Authorization: Bearer …`
-header (see `SKILL.md` section 3) applies; the endpoint already
-accepts it.
+downloadable through this endpoint. Unlike reads (which go through
+`flowbio api get`), a download is a raw-byte transfer done with `curl`, so
+attach the token to the curl yourself for private data —
+`-H "Authorization: Bearer $(< ~/.config/flow/api-token)"` — preserving the
+token discipline in `SKILL.md` section 1 (never print it). Omit the header
+for public data.
 
 - **Path parameters:**
   - `<data_id>` is a **Data primary key**, NOT a `BulkDownloadJob` id, despite
