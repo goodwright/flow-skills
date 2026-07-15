@@ -10,6 +10,6 @@
     "Because the user asked to be told when it finishes, then polls GET /executions/<id> on an interval of at least 60 seconds (runs can take hours) until `status` reaches a terminal value (OK, ERROR, or CANCELED).",
     "Does NOT poll faster than ~once per minute and does NOT busy-wait; a long interval is expected and acceptable.",
     "On terminal OK reports success with the final status and may surface a short log tail. On ERROR surfaces the execution's stderr/log rather than claiming success.",
-    "Carries `Authorization: Bearer …` on every request, including each poll."
+    "Reads and polls go via `flowbio api get … --json` (the CLI attaches the token automatically); only the run POST carries an explicit `Authorization` header."
   ]
 }

@@ -4,8 +4,36 @@ All notable changes to the `flow-ai` skill are documented here. Versions
 follow [Semantic Versioning](https://semver.org/).
 
 The canonical version is `plugins/flow-ai/.claude-plugin/plugin.json#version`.
-The User-Agent string in `plugins/flow-ai/skills/flow-ai/SKILL.md`
-(`flow-ai/<version>`) tracks it. Bump both together on every release.
+The `flow-ai/<version>` User-Agent that survives on the two `curl` remnants
+(the pipeline run and file download) tracks it. Bump both together on every
+release.
+
+## [0.10.0] — 2026-07-15
+
+- **Reads now go through the `flowbio` CLI's read-only `api get` command**
+  (`flowbio api get <PATH> --param k=v --json`) instead of `curl`. The CLI
+  resolves the token from `~/.config/flow/api-token` itself (or reads
+  anonymously), so read commands carry no embedded secret and share a stable,
+  allowlistable prefix. The discovery reads inside the pipeline-run flow moved
+  too.
+- **Removed the opt-in `PreToolUse` read-approve hook** (`hooks/`) and the
+  `FLOW_AI_AUTO_APPROVE_READS` switch. It existed only to auto-approve the
+  curl reads, which embedded `$(< …)` and so couldn't be allowlisted normally.
+  `flowbio api get` is allowlistable by standard Claude Code permissions, so
+  the hook is no longer needed. The README now documents the recommended
+  `permissions.allow` entries.
+- **Shared flowbio pin bumped `0.7.0` → `0.9.0`** — the first release carrying
+  `api get` alongside the upload commands, so one pin covers reads and uploads.
+- Added **authentication guidance**: on an auth failure, or when the user's
+  request implies they expect to be authenticated, the skill explains how to
+  create and save an API key rather than silently proceeding anonymously.
+- Read **error handling** now parses the CLI's `--json` envelope, trusting the
+  server's `status_code` and readable `message` over the coarse process exit
+  code.
+- **Breaking:** reads now require a runner (`uv`/`pipx`/`flowbio`) just like
+  uploads — there is no `curl` fallback. On a machine with none, reads stop
+  with the install message. Pipeline runs and file downloads still use `curl`
+  (`api get` is GET-only and returns text, unsuitable for binary downloads).
 
 ## [0.8.0] — 2026-07-02
 

@@ -46,11 +46,12 @@ so an authenticated key dramatically broadens what you can ask about.
    chmod 600 ~/.config/flow/api-token
    ```
 
-The skill checks for this file on every invocation. When present, it
-attaches `Authorization: Bearer …` to every request. When absent, it
-proceeds unauthenticated. **The skill never prints the token** — it's
-referenced only via `$(< ~/.config/flow/api-token)` inside a `curl -H`
-flag.
+The skill checks for this file on every invocation. When present, the
+`flowbio` CLI reads it and authenticates every read (and upload); when
+absent, reads fall back to public/anonymous access. **The skill never
+prints the token** — the CLI reads the file itself, and the only commands
+that reference it directly (the pipeline-run and file-download `curl`s) do
+so via `$(< ~/.config/flow/api-token)` inside a `-H` flag.
 
 ### If on Windows
 <details>
@@ -138,18 +139,21 @@ a download can be large.
 
 The canonical version lives in
 [`plugins/flow-ai/.claude-plugin/plugin.json`](plugins/flow-ai/.claude-plugin/plugin.json).
-The `User-Agent: flow-ai/<version>` string in `SKILL.md` is kept in
-lockstep so Flow's backend can attribute traffic to a specific release.
+Reads go through the `flowbio` CLI, so they no longer carry a `flow-ai`
+User-Agent; the string now survives only on the two `curl` remnants (the
+pipeline run and file download) as `User-Agent: flow-ai/<version>`, kept in
+lockstep so Flow's backend can attribute that traffic to a specific release.
 On each release, bump:
 
 1. `plugins/flow-ai/.claude-plugin/plugin.json#version`
-2. The `User-Agent` strings in `SKILL.md` and `examples.md`
+2. The `User-Agent` strings in `examples.md` (run + download recipes) and
+   `endpoints/pipelines.md` (run recipe)
 3. `CHANGELOG.md`
 
 A pre-release sanity check:
 
 ```sh
-grep -rn "flow-ai/" plugins/flow-ai/skills/flow-ai/ | grep -v 0.2.0
+grep -rn "flow-ai/" plugins/flow-ai/skills/flow-ai/ | grep -v 0.10.0
 ```
 
 …should return nothing once everything is in lockstep.
