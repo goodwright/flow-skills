@@ -128,8 +128,11 @@ resolves on your machine (the skill prefers `uvx`, then `pipx`, then a
 }
 ```
 
-Or just choose **"don't ask again"** the first time a read prompts — the prefix
-is stable, so that choice sticks.
+These entries must match the command the skill emits byte-for-byte — Claude
+Code prefix-matches the raw string, so the quoting has to agree (the skill
+emits the pinned spec unquoted, e.g. `uvx --from flowbio==0.9.0 …`). Or just
+choose **"don't ask again"** the first time a read prompts — the prefix is
+stable, so that choice sticks.
 
 Pipeline runs (`POST`) and file downloads still use `curl` and keep prompting;
 that is deliberate — a run changes remote state and is confirmation-gated, and
@@ -153,10 +156,12 @@ On each release, bump:
 A pre-release sanity check:
 
 ```sh
-grep -rn "flow-ai/" plugins/flow-ai/skills/flow-ai/ | grep -v 0.10.0
+grep -rn "flow-ai/[0-9]" plugins/flow-ai/skills/flow-ai/ | grep -v evals/ | grep -v 0.10.0
 ```
 
-…should return nothing once everything is in lockstep.
+…should return nothing once everything is in lockstep. (The `evals/` are
+excluded: they use a `flow-ai/<version>` placeholder and cite historical
+release numbers, neither of which tracks the current version.)
 
 ## Contributing
 

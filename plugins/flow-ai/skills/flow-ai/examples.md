@@ -7,7 +7,7 @@ parameter and response details, see `endpoints/<name>.md`.
 
 Reads run through the flowbio CLI's `api get` command. For readability the
 recipes below show the **bare** `flowbio api get …`; in practice prepend your
-resolved runner (`uvx --from "flowbio==0.9.0" flowbio api get …`, the `pipx
+resolved runner (`uvx --from flowbio==0.9.0 flowbio api get …`, the `pipx
 run` form, or a `flowbio` already on `PATH`) per SKILL.md §4.1, and use the
 same runner for the whole session. Always pass `--json` and pipe the raw body
 through `jq`.
@@ -409,7 +409,7 @@ case "counts.tsv" in *" "*) echo "Filename has spaces — rename first."; exit 1
 # Step 4: CONFIRM with the user what will be uploaded (path, stored
 # filename, data_type), then run the pinned CLI. The token is read by
 # the CLI from ~/.config/flow/api-token — never passed as --token.
-uvx --from "flowbio==0.9.0" flowbio data upload ./counts.tsv \
+uvx --from flowbio==0.9.0 flowbio data upload ./counts.tsv \
   --json --no-progress
 ```
 
@@ -470,7 +470,7 @@ done
 # Step 7: CONFIRM what will be uploaded (reads files + single/paired, name,
 # sample type, project, organism, metadata), then run the pinned CLI. The
 # token is read by the CLI from ~/.config/flow/api-token — never --token.
-uvx --from "flowbio==0.9.0" flowbio samples upload \
+uvx --from flowbio==0.9.0 flowbio samples upload \
   --name liver_rep1 --sample-type RNA-Seq \
   --reads1 ./liver_R1.fastq.gz --reads2 ./liver_R2.fastq.gz \
   --project "$PROJECT_ID" --organism "$HUMAN_ID" \
@@ -515,7 +515,7 @@ done
 # pinned CLI. The annotation is validated and uploaded BEFORE the reads, so
 # an invalid sheet never wastes a reads upload. The token is read by the CLI
 # from ~/.config/flow/api-token — never passed as --token.
-uvx --from "flowbio==0.9.0" flowbio samples upload-multiplexed \
+uvx --from flowbio==0.9.0 flowbio samples upload-multiplexed \
   --reads1 ./pool_R1.fastq.gz --reads2 ./pool_R2.fastq.gz \
   --annotation ./annotation.xlsx \
   --json --no-progress
@@ -558,7 +558,7 @@ flowbio api get /samples/types --json | \
 # existing flowbio; otherwise stop with the install message. No confirmation
 # needed — this is a read. The token is read by the CLI from
 # ~/.config/flow/api-token — never passed as --token.
-uvx --from "flowbio==0.9.0" flowbio samples annotation-template \
+uvx --from flowbio==0.9.0 flowbio samples annotation-template \
   --sample-type rna_seq -o ./template.xlsx \
   --json --no-progress
 ```

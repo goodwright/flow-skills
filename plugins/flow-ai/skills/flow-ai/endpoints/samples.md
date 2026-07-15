@@ -538,7 +538,7 @@ contract. This section covers only what is specific to the sample call.
 
 - **The call** (using whichever runner the preflight selected):
   ```bash
-  uvx --from "flowbio==0.9.0" flowbio samples upload \
+  uvx --from flowbio==0.9.0 flowbio samples upload \
     --name NAME --sample-type IDENTIFIER \
     --reads1 PATH [--reads2 PATH] \
     [--project ID] [--organism ID] [--metadata KEY=VALUE ...] \
@@ -586,7 +586,7 @@ contract.
 
 - **The call** (using whichever runner the preflight selected):
   ```bash
-  uvx --from "flowbio==0.9.0" flowbio samples annotation-template \
+  uvx --from flowbio==0.9.0 flowbio samples annotation-template \
     --sample-type IDENTIFIER -o ./template.xlsx \
     --json --no-progress
   ```
@@ -645,7 +645,7 @@ Surface this in your messaging: if validation fails, no reads were uploaded.
 
 - **The call** (using whichever runner the preflight selected):
   ```bash
-  uvx --from "flowbio==0.9.0" flowbio samples upload-multiplexed \
+  uvx --from flowbio==0.9.0 flowbio samples upload-multiplexed \
     --reads1 PATH [--reads2 PATH] \
     --annotation PATH [--reject-warnings] \
     --json --no-progress

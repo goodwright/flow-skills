@@ -58,7 +58,13 @@ skill is designed to support:
 - `013-run-pipeline-and-poll.json` — run + opt-in polling: resolve a *named* version, run, then poll `GET /executions/<id>` on a ≥60s cadence until terminal, surfacing the log on `ERROR`.
 - `014-run-pipeline-missing-required-param.json` — defensive: a required param has no default and can't be inferred, so the skill names the gap and refuses to submit an incomplete run.
 - `015-run-pipeline-no-capability.json` — defensive: the server returns 403 (`can_run_pipelines` false, or token scope not authorised); the skill reports it verbatim and stops without fabricating a run.
-- `016-find-metadata-options.json` — value discovery: confirm a controlled-vocabulary attribute via `GET /samples/metadata` (`has_options=true`), list its legal values via `GET /samples/metadata/<identifier>/options` (handling the 100-item cap), resolve the user's term to an exact option, then filter `/samples/search` by that value plus organism.
+- `016-find-metadata-options.json` — value discovery: confirm a controlled-vocabulary attribute via `GET /samples/metadata` (`has_options=true`), list its legal values via `GET /samples/metadata/<identifier>/options` (handling the 100-item cap), resolve the user's term to an exact option, then filter `/samples/search` by that value plus organism. Evals 017-018 exercise
+the read path added when reads moved from `curl` to the `flowbio` CLI's
+`api get` command: the no-runner stop (reads require the CLI, with no curl
+fallback) and the authentication guidance surfaced when a caller-scoped read
+has no token.
+- `017-read-no-runner.json` — defensive: a plain read with no `uv`/`pipx`/`flowbio` runner on PATH; the skill stops with the install message instead of falling back to curl (reads now require the CLI).
+- `018-auth-guidance-when-expected.json` — a caller-scoped read with no token present; the skill declines the misleading anonymous answer and explains how to create and save an API key.
 
 Evals 001-004 exercise the `/me`-precheck pattern introduced as a
 defensive mitigation for the API's silent auth-degrade behaviour.
