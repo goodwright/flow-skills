@@ -9,6 +9,6 @@
     "If summing sizes, sets `count` to the per-page maximum (100) and paginates through pages to capture all data; reports based on the total, not a single page.",
     "Surfaces sizes in human-readable form (MB / GB / TB) when reporting a byte total — does NOT report a raw integer of bytes.",
     "Does NOT surface `absolute_path` to the user (it's a Flow-internal path).",
-    "Carries the `Authorization: Bearer …` header on every request once authenticated."
+    "Issues each read via `flowbio api get … --json`; the CLI attaches the token automatically once the token file is present."
   ]
 }

@@ -7,9 +7,9 @@
     "Reports the legal `value`s from the `options` array; if `count` exceeds the returned array length (the 100-item cap), narrows with `?value=cortex` rather than claiming the returned list is exhaustive.",
     "Resolves the user's term 'cortex' to a matching option `value` from the options response before filtering — surfaces the candidate matches if more than one option contains the substring.",
     "Resolves the organism: calls GET /organisms, matches 'human' by name/latin_name, and uses its `id`.",
-    "Filters GET /samples/search with both `organism=<human_id>` and `tissue=<matched option value>`, URL-encoding the value via --data-urlencode and setting `count` explicitly.",
+    "Filters `flowbio api get /samples/search` with both `--param organism=<human_id>` and `--param tissue=<matched option value>` (the CLI URL-encodes the value), setting `count` explicitly.",
     "Reports the sample count from the response envelope's `count` field (cross-page total), not the length of one page's `samples` array.",
     "Treats the options endpoint as read-only: does NOT attempt to create, merge, edit, or delete options (admin operations out of scope).",
-    "Carries the `User-Agent: flow-ai/0.8.0` header on every request; attaches `Authorization: Bearer …` only if the token file is present."
+    "Issues every read via `flowbio api get … --json`; the CLI attaches the token automatically when the token file is present, and reads anonymously otherwise."
   ]
 }

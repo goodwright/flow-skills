@@ -4,7 +4,7 @@
   "expected_behavior": [
     "Runs the runner preflight and finds no usable runner: `uv` is not on PATH, `pipx` is not on PATH, and no compatible `flowbio` (>= the pinned version) is on PATH.",
     "Stops before attempting any upload — does NOT call the API, does NOT improvise Python, does NOT reimplement the chunked upload in bash.",
-    "Returns a clear, actionable message that names the missing runner and gives the install one-liners: `uv` (https://docs.astral.sh/uv/, recommended), `pipx` (`pip install --user pipx`), or `flowbio` directly (`pip install \"flowbio>=0.7.0\"`), and tells the user to re-run afterwards.",
+    "Returns a clear, actionable message that names the missing runner and gives the install one-liners: `uv` (https://docs.astral.sh/uv/, recommended), `pipx` (`pip install --user pipx`), or `flowbio` directly (`pip install \"flowbio>=0.9.0\"`), and tells the user to re-run afterwards.",
     "Does NOT fail silently or opaquely (no bare traceback, no vague 'command not found')."
   ]
 }

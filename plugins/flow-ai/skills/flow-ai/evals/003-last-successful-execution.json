@@ -10,6 +10,6 @@
     "Sets `count` explicitly; a small value (1–10) is appropriate since only the most recent is needed.",
     "Picks the first result's `id` and follows up with GET /executions/<id> for the detail record.",
     "Reports user-facing details from the detail response: pipeline name/version, identifier, created/started/finished timestamps, status, and the sample it ran on (if any). Does NOT surface internal-only fields like `absolute_path` or `nextflow_id`.",
-    "Carries the `Authorization: Bearer …` header on every request once authenticated."
+    "Issues each read via `flowbio api get … --json`; the CLI attaches the token automatically once the token file is present."
   ]
 }
