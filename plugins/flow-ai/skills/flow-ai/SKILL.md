@@ -1,15 +1,16 @@
 ---
 name: flow-ai
-description: Use when the user asks about Flow data — pipelines on Flow, samples and projects (lists *and* single-record details), single data files, the executions or data files associated with a sample, file content previews, or downloading a data file — or wants to run a pipeline on Flow (kick off an execution and optionally poll it), or to upload a generic data file, a demultiplexed sample (single- or paired-end), or multiplexed reads with an annotation sheet (including downloading an annotation-sheet template). Reads, queries, and pipeline runs use curl; uploads use the on-demand flowbio CLI, against the Flow REST API at `https://app.flow.bio/api`. Reads are unauthenticated by default; if `~/.config/flow/api-token` exists, the skill authenticates and returns resources the caller can access. Running pipelines and uploads require that token and are gated behind explicit confirmation. Does NOT cover bulk multi-file (zip) downloads, cancelling executions, or undocumented mutations.
+description: Use when the user asks about Flow data — pipelines on Flow, samples and projects (lists *and* single-record details), single data files, the executions or data files associated with a sample, file content previews, or downloading a data file — or wants to run a pipeline on Flow (kick off an execution and optionally poll it), or to upload a generic data file, a demultiplexed sample (single- or paired-end), or multiplexed reads with an annotation sheet (including downloading an annotation-sheet template). Reads, queries and uploads use the on-demand flowbio CLI (reads via `api get`); pipeline runs and file downloads use curl, against the Flow REST API at `https://app.flow.bio/api`. Reads are unauthenticated by default; if `~/.config/flow/api-token` exists, the CLI authenticates and returns resources the caller can access. Running pipelines and uploads require that token and are gated behind explicit confirmation. Does NOT cover bulk multi-file (zip) downloads, cancelling executions, or undocumented mutations.
 ---
 
 # Flow API — query skill
 
-Reliably query Flow's REST API with `curl` and `jq`. Works unauthenticated
-by default; attaches an `Authorization: Bearer …` header automatically
-when a token file is present (see section 3). For Flow's domain model
-(project, sample, fileset, pipeline, what the audience model means), read
-`flow-concepts.md` (sibling file) first.
+Reliably query Flow's REST API through the `flowbio` CLI's read-only
+`api get` command, projecting the results with `jq`. Works unauthenticated
+by default; the CLI attaches the caller's token automatically when a token
+file is present (see section 3). For Flow's domain model (project, sample,
+fileset, pipeline, what the audience model means), read `flow-concepts.md`
+(sibling file) first.
 
 ## 1. Safety
 
@@ -60,9 +61,13 @@ This list is illustrative; the principle in the first paragraph is what
 does the work.
 
 **Token discipline.** When a token file is configured (see section 3),
-never `cat`, `head`, `echo`, or otherwise print its contents. The token
-is referenced only via shell expansion inside a `curl -H` argument
-(see section 3). It must never appear in the agent's transcript.
+never `cat`, `head`, `echo`, or otherwise print its contents. Reads and
+uploads never handle the token at all — the flowbio CLI reads the file
+itself (never pass `--token`). The only place the skill references the
+token directly is the pipeline-run `curl` (section 5 and
+`endpoints/pipelines.md`), and there only via shell expansion
+(`$(< ~/.config/flow/api-token)`) inside a `-H` argument. In every case
+the token must never appear in the agent's transcript.
 
 ## 2. Scope
 
@@ -121,9 +126,11 @@ to section 4 over time):
   confirmation needed). Performed via the flowbio CLI, not curl. See
   `endpoints/samples.md`.
 
-All of the GET endpoints above accept an optional `Authorization: Bearer …`
-header (see section 3); the upload always requires the token. With auth, list / detail / sub-resource calls broaden to
-include resources the caller owns or has been shared. URLs do not change.
+All of the GET endpoints above are issued via `flowbio api get` (see
+section 3), which attaches the caller's token automatically when the token
+file is present; the upload always requires the token. With auth, list /
+detail / sub-resource calls broaden to include resources the caller owns or
+has been shared. Paths do not change.
 
 Out-of-scope — decline politely:
 
@@ -134,48 +141,59 @@ Anything not on the in-scope list above is also out of scope per the
 Safety principle in section 1 — including, but not limited to, mutating
 requests, admin operations, and endpoints the skill does not document.
 
-## 3. Configuration (applies to every request)
+## 3. Configuration (applies to every read)
 
-- **Base URL.** Read from `FLOW_API_URL`, defaulting to `https://app.flow.bio/api`.
-  Example override: `FLOW_API_URL=https://staging.flow.bio/api`.
-- **User-Agent.** Every request must carry `User-Agent: flow-ai/0.8.0`
-  so the Flow API can identify AI-agent traffic. The curl flag is
-  `-A "flow-ai/0.8.0"`.
-- **Authentication (optional).** If the file `~/.config/flow/api-token`
-  exists, attach the user's token on every request:
-  ```bash
-  -H "Authorization: Bearer $(< ~/.config/flow/api-token)"
-  ```
-  The `$(< file)` shell construct expands at execution time, so the
-  literal token never appears in the agent's transcript. **If the file
-  does not exist, omit the `-H` flag entirely and proceed
-  unauthenticated.** There is no other configuration switch — file
-  presence is the only signal.
+Reads are issued with the flowbio CLI's read-only `api get` command:
 
-  The token file contains only the raw token (a JWT string), not a
-  pre-formatted `Authorization:` line. (`$(< file)` is preferred over
-  curl's `-H @file` for exactly this reason — `-H @file` would require
-  the file to contain a complete `Header: value` line.) The skill is
-  forbidden from reading the file's contents directly
-  (`cat`/`head`/`echo`/…); pass it by reference via `$(< file)` inside
-  the `curl -H` flag only. See the token-discipline rule in section 1.
+```
+flowbio api get <PATH> [--param KEY=VALUE …] --json
+```
 
-  When the token file is present, the header is attached to **every**
-  request the skill makes, including `/pipelines`. This is the intended
-  behaviour: authentication broadens the result set uniformly across
-  every endpoint the skill uses.
+Substitute your resolved runner for the bare `flowbio` (see the runner
+preflight in section 4.1 — the same machinery serves reads and uploads):
+`uvx --from "flowbio==0.9.0" flowbio api get …`, or the `pipx run` form, or a
+compatible `flowbio` already on `PATH`. If no runner is found, stop — reads
+need the CLI just as uploads do (section 4.1).
 
-Skeleton invocations:
+- **`<PATH>`.** Relative to the base URL, leading slash optional (e.g.
+  `/samples/search`). Never put a `?` in the path — the CLI rejects it; pass
+  query params with `--param`.
+- **Query params.** One `--param KEY=VALUE` per param; the CLI URL-encodes each
+  value. Repeat the flag for multi-valued params
+  (`--param sample_types=rna --param sample_types=atac`). Never interpolate
+  user input into the path.
+- **`--json`.** Always pass it. For `api get` it does **not** reshape the
+  success body — that stays the raw response for `jq` to project — it only
+  makes error output machine-readable (see section 8).
+- **Base URL.** The CLI resolves it from `FLOW_API_URL` (default
+  `https://app.flow.bio/api`). Forward `FLOW_API_URL` only when the user has
+  overridden it; never pass `--base-url` otherwise.
+- **Output.** The raw body goes to stdout — pipe it through `jq` exactly as
+  before.
+
+**Authentication.** The CLI reads the token from `~/.config/flow/api-token`
+itself. When the file is present every read is authenticated and broadens
+uniformly across every endpoint; when it is absent the CLI reads anonymously
+(public resources only). File presence is the only switch — **never pass
+`--token`, and never `cat`/`head`/`echo`/print the token** (section 1).
+
+If a read fails authentication, or the user's request implies they expect to
+be authenticated (e.g. "my samples", `owned=true`) but no token file is
+present, tell them how to authenticate rather than silently proceeding
+anonymously: create an API key in the Flow web app (Settings →
+Account Management → API Keys, purpose "AI Agent") and save it to
+`~/.config/flow/api-token` (or set `FLOW_API_TOKEN`). The `README.md`
+"Getting a Flow API key" section has the exact steps.
+
+Skeleton invocations (using `uvx` as the resolved runner):
 
 ```bash
-# Unauthenticated
-curl -s -A "flow-ai/0.8.0" \
-  --get "${FLOW_API_URL:-https://app.flow.bio/api}/pipelines"
+# Reads anonymously, or with the caller's token if ~/.config/flow/api-token exists
+uvx --from "flowbio==0.9.0" flowbio api get /pipelines --json
 
-# Authenticated (when ~/.config/flow/api-token exists)
-curl -s -A "flow-ai/0.8.0" \
-  -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
-  --get "${FLOW_API_URL:-https://app.flow.bio/api}/pipelines"
+# With query params
+uvx --from "flowbio==0.9.0" flowbio api get /samples/search \
+  --param name=rna-seq --param count=20 --json | jq '.count'
 ```
 
 ## 4. Uploading data
@@ -197,37 +215,42 @@ Uploads are **not** done with `curl`. The chunked/resumable upload protocol
 skill shells out to that library's command-line interface and never
 reimplements the protocol in bash, nor improvises Python at runtime.
 
-### 4.1 On-demand runner — preflight before the first upload
+### 4.1 On-demand runner — preflight before the first CLI call
 
 Installing this plugin does **not** install Python or `flowbio`. The skill
-fetches the CLI on demand, pinned to **`flowbio==0.7.0`** (the release that
-carries the upload methods and the CLI's `data upload`, `samples upload`,
-`samples upload-multiplexed`, and `samples annotation-template` commands).
-Before the first upload, run this preflight and use the first runner
-that is present:
+fetches the CLI on demand, pinned to **`flowbio==0.9.0`** (the release that
+carries the read-only `api get` command **and** the upload commands `data
+upload`, `samples upload`, `samples upload-multiplexed`, and `samples
+annotation-template`). The CLI is required for **both reads and uploads** —
+there is no curl fallback for reads. Before the first CLI call of a session
+(read or upload), run this preflight and use the first runner that is present:
 
 1. `uv` on `PATH` → run via `uvx` (a.k.a. `uv tool run`):
    ```bash
-   uvx --from "flowbio==0.7.0" flowbio data upload … --json --no-progress
+   uvx --from "flowbio==0.9.0" flowbio <command> …
    ```
 2. else `pipx` on `PATH`:
    ```bash
-   pipx run --spec "flowbio==0.7.0" flowbio data upload … --json --no-progress
+   pipx run --spec "flowbio==0.9.0" flowbio <command> …
    ```
 3. else a compatible `flowbio` already on `PATH` (`flowbio --version` reports
-   ≥ `0.7.0`) → call `flowbio data upload …` directly.
-4. else → **stop. Do not attempt the upload.** Return this message:
+   ≥ `0.9.0`) → call `flowbio <command> …` directly.
+4. else → **stop. Do not attempt the call.** Return this message:
 
-   > Uploading to Flow needs the `flowbio` CLI, which this skill runs on demand
+   > Using Flow needs the `flowbio` CLI, which this skill runs on demand
    > via `uv`. I couldn't find `uv` (or `pipx`, or a compatible `flowbio`) on
    > your PATH. Install one of:
    >   • `uv`   — https://docs.astral.sh/uv/ (recommended), then re-run; or
    >   • `pipx` — `pip install --user pipx`; or
-   >   • `flowbio` directly — `pip install "flowbio>=0.7.0"`.
-   > Then ask me to upload again.
+   >   • `flowbio` directly — `pip install "flowbio>=0.9.0"`.
+   > Then ask me again.
 
-Never fail opaquely — no bare "command not found", no traceback. The message
-names the missing tool and the next step.
+The `<command>` is `api get …` for reads (section 3) and `data upload …`,
+`samples upload …`, etc. for uploads (sections 4.3–4.4). Whichever runner
+resolves, use it consistently for every call — the prefix is stable, which is
+what lets the operator allowlist it (see `README.md`). Never fail opaquely —
+no bare "command not found", no traceback. The message names the missing tool
+and the next step.
 
 ### 4.2 Auth & base URL (token discipline preserved)
 
@@ -314,13 +337,14 @@ inline.
 
 ## 6. Reliable querying patterns
 
-1. Always include `-A "flow-ai/0.8.0"` so requests identify as AI traffic.
+1. Issue every read with the resolved runner's `flowbio api get … --json`
+   (section 3), and use the same runner for the whole session.
 2. For paginated endpoints, set `count` explicitly — never rely on the
    implicit default of 10. Cap at 100; the API rejects >100 with HTTP 400
    (not silent clamp).
-3. URL-encode every user-supplied filter value with
-   `--data-urlencode "<param>=<value>"` (e.g. `name=rna-seq`); never
-   string-interpolate user input into the URL.
+3. Pass every user-supplied filter as `--param KEY=VALUE` (e.g.
+   `--param name=rna-seq`); the CLI URL-encodes the value. Never interpolate
+   user input into the path, and never put a `?` there.
 4. **Discover before filtering.** When a user names a resource ("the rna-seq
    pipeline"), list the catalog first, identify the right item by name,
    then use the `id`. The list endpoints don't accept names as exact-match
@@ -366,7 +390,7 @@ inline.
   then summarise.
 - For lists, summarise (e.g. "5 categories spanning 18 pipelines: rna-seq,
   atac-seq, …"). Show full records only on request.
-- Always pipe through `jq`; never paste raw curl output verbatim into the
+- Always pipe through `jq`; never paste raw CLI output verbatim into the
   user's view if it's longer than ~20 lines.
 - If iterating across pages, accumulate results internally and report the
   rolled-up summary, not each page's raw envelope.
@@ -376,18 +400,39 @@ inline.
 
 ## 8. Error handling
 
-| Status | Meaning | What to do |
+Because every read passes `--json`, a failed `api get` writes a machine-readable
+envelope to **stderr** — `{"message": …, "status_code": …}` — and exits
+non-zero. Trust the server's **`status_code` and readable `message`** as the
+primary signal: they are precise and come straight from Flow. The process
+**exit code is a coarse secondary** signal (`0` ok, `2` usage, `3` auth, `4`
+not found, `5` bad request) — use it only to corroborate, and always report the
+server `message` verbatim.
+
+Map the server `status_code` to a cause:
+
+| `status_code` | Meaning | What to do |
 |---|---|---|
 | 400 | Wrong filter, wrong type, malformed value, or `count > 100` | Report the message verbatim. Suggest the closest valid filter from the relevant `endpoints/*.md`. For count, lower it. |
+| 401 / 403 | Auth missing, expired, or insufficient | Report it, then give the authentication guidance in section 3 (how to create and save an API key). Do not silently retry anonymously. |
 | 404 | Wrong path or non-public ID | Verify path against `endpoints/*.md`. If filtering by ID, fall back to discovery via the list endpoint. |
 | 500 | Likely a non-integer `page`/`count` value (the API doesn't catch ValueError) | Confirm both are integers. If they are, report as a server-side issue and stop. |
 | 5xx (other) | Server-side | Report once. Do not retry — the user retries manually. |
-| Network failure | DNS, timeout | Report `FLOW_API_URL` and the failure to the user. Ask whether the URL is reachable. |
-| 200 with empty list | No resources visible to this caller match | Not a failure. Tell the user "no matches found". If the request was unauthenticated, remind them many resources on Flow are private and an authenticated caller may see more. |
-| 200 but result count unchanged after adding a filter | Filter likely silently ignored — unknown identifier on this instance | Confirm the identifier exists via `GET /samples/metadata` (or the relevant discovery endpoint). The API does not currently reject unknown filter params. |
 
-Never silently swallow an error. If `curl` exits non-zero or the body
-contains an error, report and stop — do not fabricate a result.
+Two more cases have **no** error — the read succeeds (exit `0`) but the body
+needs interpreting:
+
+| Result | Meaning | What to do |
+|---|---|---|
+| Empty list | No resources visible to this caller match | Not a failure. Tell the user "no matches found". If the read was unauthenticated, remind them many resources on Flow are private and an authenticated caller may see more (section 3). |
+| Result count unchanged after adding a filter | Filter likely silently ignored — unknown identifier on this instance | Confirm the identifier exists via `GET /samples/metadata` (or the relevant discovery endpoint). The API does not currently reject unknown filter params. |
+
+A missing runner is not an API error — handle it via the preflight message in
+section 4.1. For a network failure (DNS, timeout) the CLI exits non-zero with a
+transport error and no `status_code`; report `FLOW_API_URL` and the failure,
+and ask whether the URL is reachable.
+
+Never silently swallow an error. If the CLI exits non-zero, report the server
+`message` (or the transport error) and stop — do not fabricate a result.
 
 ## 9. Future shape
 
