@@ -105,41 +105,34 @@ plus the supporting files it references — no harness-specific glue.
 
 ## Reducing permission prompts
 
-Every authenticated Flow read injects your token with the command substitution
-`$(< ~/.config/flow/api-token)`. Claude Code treats `$(...)` as a security
-boundary, so a `permissions.allow` rule can't silence these calls and the
-"don't ask again" option is never offered — you get prompted on every read.
+Flow reads run through the `flowbio` CLI's read-only `api get` command, which
+resolves your token itself. Because these calls carry no embedded secret and
+share a stable command prefix, Claude Code can allowlist them the normal way —
+no plugin-supplied machinery required.
 
-`flow-ai` ships an **opt-in** `PreToolUse` hook that auto-approves those reads.
-It is strictly **read-only**: it only matches a `curl` that starts with the
-`flow-ai` User-Agent, uses `--get`, and targets flow.bio (or your
-`FLOW_API_URL`). Pipeline runs (`POST`), uploads (which go through the `flowbio`
-CLI), commands that merely *contain* a Flow read, and any other host all keep
-prompting exactly as before.
-
-**The hook does nothing until you opt in.** Set `FLOW_AI_AUTO_APPROVE_READS=1`,
-either exported in the shell that launches Claude Code:
-
-```sh
-export FLOW_AI_AUTO_APPROVE_READS=1
-```
-
-or via an `"env"` block in your `.claude/settings.json`:
+To stop being prompted on every read, add the entry that matches how the CLI
+resolves on your machine (the skill prefers `uvx`, then `pipx`, then a
+`flowbio` already on your `PATH`) to `permissions.allow` in your
+`.claude/settings.json`:
 
 ```json
 {
-  "env": { "FLOW_AI_AUTO_APPROVE_READS": "1" }
+  "permissions": {
+    "allow": [
+      "Bash(flowbio api get:*)",
+      "Bash(uvx --from flowbio==0.9.0 flowbio api get:*)",
+      "Bash(pipx run --spec flowbio==0.9.0 flowbio api get:*)"
+    ]
+  }
 }
 ```
 
-**Activation caveat:** Claude Code snapshots hooks at session start. After
-installing the plugin or setting the env var, you must **restart Claude Code or
-run `/reload-plugins`** — the hook does not activate in the session where it was
-enabled. This is the easiest step to miss.
+Or just choose **"don't ask again"** the first time a read prompts — the prefix
+is stable, so that choice sticks.
 
-To verify: after restarting, run any Flow read (e.g. "what pipelines are on
-Flow?") and confirm no prompt appears; then confirm a pipeline run still
-prompts.
+Pipeline runs (`POST`) and file downloads still use `curl` and keep prompting;
+that is deliberate — a run changes remote state and is confirmation-gated, and
+a download can be large.
 
 ## Versioning
 
