@@ -23,10 +23,10 @@
   appear. Empty subcategories and categories are dropped.
 
 **With authentication:** the catalogue broadens to include pipelines
-the caller can see via project access, ownership, or sharing. The URL
-is unchanged. When the token file (see `SKILL.md` section 3) is
-present, the agent must attach the `Authorization: Bearer …` header
-on this call too — broadening is automatic from there.
+the caller can see via project access, ownership, or sharing. The path
+is unchanged. This read goes through `flowbio api get` (see `SKILL.md`
+section 3), which attaches the caller's token automatically when the token
+file is present — broadening is automatic from there.
 
 ## `GET /pipelines/<id>`
 
@@ -35,8 +35,8 @@ Single-pipeline detail. Use this after `/pipelines` to discover a pipeline's
 below).
 
 - **Auth:** public GET. Broadens with auth to include versions the caller can
-  see via ownership/sharing. Attach the `Authorization` header when the token
-  file is present.
+  see via ownership/sharing. Issued via `flowbio api get`, which attaches the
+  token automatically when the token file is present.
 - **404 cases:** the pipeline id does not exist, **or** the pipeline has no
   version readable to the caller (e.g. all versions private and the caller is
   not an admin). Fall back to `/pipelines` discovery if you guessed the id.
@@ -220,7 +220,7 @@ The read/discovery steps (steps 1–4) need no confirmation.
 ### The call
 
 ```bash
-curl -s -A "flow-ai/0.8.0" \
+curl -s -A "flow-ai/0.10.0" \
   -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
   -H "Content-Type: application/json" \
   -X POST \
