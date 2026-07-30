@@ -28,7 +28,7 @@ result. `/me` is likewise needed when:
   - success with a non-null `id` → genuinely authenticated.
   - 401 / exit 3 → no valid token; treat as anonymous and tell the user
     their token is missing, expired, or invalid (and how to authenticate,
-    `SKILL.md` section 3).
+    `SKILL.md` step 0).
 - **Query params:** none.
 - **Response shape:** a single object with:
   - `id` (str — the caller's user pk, **stringified** integer; present on
