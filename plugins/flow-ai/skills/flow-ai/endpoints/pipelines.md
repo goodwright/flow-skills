@@ -234,7 +234,7 @@ version's `nextflow_versions` (default `nextflow_versions[0]`) unless the user
 named a specific one. The `"23.04.3"` above is just an illustrative resolved
 value, not a fixed string to send.
 
-Preserve token discipline (SKILL.md §1): the token is referenced only via
+Preserve token discipline (`safety.md`): the token is referenced only via
 `$(< ~/.config/flow/api-token)` inside the header — never `cat`/`echo`/printed.
 
 ### Success

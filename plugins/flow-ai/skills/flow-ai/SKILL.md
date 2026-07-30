@@ -1,445 +1,440 @@
 ---
 name: flow-ai
-description: Use when the user asks about Flow data — pipelines on Flow, samples and projects (lists *and* single-record details), single data files, the executions or data files associated with a sample, file content previews, or downloading a data file — or wants to run a pipeline on Flow (kick off an execution and optionally poll it), or to upload a generic data file, a demultiplexed sample (single- or paired-end), or multiplexed reads with an annotation sheet (including downloading an annotation-sheet template). Reads, queries and uploads use the on-demand flowbio CLI (reads via `api get`); pipeline runs and file downloads use curl, against the Flow REST API at `https://app.flow.bio/api`. Reads are unauthenticated by default; if `~/.config/flow/api-token` exists, the CLI authenticates and returns resources the caller can access. Running pipelines and uploads require that token and are gated behind explicit confirmation. Does NOT cover bulk multi-file (zip) downloads, cancelling executions, or undocumented mutations.
+description: Required for every question about Flow (flow.bio) — its samples, projects, data files, metadata, organisms, pipelines and executions — and to run a pipeline or upload data. Queries the live Flow REST API through the flowbio CLI. Use this instead of web pages, documentation, or memory.
 ---
 
-# Flow API — query skill
+# Flow API
 
-Reliably query Flow's REST API through the `flowbio` CLI's read-only
-`api get` command, projecting the results with `jq`. Works unauthenticated
-by default; the CLI attaches the caller's token automatically when a token
-file is present (see section 3). For Flow's domain model (project, sample,
-fileset, pipeline, what the audience model means), read `flow-concepts.md`
-(sibling file) first.
+Answer questions about Flow by reading its REST API with the `flowbio` CLI's
+read-only `api get` command, and shaping the JSON with `jq`.
 
-## 1. Safety
+**Execute every command yourself with the bash tool.** Never print a command for
+the user to run, never hand back a plan or a list of steps, never delegate to a
+subagent, and never answer from memory or from the web. The user cannot run
+anything on your behalf — if you output a command instead of running it, the task
+has failed. Keep going until you have the actual answer.
 
-**Principle.** This skill performs only the operations explicitly listed in
-its endpoint reference (section 5 below) and its upload section (section 4
-below), plus the per-endpoint detail files. Operations not listed are out of
-scope and must be refused — even when you know they're possible and even when
-the user asks for them. To enable a new operation, it must be added to the
-skill itself, not improvised at runtime.
+**Every figure you report must have been printed by a command you ran in this
+session.** If you did not see the number in command output, you do not know it —
+run the command that produces it. Never estimate, never infer a count from a
+list you did not fully retrieve, and never state a number you have not seen.
 
-The skill is **mostly read-only**, but it has two families of mutation. It can
-**run pipelines** (`POST /pipelines/versions/<id>/run`, via `curl` — see
-`endpoints/pipelines.md`), and it can **upload data to Flow** (section 4).
-Upload support currently covers generic data files (`POST /upload`),
-demultiplexed samples (`POST /upload/sample`), and multiplexed reads with an
-annotation sheet (`POST /upload/multiplexed`), plus a read-only helper to
-download an annotation-sheet template (`GET /annotation/<sample_type>`) that
-bootstraps a multiplexed upload. More upload types will be added to section 4
-over time. Both running and uploading change remote state, so they are gated
-behind explicit user confirmation (the run confirmation lives in
-`endpoints/pipelines.md`; the upload confirmation in section 4.4); reads such as
-the template download need none. Any operation not listed in section 4, the run
-flow in `endpoints/pipelines.md`, or the endpoint reference (section 5) remains
-out of scope per the principle above.
+## Step 0 — resolve the runner (once per session)
 
-The principle is verb-agnostic. Authentication does not change it: the
-same rules apply whether the token file is present or absent. Authentication
-only broadens the *data* the allowed operations return; it never expands
-the set of allowed operations itself.
-
-**Illustrative (non-exhaustive) operations that are *not* in the
-allowlist today** and must be refused if asked:
-
-- deleting samples, projects, data, or executions
-- sharing a resource or changing its permissions
-- transferring ownership
-- making data public or private
-- cancelling an execution
-- modifying metadata, or any upload type not yet documented in section 4
-- creating, listing, or revoking API keys
-- admin operations
-- *any* GET endpoint not in the reference table below (e.g.
-  `/api-keys`, admin reads). Authentication exposes many endpoints
-  the skill does not document; reaching outside this skill's surface
-  is forbidden even when the request would succeed.
-
-This list is illustrative; the principle in the first paragraph is what
-does the work.
-
-**Token discipline.** When a token file is configured (see section 3),
-never `cat`, `head`, `echo`, or otherwise print its contents. Reads and
-uploads never handle the token at all — the flowbio CLI reads the file
-itself (never pass `--token`). The only places the skill references the
-token directly are the two `curl` remnants — the pipeline run
-(`endpoints/pipelines.md`) and an authenticated file download
-(`endpoints/downloads.md`) — and there only via shell expansion
-(`$(< ~/.config/flow/api-token)`) inside a `-H` argument. In every case
-the token must never appear in the agent's transcript.
-
-## 2. Scope
-
-In-scope endpoints (all `GET`):
-
-- `GET /pipelines`
-- `GET /pipelines/<id>` — single-pipeline detail (versions list)
-- `GET /pipelines/versions/<id>` — pipeline-version detail (run schema)
-- `GET /samples/metadata`
-- `GET /samples/metadata/<identifier>/options` — controlled value set for one metadata attribute (value discovery)
-- `GET /samples/types`
-- `GET /samples/types/<identifier>`
-- `GET /samples/search`
-- `GET /samples/<id>` — single-sample detail (full metadata bag, inlined filesets)
-- `GET /samples/<id>/executions`
-- `GET /samples/<id>/data`
-- `GET /projects/search`
-- `GET /projects/<id>` — single-project detail (description, papers, owner)
-- `GET /projects/<id>/samples` — samples in a project
-- `GET /projects/<id>/executions` — executions in a project
-- `GET /organisms`
-- `GET /organisms/<id>`
-- `GET /me`
-- `GET /users/search`
-- `GET /data/search`
-- `GET /data/<id>` — single-data-file detail (type, size, fileset and execution links)
-- `GET /data/<id>/contents`
-- `GET /data/types`
-- `GET /executions/search`
-- `GET /executions/<id>` — single-execution detail (poll a run, drill into a run)
-- `GET /downloads/<data_id>/<filename>` — direct single-file download
-
-In-scope mutation (performed via `curl`, gated behind explicit confirmation):
-
-- `POST /pipelines/versions/<id>/run` — **run a pipeline version**. Unlike the
-  uploads below, this is a plain JSON `POST` done with `curl` (no chunked-upload
-  protocol, no flowbio CLI). It always requires the token and is gated behind
-  the confirmation rule. See `endpoints/pipelines.md` for the full run flow,
-  the schema→body mapping, and error handling.
-
-In-scope uploads (performed via the flowbio CLI, not curl; more will be added
-to section 4 over time):
-
-- `POST /upload` — upload a **generic data file**, gated behind explicit
-  confirmation. See section 4 for the runner/auth/contract machinery and
-  `endpoints/data.md` for the call itself.
-- `POST /upload/sample` — upload a **demultiplexed sample** (single- or
-  paired-end reads + metadata), gated behind explicit confirmation. See
-  section 4 for the runner/auth/contract machinery and `endpoints/samples.md`
-  for the call itself.
-- `POST /upload/multiplexed` — upload **multiplexed reads** (single- or
-  paired-end) plus a completed annotation sheet, gated behind explicit
-  confirmation. See section 4 and `endpoints/samples.md`.
-- `GET /annotation/<sample_type>` — download an **annotation-sheet template**
-  (`.xlsx`) for a sample type, a read-only helper for the multiplexed flow (no
-  confirmation needed). Performed via the flowbio CLI, not curl. See
-  `endpoints/samples.md`.
-
-All of the GET endpoints above are issued via `flowbio api get` (see
-section 3), which attaches the caller's token automatically when the token
-file is present; the upload always requires the token. With auth, list /
-detail / sub-resource calls broaden to include resources the caller owns or
-has been shared. Paths do not change.
-
-Out-of-scope — decline politely:
-
-- Targeting non-default Flow environments (staging, etc.).
-- Bulk multi-file downloads (`POST /downloads/...` + zip retrieval).
-
-Anything not on the in-scope list above is also out of scope per the
-Safety principle in section 1 — including, but not limited to, mutating
-requests, admin operations, and endpoints the skill does not document.
-
-## 3. Configuration (applies to every read)
-
-Reads are issued with the flowbio CLI's read-only `api get` command:
-
-```
-flowbio api get <PATH> [--param KEY=VALUE …] --json
-```
-
-Substitute your resolved runner for the bare `flowbio` (see the runner
-preflight in section 4.1 — the same machinery serves reads and uploads):
-`uvx --from flowbio==0.9.0 flowbio api get …`, or the `pipx run` form, or a
-compatible `flowbio` already on `PATH`. If no runner is found, stop — reads
-need the CLI just as uploads do (section 4.1).
-
-- **`<PATH>`.** Relative to the base URL, leading slash optional (e.g.
-  `/samples/search`). Never put a `?` in the path — the CLI rejects it; pass
-  query params with `--param`.
-- **Query params.** One `--param KEY=VALUE` per param; the CLI URL-encodes each
-  value. Repeat the flag for multi-valued params
-  (`--param sample_types=rna --param sample_types=atac`). Never interpolate
-  user input into the path.
-- **`--json`.** Always pass it. For `api get` it does **not** reshape the
-  success body — that stays the raw response for `jq` to project — it only
-  makes error output machine-readable (see section 8).
-- **Base URL.** The CLI resolves it from `FLOW_API_URL` (default
-  `https://app.flow.bio/api`). Forward `FLOW_API_URL` only when the user has
-  overridden it; never pass `--base-url` otherwise.
-- **Output.** The raw body goes to stdout — pipe it through `jq` exactly as
-  before.
-
-**Authentication.** The CLI reads the token from `~/.config/flow/api-token`
-itself. When the file is present every read is authenticated and broadens
-uniformly across every endpoint; when it is absent the CLI reads anonymously
-(public resources only). File presence is the only switch — **never pass
-`--token`, and never `cat`/`head`/`echo`/print the token** (section 1).
-
-If a read fails authentication, or the user's request implies they expect to
-be authenticated (e.g. "my samples", `owned=true`) but no token file is
-present, tell them how to authenticate rather than silently proceeding
-anonymously: create an API key in the Flow web app (Settings →
-Account Management → API Keys, purpose "AI Agent") and save it to
-`~/.config/flow/api-token` (or set `FLOW_API_TOKEN`). The `README.md`
-"Getting a Flow API key" section has the exact steps.
-
-Skeleton invocations (using `uvx` as the resolved runner):
+The CLI is not installed. It is fetched on demand, pinned to `flowbio==0.9.0`.
+**Reads need this too — there is no curl fallback for reads.** Run this once:
 
 ```bash
-# Reads anonymously, or with the caller's token if ~/.config/flow/api-token exists
-uvx --from flowbio==0.9.0 flowbio api get /pipelines --json
-
-# With query params
-uvx --from flowbio==0.9.0 flowbio api get /samples/search \
-  --param name=rna-seq --param count=20 --json | jq '.count'
+uvx --from flowbio==0.9.0 flowbio api get /samples/types --json | head -c 300
 ```
 
-## 4. Uploading data
+- **It printed JSON** → your runner prefix is `uvx --from flowbio==0.9.0 flowbio`.
+  Use that exact prefix on every call for the rest of the session. First call is
+  slow (it downloads the package); later calls are fast.
+- **`uvx: command not found`** → try the same call with
+  `pipx run --spec flowbio==0.9.0 flowbio` and use that prefix instead.
+- **Neither exists** → try bare `flowbio api get /samples/types --json`. Only use
+  the bare form if that call *actually prints JSON*.
+- **All three failed** → stop and tell the user:
 
-The skill can upload data to Flow. Upload support currently covers a
-**generic data file** (`POST /upload`), a **demultiplexed sample**
-(`POST /upload/sample`), and **multiplexed reads + an annotation sheet**
-(`POST /upload/multiplexed`), plus a read-only **annotation-sheet template**
-download (`GET /annotation/<sample_type>`) that bootstraps the multiplexed flow.
-More upload types will be added to this section over time — an upload type is
-available only once it is documented here. This section holds the cross-cutting
-upload machinery; the per-resource specifics (inputs, local validation,
-success/error shapes) live in the matching endpoint file — generic files →
-`endpoints/data.md`, samples / multiplexed / annotation templates →
-`endpoints/samples.md`.
+  > Using Flow needs the `flowbio` CLI, which this skill runs on demand via `uv`.
+  > I couldn't find `uv` (or `pipx`, or a working `flowbio`) on your PATH.
+  > Install one of:
+  >   • `uv`   — https://docs.astral.sh/uv/ (recommended); or
+  >   • `pipx` — `pip install --user pipx`; or
+  >   • `flowbio` directly — `pip install "flowbio>=0.9.0"`.
+  > Then ask me again.
 
-Uploads are **not** done with `curl`. The chunked/resumable upload protocol
-(retry, backoff, token refresh) is owned by the **flowbio** Python library; the
-skill shells out to that library's command-line interface and never
-reimplements the protocol in bash, nor improvises Python at runtime.
+**Give every call enough time.** If you set a timeout on the bash tool, the value
+is in **milliseconds**: use at least `120000` (two minutes) for a single call and
+`600000` (ten minutes) for the pagination loop in Shape B. A value like `60` means
+sixty milliseconds and will kill the command before it starts — which looks
+exactly like a broken runner.
 
-### 4.1 On-demand runner — preflight before the first CLI call
+**Once any call has succeeded, the runner is working.** A later failure is a
+mistake in that command — most often a mistyped version pin (it is exactly
+`flowbio==0.9.0`) or a timeout that was too short. Re-read your command and fix
+it. Do not conclude the CLI is missing, do not switch runners, and never fall
+back to `pip install`.
 
-Installing this plugin does **not** install Python or `flowbio`. The skill
-fetches the CLI on demand, pinned to **`flowbio==0.9.0`** (the release that
-carries the read-only `api get` command **and** the upload commands `data
-upload`, `samples upload`, `samples upload-multiplexed`, and `samples
-annotation-template`). The CLI is required for **both reads and uploads** —
-there is no curl fallback for reads. Before the first CLI call of a session
-(read or upload), run this preflight and use the first runner that is present:
+**Never run a bare `flowbio` without testing it first.** A `flowbio` on `PATH` is
+often a stale shim that reports a version yet crashes with
+`ModuleNotFoundError`. `flowbio --version` is not a valid check — only a real
+`api get` call is. **Never `pip install` anything**; use the runner instead.
 
-1. `uv` on `PATH` → run via `uvx` (a.k.a. `uv tool run`):
-   ```bash
-   uvx --from flowbio==0.9.0 flowbio <command> …
-   ```
-2. else `pipx` on `PATH`:
-   ```bash
-   pipx run --spec flowbio==0.9.0 flowbio <command> …
-   ```
-3. else a compatible `flowbio` already on `PATH` (`flowbio --version` reports
-   ≥ `0.9.0`) → call `flowbio <command> …` directly.
-4. else → **stop. Do not attempt the call.** Return this message:
+Below, `RUNNER` means the prefix you resolved here. Write it out in full every
+time — do not use a shell variable for it.
 
-   > Using Flow needs the `flowbio` CLI, which this skill runs on demand
-   > via `uv`. I couldn't find `uv` (or `pipx`, or a compatible `flowbio`) on
-   > your PATH. Install one of:
-   >   • `uv`   — https://docs.astral.sh/uv/ (recommended), then re-run; or
-   >   • `pipx` — `pip install --user pipx`; or
-   >   • `flowbio` directly — `pip install "flowbio>=0.9.0"`.
-   > Then ask me again.
+## Step 1 — pick a command shape
 
-The `<command>` is `api get …` for reads (section 3) and `data upload …`,
-`samples upload …`, etc. for uploads (sections 4.3–4.4). Whichever runner
-resolves, use it consistently for every call — the prefix is stable, which is
-what lets the operator allowlist it (see `README.md`). Never fail opaquely —
-no bare "command not found", no traceback. The message names the missing tool
-and the next step.
+Most Flow questions are answered by one of the two shapes below. Decide which
+before you type anything — and if neither fits, see "If neither shape fits".
 
-### 4.2 Auth & base URL (token discipline preserved)
+Write each command as **one line**, and end every statement with `;`. Do not use
+shell variables or arrays — substitute the real path, params, field and page
+count into the command text yourself. Multi-line scripts and `VAR=...`
+assignments get mangled and fail silently.
 
-- **Token.** The CLI reads `~/.config/flow/api-token` itself — the same file
-  the read endpoints use (section 3). **Do not pass `--token`, and never
-  `cat`/`echo`/print the token.** Let the CLI read the file. If the file is
-  absent the CLI exits with an auth error (exit `3`); report that the token is
-  missing rather than improvising one.
-- **Base URL.** The CLI honours `FLOW_API_URL` (default
-  `https://app.flow.bio/api`). Forward it only when the user has overridden it.
-- Always pass `--json` (one machine-readable document on stdout) **and**
-  `--no-progress` (keep progress bars out of the transcript).
+Call shape: `RUNNER api get <PATH> --param KEY=VALUE … --json`. One `--param` per
+filter; the CLI URL-encodes each value. **Never put a `?` in the path** — the CLI
+rejects it.
 
-### 4.3 CLI contract — what to parse
+### Shape A — one request
 
-- **Success:** exit `0`, with one machine-readable JSON document on stdout. The
-  shape depends on the command — parse the right one:
-  - `data upload` and `samples upload` → `{"id": "<id>"}`. The `id` is a
-    `data_id` for a generic file and a `sample_id` for a sample. The key is
-    always `id`, **not** `data_id` / `sample_id`.
-  - `samples upload-multiplexed` → `{"data_ids": ["…"], "annotation_id": "…",
-    "warnings": [...]}`. Report the data ids, the annotation id, and any
-    `warnings` (these were auto-accepted unless `--reject-warnings` was set).
-    There is **no** `id` key here.
-  - `samples annotation-template` → `{"output": "<path>", "sample_type": "…"}`.
-    Report where the template was written. No `id` key.
-- **Failure:** non-zero exit; stderr carries `{"message": …, "status_code": …}`
-  when the error came from the server. Annotation validation failures
-  additionally carry an `errors` array of per-row/field issues
-  (`{"row": …, "message": …}`) — surface those. Report the server `message`
-  verbatim and map the exit code to the cause — never fabricate success:
+For inspecting records, and for "how many **records** match" — the answer is the
+envelope's `count` field.
 
-  | Exit | Meaning |
-  |------|---------|
-  | `0` | Success |
-  | `1` | API / runtime error |
-  | `2` | Usage / input error (e.g. file not found, bad flags) |
-  | `3` | Authentication failed (token missing or expired) |
-  | `4` | Not found (e.g. unknown sample type for a template) |
-  | `5` | Bad request / validation (e.g. spaces in filename, invalid data-type, annotation-sheet validation errors) |
+```bash
+uvx --from flowbio==0.9.0 flowbio api get /samples/search --param sample_types=TYPE_IDENTIFIER --param ATTRIBUTE_IDENTIFIER=VALUE --param count=1 --json | jq -r '.count'
+```
 
-### 4.4 Confirmation gate
+**A filtered count of `0` is never an answer — it is a bug report.** It means one
+of your filter *values* is wrong, almost always one you guessed from the user's
+wording instead of discovering it. Assay names are the usual culprit: the user says
+"CLIP-Seq" but the identifier is `CLIP`. Run `/samples/types` and
+`/samples/metadata` (Step 4) and use their exact `identifier` values. To find the
+offending filter, drop them one at a time and see which one restores a non-zero
+count.
 
-Uploads change remote state. Before running any upload command, show the user
-exactly what will be uploaded and proceed **only on explicit confirmation**.
-Read and discovery calls need no confirmation. What to show depends on the
-upload type:
+Any metadata attribute identifier from Step 4 works as a `--param` filter — that
+is how you count the records holding a particular value. Drop the params you don't
+need. **Filter server-side like this rather than fetching records and searching
+their values yourself**: a value absent from page 1 is not a value absent from the
+data.
 
-- **Generic data file** (`POST /upload`): the file path, the stored `filename`
-  if overridden, and the `data_type` if given.
-- **Demultiplexed sample** (`POST /upload/sample`): the reads file(s) and
-  whether the sample is single- or paired-end, the sample `name`, the resolved
-  sample type, the project and organism (if given), and the metadata
-  key/values.
-- **Multiplexed reads** (`POST /upload/multiplexed`): the reads file(s) and
-  whether single- or paired-end, the annotation-sheet path, and whether warnings
-  are auto-accepted (default) or rejected (`--reject-warnings`).
+**If `.count` prints `null`, stop.** This endpoint is not a paginated list, so
+Shape A does not apply and the answer is *not* `length`. Go to "Response shapes"
+below before counting anything.
 
-Downloading an annotation-sheet template (`GET /annotation/<sample_type>`) is a
-read — it changes no remote state, so it needs **no** confirmation.
+### Shape B — paginated aggregate
 
-## 5. Endpoint reference — read on demand
+For "how many **distinct / unique / different** X", "which X are there", "list all
+X" — anything needing a *field* from every record.
 
-This file does NOT contain endpoint parameter or response details. Before
-issuing a request to any endpoint, **Read the matching file below**. Do not
-guess query params, response shapes, or visibility rules — they vary
-non-obviously across endpoints (e.g. timestamp encoding, envelope keys,
-private-sample reachability).
+**A single request can never answer these.** Page size is capped at 100, so one
+request sees at most 100 of possibly thousands of records. Envelope `count` is not
+the answer either — it counts records, not distinct values.
 
-| User question is about… | Read this file before answering |
+**B1. Find the real identifiers first** (Step 4; never guess them):
+
+```bash
+(  uvx --from flowbio==0.9.0 flowbio api get /samples/types --json | jq -r '.[] | "TYPE | " + .identifier + " | " + .name';  uvx --from flowbio==0.9.0 flowbio api get /samples/metadata --json | jq -r '.[] | "ATTR | " + .identifier + " | " + .name + " | " + (.description // "")'  )
+```
+
+**B2. Collect the field across every page and deduplicate.** This command
+paginates by itself — it asks for the record total, computes the page count, and
+walks them all:
+
+```bash
+# The `for` loop is mandatory. One request returns at most 100 records, so a
+# single call without `for` answers for page 1 only. Never remove it.
+for p in $(seq 1 $(uvx --from flowbio==0.9.0 flowbio api get /samples/search --param sample_types=TYPE_IDENTIFIER --param count=1 --json | jq -r '((.count+99)/100|floor)')); do uvx --from flowbio==0.9.0 flowbio api get /samples/search --param sample_types=TYPE_IDENTIFIER --param full_metadata=true --param count=100 --param page=$p --json | jq -r '.samples[] | .metadata.ATTRIBUTE_IDENTIFIER.value // empty'; done | sort -u | wc -l
+```
+
+Drop the `| wc -l` to list the values instead of counting them.
+
+
+**`sort -u | wc -l` goes after `done`, never inside the loop.** Inside, it
+deduplicates each page separately and the counts are then summed, inflating the
+answer — a value repeated on ten pages would be counted ten times. Deduplication
+must see all pages at once, so it belongs on the loop's combined output.
+
+`TYPE_IDENTIFIER` and `ATTRIBUTE_IDENTIFIER` are **placeholders and are not valid
+values.** Replace both with the real identifiers from B1 — and keep both copies of
+`TYPE_IDENTIFIER` in sync. They are deliberately invalid so that forgetting to
+substitute one returns `0` rather than a plausible wrong number.
+
+**A result of `0` is never the answer.** It means a placeholder is unsubstituted,
+an identifier is misspelled, or `full_metadata=true` is missing. Go back to B1.
+
+This makes one CLI call per page and takes a minute or two on a large result set.
+That is expected — let it finish rather than reaching for a shortcut.
+
+Two ways people get this wrong, both of which silently answer for page 1 only:
+
+- **Never** replace this with a single request carrying `page=1`, or with no
+  `page` at all, and treat the result as complete. That is exactly the trap the
+  loop exists to avoid.
+- **Never** copy values out of a response into a follow-up command — no
+  `echo "…" | sort -u`, no pasting a list back into the shell. Deduplicate inside
+  the single pipeline above, so every page is included.
+
+Other notes:
+
+- `full_metadata=true` is what makes metadata visible in a list response. Without
+  it `.metadata` is nearly always empty and you will count zero.
+- To collect a top-level field instead of a metadata attribute, replace the `jq`
+  program with e.g. `'.samples[] | .organism.name // empty'`.
+- Keep `// empty` so records missing the field are skipped, not counted as `null`.
+- Every value the attribute holds counts. Do not filter or `grep` the collected
+  values — see Step 4.
+- Same shape for `/projects/search`, `/data/search`, `/executions/search` — swap
+  the path and the `.samples[]` root.
+
+Report the number, say what you counted, and name anything you excluded.
+
+**State how many pages you walked and the record total.** This is your own
+correctness check: if the total is above 100 and you walked one page, the answer
+is wrong — you read at most 100 of the records. Redo it with the loop before
+answering.
+
+### If neither shape fits
+
+#### Response shapes
+
+Flow returns three different shapes. Counting the wrong one is the most common
+error on this API, so identify the shape before writing any `length` or `.count`.
+
+| Path | Shape | Number of items is |
+|---|---|---|
+| `/samples/search`, `/projects/search`, `/data/search`, `/executions/search`, `/users/search` | envelope `{count, page, <resource>: [...]}` | `.count` (total across all pages) |
+| `/samples/types`, `/samples/metadata`, `/data/types`, `/organisms` | flat bare array | `length` |
+| `/pipelines` | bare array of **categories**, each holding `subcategories`, each holding `pipelines` | `[.[].subcategories[].pipelines[]] \| length` — `length` alone counts categories |
+| `/samples/<id>`, `/projects/<id>`, `/pipelines/<id>`, `/pipelines/versions/<id>`, `/data/<id>`, `/executions/<id>`, `/me` | single object | not a list |
+
+For any path not listed, read its file (Step 3) before counting. If you cannot,
+inspect the response first with `jq '.[0]'` and check whether that element is the
+thing you were asked about or a container holding it.
+
+
+
+Not every endpoint is a paginated list. Two signals tell you that you are on the
+wrong shape, and both have the same remedy: read the endpoint's file (Step 3)
+before counting anything.
+
+- **`.count` came back `null`.** That endpoint has no pagination envelope, so
+  Shape A does not apply. Do not silently fall back to `length` — that answers a
+  different question. Find out what the response actually is first.
+- **The array's elements are containers, not the thing you were asked about.**
+  Before counting any array, inspect one element:
+
+  ```bash
+  uvx --from flowbio==0.9.0 flowbio api get /PATH --json | jq '.[0]'
+  ```
+
+  If it holds a nested array — `subcategories`, `pipelines`, `versions`,
+  `filesets`, `samples` — then the items you want are the **leaves**, and the
+  top-level `length` counts *groups* instead. Descend and count the leaves,
+  flattening every level:
+
+  ```bash
+  uvx --from flowbio==0.9.0 flowbio api get /PATH --json | jq '[.[].OUTER[].INNER[]] | length'
+  ```
+
+  Sanity-check by also counting unique ids (`[.[].OUTER[].INNER[].id] | unique |
+  length`); if the two differ, the tree repeats entries and you should report the
+  unique figure.
+
+**Counting containers instead of leaves is the most common way to report a number
+that is far too small.** A catalogue of four categories is not four items. If a
+count comes back suspiciously small, this is the first thing to check.
+
+## Step 2 — rules for every call
+
+1. Always pass `--json`. On success it leaves the body untouched for `jq`; on
+   failure it makes the error machine-readable.
+2. One `--param KEY=VALUE` per filter. Repeat the flag for multi-valued params.
+   Never interpolate user input into the path.
+3. Always set `count` explicitly. The default page size is **10**, so omitting it
+   silently gives you ten records. Max is 100; `count>100` returns HTTP 400.
+4. Use the **exact** parameter name from the endpoint file — `sample_types`, not
+   `sample_type`. A misspelled parameter is silently ignored, not rejected.
+5. **Wrap every `jq` program in single quotes**: `jq -r '.[] | .name'`. Double
+   quotes break the moment the program contains a string literal, and the shell
+   error surfaces as empty output rather than as a failure.
+6. **Keep `jq` programs trivial.** Never use string interpolation (`"\(.x)"`) or
+   `printf`-style formatting — the escaping is fragile and fails silently. To
+   inspect a list of records, project the two or three fields you need by joining
+   them with `+`, e.g.
+   `jq -r '.[] | .identifier + " | " + .name + " | " + (.description // "")'`.
+   Keep `description` on discovery calls — it is what tells apart similar-sounding
+   attributes (a "Source" holding cell lines and tissues vs a "Condition" holding
+   experimental conditions). Dumping every
+   field of every row (`jq -c '.[]'`) can be tens of kilobytes and crowds out
+   everything else you need to remember. To extract one field, use
+   `jq -r '.[].fieldname'`.
+7. **Never `jq 'select(...)'` on a name you guessed.** Dump the whole list
+   (projecting `identifier` and `name`) and read it. A `select` that matches nothing is
+   indistinguishable from "this instance has none of those" — see Step 4.
+8. `FLOW_API_URL` overrides the base URL; forward it only if the user set it.
+   Never pass `--base-url` otherwise.
+9. **Auth is optional and needs no decision up front.** The CLI reads
+   `~/.config/flow/api-token` by itself — never pass `--token`, never print the
+   token. If the file is absent the CLI reads anonymously; carry on, because
+   Flow's public catalogue is large and anonymous access is the normal case.
+   Never ask the user for a token and never make it a precondition for
+   answering. See "Authentication" below.
+
+## Step 3 — read the endpoint file before you call it
+
+Query params and response shapes vary non-obviously between endpoints. **Read the
+one matching file below before issuing the request.** Do not guess.
+
+| The question is about… | Read this file |
 |---|---|
-| Pipeline catalog, a pipeline's versions, a version's run schema, **or running a pipeline** (`/pipelines`, `/pipelines/<id>`, `/pipelines/versions/<id>`, `POST /pipelines/versions/<id>/run`) | `endpoints/pipelines.md` |
-| Samples or sample-related discovery — list, detail, executions, data, plus what metadata attributes / sample types exist on this instance and the legal values for a controlled-vocabulary attribute, **or uploading a demultiplexed sample, uploading multiplexed reads + an annotation sheet, or downloading an annotation-sheet template** (`/samples/search`, `/samples/<id>`, `/samples/<id>/executions`, `/samples/<id>/data`, `/samples/metadata`, `/samples/metadata/<identifier>/options`, `/samples/types`, `POST /upload/sample`, `POST /upload/multiplexed`, `GET /annotation/<sample_type>`) | `endpoints/samples.md` |
-| Projects list, single project detail, or a project's samples / executions (`/projects/search`, `/projects/<id>`, `/projects/<id>/samples`, `/projects/<id>/executions`) | `endpoints/projects.md` |
-| Resolving an organism name to a pk (`/organisms`) | `endpoints/organisms.md` |
-| The authenticated caller's identity / memberships, or resolving a user name to a pk (`/me`, `/users/search`) | `endpoints/users.md` |
-| Cross-sample executions search, or single-execution detail / polling a run (`/executions/search`, `/executions/<id>`) | `endpoints/executions.md` |
-| Data file detail / contents / cross-sample search, data-type discovery, **or uploading a generic data file** (`/data/<id>`, `/data/<id>/contents`, `/data/search`, `/data/types`, `POST /upload`) | `endpoints/data.md` |
-| Downloading the bytes of a file (`/downloads/<data_id>/<filename>`) | `endpoints/downloads.md` |
-| End-to-end recipes that chain endpoints | `examples.md` |
+| Samples: find/filter/count samples, one sample's details, its executions, its data files (`/samples/search`, `/samples/<id>`, `/samples/<id>/executions`, `/samples/<id>/data`) | `endpoints/samples.md` |
+| What metadata attributes or sample types exist on this instance (`/samples/metadata`, `/samples/types`) | `endpoints/samples-metadata.md` |
+| Projects (`/projects/search`, `/projects/<id>`, `/projects/<id>/samples`, `/projects/<id>/executions`) | `endpoints/projects.md` |
+| Data files: detail, contents preview, cross-sample search, data types (`/data/<id>`, `/data/<id>/contents`, `/data/search`, `/data/types`) | `endpoints/data.md` |
+| Pipelines, their versions, a version's run schema, **or running a pipeline** | `endpoints/pipelines.md` |
+| Executions: search, or one execution's detail / polling a run (`/executions/search`, `/executions/<id>`) | `endpoints/executions.md` |
+| Organisms (`/organisms`) | `endpoints/organisms.md` |
+| Who am I / find a user (`/me`, `/users/search`) | `endpoints/users.md` |
+| Downloading a file's bytes (`/downloads/<data_id>/<filename>`) | `endpoints/downloads.md` |
+| Uploading anything, or running a pipeline (machinery, confirmation gate) | `uploading.md`, `endpoints/samples-upload.md` |
+| Multi-step recipes for read questions | `examples.md` |
+| Multi-step recipes for uploads and pipeline runs | `examples-write.md` |
+| What a project / sample / fileset / execution *is* | `flow-concepts.md` |
 
-Cross-cutting rules (sections 6–8 below) apply to every endpoint and stay
-inline.
+## Step 4 — discover before you filter
 
-## 6. Reliable querying patterns
+Never guess an id, identifier, or metadata value. Resolve it first.
 
-1. Issue every read with the resolved runner's `flowbio api get … --json`
-   (section 3), and use the same runner for the whole session.
-2. For paginated endpoints, set `count` explicitly — never rely on the
-   implicit default of 10. Cap at 100; the API rejects >100 with HTTP 400
-   (not silent clamp).
-3. Pass every user-supplied filter as `--param KEY=VALUE` (e.g.
-   `--param name=rna-seq`); the CLI URL-encodes the value. Never interpolate
-   user input into the path, and never put a `?` there.
-4. **Discover before filtering.** When a user names a resource ("the rna-seq
-   pipeline"), list the catalog first, identify the right item by name,
-   then use the `id`. The list endpoints don't accept names as exact-match
-   filter values directly — at best they accept a substring on `name`,
-   which can over-match.
-5. Trust only the documented response envelope per endpoint. `/pipelines`
-   is a bare array. List endpoints use `{count, page, <resource>: [...]}`
-   where the envelope `count` is total matches, not page size. Detail
-   endpoints return a bare object. Read the relevant `endpoints/*.md`
-   before assuming a shape.
-6. One endpoint per question. To answer a multi-resource question, make
-   sequential calls. Do not invent combined endpoints or query params.
-7. Never invent query params. If a user asks for a filter that isn't in
-   the table for that endpoint (in `endpoints/*.md`), say so honestly.
-   Do not send unknown params.
-8. **Discover before filtering on metadata or controlled-vocab
-   entities.** When a user's question involves a domain concept
-   (organism, tissue, treatment, sample type, etc.), do not guess
-   at filter identifiers or values. Call the relevant discovery
-   endpoint first:
-   - For organisms: `GET /organisms` → match by `name`/`latin_name`,
-     pass `id` to `/samples/search?organism=<id>`.
-   - For sample types: `GET /samples/types` → pass `identifier` to
-     `/samples/search?sample_types=<identifier>`.
-   - For data types: `GET /data/types` → match by `name` or `identifier`,
-     pass `identifier` to `/data/search?data_types=<identifier>`.
-   - For metadata attributes: `GET /samples/metadata` → confirm the
-     identifier exists on this instance, then use it on
-     `/samples/search?<identifier>=<value>`. For a controlled-vocabulary
-     attribute (`has_options=true`), also call
-     `GET /samples/metadata/<identifier>/options` to discover the legal
-     values before filtering, rather than guessing the value.
+Any biological property of a sample — the molecule or protein targeted, tissue,
+cell line, condition, treatment, sequencer, selection method — lives in **sample
+metadata**, not in the sample's name or type. Questions phrased around such a
+property start with `/samples/metadata` to find which attribute holds it.
 
-   Discovery costs one extra round-trip and removes the entire class
-   of "filter silently ignored" bugs from your query path. Metadata
-   attributes vary per Flow instance — do not assume specific
-   identifiers exist.
+Run these verbatim; both lists are short, so read every row before choosing:
 
-## 7. Output discipline
+```bash
+(  uvx --from flowbio==0.9.0 flowbio api get /samples/types --json | jq -r '.[] | "TYPE | " + .identifier + " | " + .name';  uvx --from flowbio==0.9.0 flowbio api get /samples/metadata --json | jq -r '.[] | "ATTR | " + .identifier + " | " + .name + " | " + (.description // "")'  )
+```
 
-- Don't paste raw paginated JSON into context if there are more than ~20
-  items. Use `jq` to project to the fields the user actually asked for,
-  then summarise.
-- For lists, summarise (e.g. "5 categories spanning 18 pipelines: rna-seq,
-  atac-seq, …"). Show full records only on request.
-- Always pipe through `jq`; never paste raw CLI output verbatim into the
-  user's view if it's longer than ~20 lines.
-- If iterating across pages, accumulate results internally and report the
-  rolled-up summary, not each page's raw envelope.
-- Sample-metadata questions have a specific pitfall (list view vs detail
-  view) — Read `endpoints/samples.md` before answering any "what
-  metadata does sample X have?" question.
+`TYPE` rows are sample types (`.identifier` is the `sample_types` value); `ATTR`
+rows are metadata attributes. A term absent from `TYPE` is usually a *value* of one
+of the `ATTR` rows.
 
-## 8. Error handling
+`/samples/types` also lists each type's own `attributes` — a fast way to see
+which metadata attributes apply to a given assay. Its `sample_count` counts
+every sample of that type on the instance including ones you cannot see, so it
+is **not** the number of records a filtered search will return; use Shape A for
+that.
 
-Because every read passes `--json`, a failed `api get` writes a machine-readable
-envelope to **stderr** — `{"message": …, "status_code": …}` — and exits
-non-zero. Trust the server's **`status_code` and readable `message`** as the
-primary signal: they are precise and come straight from Flow. The process
-**exit code is a coarse secondary** signal (`0` ok, `2` usage, `3` auth, `4`
-not found, `5` bad request) — use it only to corroborate, and always report the
-server `message` verbatim.
+**Attributes have two names, and you almost always want `identifier`.** `name` is
+the human label ("Purification Target"); `identifier` is the machine key
+(`purification_target`). The metadata bag on a sample is keyed by `identifier`,
+and `identifier` is what filters accept — so `.metadata.purification_target.value`
+works and `.metadata."Purification Target".value` silently yields nothing. Match
+the user's wording against the `name` column, then use that row's `identifier`.
 
-Map the server `status_code` to a cause:
+| User says | Call this first | Then filter with |
+|---|---|---|
+| a pipeline by name | `/pipelines` | the matched `id` |
+| an organism ("human") | `/organisms` | `--param organism=<id>` |
+| a sample type ("CLIP", "RNA-Seq") | `/samples/types` | `--param sample_types=<identifier>` |
+| a data type | `/data/types` | `--param data_types=<identifier>` |
+| any other domain attribute (tissue, treatment, target…) | `/samples/metadata` — find the row whose `name` matches the user's wording, take its `identifier` | `--param <identifier>=<value>` |
+
+**The values an attribute actually holds come from the records, never from a
+schema endpoint.** `/samples/metadata` tells you an attribute *exists* and what it
+is called; only Shape B tells you which values are present in a given set of
+samples.
+
+Three habits make this work:
+
+- **A question usually names two different things — map each to the right level.**
+  The *kind* of property ("protein target", "tissue", "sequencer") is an
+  **attribute identifier**; a *specific named thing* ("TARDBP", "HeLa", "human")
+  is a **value** of that attribute. Never look for a specific name in the list of
+  attributes, and never look for a property name among the values.
+  - Asked for a *count of a named thing* -> find the attribute, then filter on the
+    value: `--param <identifier>=<name>` (Shape A).
+  - Asked *which values exist* or *how many distinct* -> find the attribute, then
+    aggregate its values (Shape B). Here the user's word names only the attribute:
+    the values are the domain's own identifiers (gene symbols, cell lines,
+    accessions) and will not contain the user's word, so never `grep` them for it
+    and never drop values you don't recognise.
+- **Print the whole discovery list and read every row** — project `identifier` and
+  `name` as above rather than dumping all fields. These lists are short (under 30
+  rows). Never
+  `jq 'select(.name == "…")'` on the word the user used: the instance's wording
+  rarely matches it, an assay the user calls "X-Seq" may have identifier `X`, and
+  a `select` that matches nothing looks identical to "this instance has none".
+- **Verify the filter was applied.** `/samples/search` silently ignores params it
+  does not recognise, returning the *unfiltered* set with no error. After adding
+  a filter, check that envelope `count` actually dropped. If it didn't, the
+  parameter name or the value was wrong — fix it before going on.
+
+Metadata identifiers and sample types differ per Flow instance — always discover
+them at runtime, never assume.
+
+## Step 5 — output discipline
+
+- Pipe every response through `jq`, projecting only the fields asked for.
+- Never paste more than ~20 lines of raw JSON into the answer. Summarise lists.
+- Report the number you computed and how you computed it. Never estimate, and
+  never fabricate a result if a call failed.
+
+## Errors
+
+Every read passes `--json`, so a failed `api get` writes
+`{"message": …, "status_code": …}` to **stderr** and exits non-zero. Trust the
+server's `status_code` and `message` as the primary signal, and report the
+`message` verbatim. The process exit code is a coarse secondary signal (`0` ok,
+`2` usage, `3` auth, `4` not found, `5` bad request).
 
 | `status_code` | Meaning | What to do |
 |---|---|---|
-| 400 | Wrong filter, wrong type, malformed value, or `count > 100` | Report the message verbatim. Suggest the closest valid filter from the relevant `endpoints/*.md`. For count, lower it. |
-| 401 / 403 | Auth missing, expired, or insufficient | Report it, then give the authentication guidance in section 3 (how to create and save an API key). Do not silently retry anonymously. |
-| 404 | Wrong path or non-public ID | Verify path against `endpoints/*.md`. If filtering by ID, fall back to discovery via the list endpoint. |
-| 500 | Likely a non-integer `page`/`count` value (the API doesn't catch ValueError) | Confirm both are integers. If they are, report as a server-side issue and stop. |
-| 5xx (other) | Server-side | Report once. Do not retry — the user retries manually. |
+| 400 | Wrong filter/type/value, or `count > 100` | Report the message verbatim; lower `count` or use a valid param from the endpoint file. |
+| 401 / 403 | Auth missing, expired, or insufficient | Report it, then give the authentication guidance below. Do not silently retry anonymously. |
+| 404 | Wrong path, or an id not visible to this caller | Re-check the path; fall back to the list endpoint to rediscover the id. |
+| 500 | Usually a non-integer `page`/`count`, or an ISO date where a Unix timestamp is required | Fix the type. If already correct, report a server-side error and stop. |
+| other 5xx | Server-side | Report once. Do not retry. |
+| no `status_code`, transport error | Network/DNS/timeout | Report the base URL and ask whether it is reachable. |
 
-Two more cases have **no** error — the read succeeds (exit `0`) but the body
-needs interpreting:
+Two cases exit `0` but still need interpreting:
 
 | Result | Meaning | What to do |
 |---|---|---|
-| Empty list | No resources visible to this caller match | Not a failure. Tell the user "no matches found". If the read was unauthenticated, remind them many resources on Flow are private and an authenticated caller may see more (section 3). |
-| Result count unchanged after adding a filter | Filter likely silently ignored — unknown identifier on this instance | Confirm the identifier exists via `GET /samples/metadata` (or the relevant discovery endpoint). The API does not currently reject unknown filter params. |
+| Empty list | Nothing visible to this caller matches | Not a failure. Say "no matches". If unauthenticated, mention that much of Flow is private. |
+| `count` unchanged after adding a filter | The filter was silently ignored (unknown identifier) | Confirm it via the relevant discovery endpoint (Step 4). |
 
-A missing runner is not an API error — handle it via the preflight message in
-section 4.1. For a network failure (DNS, timeout) the CLI exits non-zero with a
-transport error and no `status_code`; report `FLOW_API_URL` and the failure,
-and ask whether the URL is reachable.
+A missing runner is not an API error — handle it with Step 0.
 
-Never silently swallow an error. If the CLI exits non-zero, report the server
-`message` (or the transport error) and stop — do not fabricate a result.
+Never swallow an error. If the CLI exits non-zero, report the server `message`
+(or the transport error) and stop — do not fabricate a result.
 
-## 9. Future shape
+**Never re-run a command unchanged.** Empty output means your `jq` program, your
+param name, or your quoting was wrong — repeating it produces the same empty
+result. Drop the `jq` filter, look at the raw JSON, and fix the command. If two
+attempts at a step both fail, report what you tried and ask the user rather than
+continuing to retry.
 
-- **Bulk multi-file downloads:** the `POST /downloads/...` →
-  `GET /downloads/<job_id>` zip flow is auth-gated and tracked separately.
-- **When a machine-readable OpenAPI spec is available:** the per-endpoint
-  files collapse to a single line — "fetch `<base>/openapi.json` and use
-  it." Reliability tactics, output discipline, and error handling stay;
-  they're operational, not endpoint-specific.
+## Authentication
+
+Presence of the file `~/.config/flow/api-token` is the only switch. The CLI reads
+it itself: **never pass `--token`, never `cat`/`head`/`echo` the token.** When
+present, every read is authenticated and broadens uniformly; when absent, reads
+are anonymous and return public resources only.
+
+If a read fails authentication, or the user's request implies they expect to be
+authenticated ("my samples", `owned=true`) but no token file exists, tell them how
+to authenticate rather than silently proceeding anonymously: create an API key in
+the Flow web app (Settings → Account Management → API Keys, purpose "AI Agent")
+and save it to `~/.config/flow/api-token` (or set `FLOW_API_TOKEN`).
+
+`owned=true` is the one filter unsafe to trust blindly: an expired token is
+treated as anonymous with no error, and the filter then silently matches
+`owner=NULL`. Call `/me` and confirm a non-null `id` first.
+
+The two `curl` remnants — running a pipeline (`endpoints/pipelines.md`) and an
+authenticated file download (`endpoints/downloads.md`) — reference the token only
+via `$(< ~/.config/flow/api-token)` inside a `-H` argument.
+
+## Safety
+
+**Only the operations listed in the Step 3 table are allowed.** Anything else —
+deleting, sharing, changing permissions or visibility, cancelling an execution,
+editing metadata, managing API keys, admin endpoints, non-default Flow
+environments, bulk zip downloads, or any endpoint not listed — is out of scope and
+must be refused, even if the user asks and even if it would succeed.
+Authentication broadens the *data* you see, never the *operations* you may
+perform.
+
+Two operations change remote state and require **explicit user confirmation**
+before running: uploading (`uploading.md`) and running a pipeline
+(`endpoints/pipelines.md`).
+
+Full rationale, the illustrative refusal list, and the complete endpoint
+allowlist: `safety.md`.

@@ -51,7 +51,7 @@ Flow resources have three audiences:
 This skill targets a single audience-agnostic surface. Every endpoint it
 uses returns the **union** of resources visible to the caller: public
 resources always, plus owned and shared resources when a token is
-attached. There is no "mode" — file presence (see SKILL.md section 3)
+attached. There is no "mode" — file presence (see `SKILL.md` step 0)
 determines which audience the response covers.
 
 "Public" is a strict subset, not a default. Most data on Flow is

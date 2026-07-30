@@ -195,7 +195,7 @@ Note: the search list view returns fewer fields than the detail view (`/data/<id
 
 Uploads a single generic data file (counts table, BAM, archive, …).
 **This is not a `curl` call** — it runs through the flowbio CLI on demand.
-Read **SKILL.md section 4** first: it owns
+Read `uploading.md` first: it owns
 the runner preflight (`uv`/`uvx` → `pipx` → existing `flowbio` → stop with an
 install message), the pinned version, token discipline, base-URL handling, and
 the JSON / exit-code contract. This section covers only what is specific to the
@@ -224,7 +224,7 @@ data-file call.
 
 - **Confirmation:** show the user the file path, the stored `filename` (if
   overridden), and the `data_type` (if any), and upload **only on explicit
-  confirmation** (SKILL.md §4.4).
+  confirmation** (the confirmation gate in `uploading.md`).
 
 - **The call** (using whichever runner the preflight selected):
   ```bash
@@ -237,7 +237,7 @@ data-file call.
   that the file is uploaded and ready. (The JSON key is `id`, not `data_id`.)
 
 - **Errors:** a non-zero exit code carries the cause and the server message
-  arrives on stderr — see **SKILL.md §4.3** for the exit-code table and the
+  arrives on stderr — see the CLI contract in `uploading.md` for the exit-code table and the
   JSON error shape. The data-file-specific causes to recognise:
   - **Bad request / validation** — spaces in the filename
     (`{"filename": ["Spaces in filename"]}`), an invalid `data_type`, or an
