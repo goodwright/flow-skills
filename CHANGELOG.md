@@ -9,6 +9,9 @@ The `flow-ai/<version>` User-Agent that survives on the two `curl` remnants
 release.
 
 ## [0.10.0] — 2026-07-15
+- Make skill work better with smaller models.
+
+## [0.10.0] — 2026-07-15
 
 - **Reads now go through the `flowbio` CLI's read-only `api get` command**
   (`flowbio api get <PATH> --param k=v --json`) instead of `curl`. The CLI
