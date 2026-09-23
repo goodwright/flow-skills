@@ -8,6 +8,27 @@ The `flow-ai/<version>` User-Agent that survives on the two `curl` remnants
 (the pipeline run and file download) tracks it. Bump both together on every
 release.
 
+## [Unreleased]
+
+- **Public-only reads.** When the user asks about public data, run reads logged
+  out with a documented prefix; logged in, searches include private data and
+  listings carry no reliable `private` flag. `--token ""` does not log out.
+- **Example 18: samples with outputs from pipeline X, version Y.** Narrow the
+  samples first, then either list per sample (a few dozen) or list every run's
+  outputs in bulk and resolve one anchor file per sample (hundreds). Files are
+  linked to samples by id, never by filename, which can name a different sample.
+- **Endpoint notes:** `include=pipeline` on `/executions/<id>` returns 500;
+  reference files a run lists can have been deleted since; sample search uses
+  `project_name` while sample detail uses `project`.
+- **clip-analysis:** gene and region binding comes from genomic Clippy peaks
+  assigned with the run's `regions_resolved_gtf` (with a checked fallback when
+  that file was deleted), not whole-gene counts; small QC files are fetched and
+  checked before large outputs.
+- **New skill: splicing-analysis.** rMATS on Flow via the Differential splicing
+  analysis pipeline (rnasplice) from RNA-Seq BAMs; JCEC, FDR < 0.05,
+  |dPSI| > 0.1; unchanged exons as background; RNA maps with ulelab/rna_maps
+  from genomic Clippy peaks.
+
 ## [0.10.0] — 2026-07-15
 - Make skill work better with smaller models.
 
