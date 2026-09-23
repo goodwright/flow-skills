@@ -99,7 +99,7 @@ via `/executions/search`, and **polling a run** started via
 | Name      | Type | Default | Behaviour |
 |-----------|------|---------|-----------|
 | `log`     | int  | `0`     | Log **byte offset** to start from — returns log text from that offset onward (for incremental tailing across polls). Non-integer → HTTP 400. |
-| `include` | str  | (none)  | Repeatable. Restrict the response to only these top-level fields. |
+| `include` | str  | (none)  | Repeatable. Restrict the response to only these top-level fields. `include=pipeline` returns HTTP 500; take the version from `/executions/search` (`pipeline_version`) instead. `include=upstream_samples&include=data_params` is the cheap way (~a few KB instead of ~2 MB) to get a run's samples and its reference files. |
 | `exclude` | str  | (none)  | Repeatable. Drop these top-level fields. Using both `include` and `exclude` → HTTP 400. |
 
 - **This payload is large.** It nests the full pipeline schema, process

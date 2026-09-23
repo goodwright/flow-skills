@@ -414,6 +414,25 @@ to authenticate rather than silently proceeding anonymously: create an API key i
 the Flow web app (Settings → Account Management → API Keys, purpose "AI Agent")
 and save it to `~/.config/flow/api-token` (or set `FLOW_API_TOKEN`).
 
+### Public-only reads
+
+When the user asks about **public** data ("public samples", "published CLIP
+data", anything for a result others must be able to reproduce), run every read
+**logged out**, even if a token file exists. Logged in, searches return
+everything the user can see, private data included, and the search listings
+carry no reliable `private` flag to filter on afterwards. Use this prefix in place
+of `RUNNER` for those reads:
+
+```bash
+env HOME="$(mktemp -d)" UV_CACHE_DIR="$HOME/.cache/uv" UV_PYTHON_INSTALL_DIR="$HOME/.local/share/uv/python" uvx --from flowbio==0.9.0 flowbio
+```
+
+It hides the token file from the CLI while keeping uv's cache. `--token ""` does
+**not** work: it falls back to the token file silently. Confirm the prefix is
+anonymous once: `/me` must return `401`. Downloads of public files need no
+token, so omit the `Authorization` header. Uploading and running pipelines still
+need the normal, authenticated `RUNNER`.
+
 `owned=true` is the one filter unsafe to trust blindly: an expired token is
 treated as anonymous with no error, and the filter then silently matches
 `owner=NULL`. Call `/me` and confirm a non-null `id` first.
