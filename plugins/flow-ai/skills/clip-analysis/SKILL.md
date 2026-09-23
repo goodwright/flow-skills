@@ -6,6 +6,11 @@ description: Use when the user asks a biological question CLIP data can answer â
 When using CLIP data to research a user's question always apply the following rules:
 
 Only use CLIP-Seq v1.7 or v1.6 pipeline outputs.
+Work from small files to large ones, narrowing at each step, so you never fetch outputs you won't use:
+1. From sample metadata alone, drop controls (size-matched inputs, IgG, no-antibody, tag-only) and samples outside the question.
+2. QC the rest from the small files only: the "unique_genome.dedup_UMICollapse.log" and "summary_type_premapadjusted.tsv" (a few KB each).
+3. Decide which datasets and RBPs you will analyse, and tell the user how many and why.
+4. Only then fetch the Clippy peaks (~10 MB each) and PEKA outputs, for those datasets only. Reduce each file to what you need as it arrives and delete it, rather than keeping every file.
 QC the data for the user and provide a table of included datasets with the following metrics:
 a) PCR duplication rate. Calculated from taking the UMICollapse log and calculating the ratio of input to deduplicated reads.
 b) Number of uniquely mapped crosslinks, take this also from the UMICollapse log as the number of deduplicated reads.

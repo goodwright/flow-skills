@@ -380,11 +380,15 @@ correct expectations with the user instead of guessing.
 For example "public CLIP samples processed with CLIP-Seq v1.6 or v1.7". Use the
 public-only prefix (see "Public-only reads" in `SKILL.md`) for every read below.
 
+**Narrow the samples before you touch any files.** Every `flowbio` call starts a
+new Python process, and output files can be large, so fetching "everything"
+can take hours and swamp the user's computer. Decide which samples you need
+from their metadata first (drop controls, off-topic samples, other organisms),
+then fetch files for those only. Run at most 4 calls in parallel.
+
 **Link files to samples by id, never by filename or sample name.** Output
 filenames do not reliably match sample names: a sample's own data list can hold
-a file named after a different sample. Sample names are not unique either. And a
-run's `upstream_samples` does not tell you which output belongs to which sample.
-The file detail does.
+a file named after a different sample. Sample names are not unique either.
 
 ```bash
 # Step 1: the pipeline id
@@ -397,27 +401,29 @@ flowbio api get /executions/search --param pipeline=<id> --param status=OK \
   --param count=100 --param page=<p> --json | \
   jq -r '.executions[] | [.id, .pipeline_version] | @tsv'
 
-# Step 3: every output file of the kind you need, in one paged listing.
-# `pattern` is a regex on the filename.
-flowbio api get /data/search --param pipeline=<id> --param pattern='<regex>' \
-  --param count=100 --param page=<p> --json | jq -r '.data[] | .id'
-
-# Step 4: for each file, its sample and the run that made it (~1 KB per call;
-# run 8 in parallel, a few thousand files take a few minutes)
-flowbio api get /data/<data id> --json | \
-  jq -r '[.id, (.sample.id // "-"), (.execution.id // "-")] | @tsv'
-
-# Step 5: join to sample metadata by sample id
+# Step 3: sample metadata (Shape B), then choose the samples you need
 flowbio api get /samples/search --param sample_types=<type> \
   --param full_metadata=true --param count=100 --param page=<p> --json
+
+# Step 4: for each chosen sample, its files of one kind. The list is scoped by
+# sample id, so membership is reliable even when filenames are not. `filter`
+# is a substring on the filename (and on sample, pipeline and owner names), so
+# make it specific.
+flowbio api get /samples/<sample id>/data --param filter=<filename fragment> \
+  --param count=100 --json | jq -r '.data[] | .id + " " + .filename'
+
+# Step 5: only when a sample has more than one matching file, find each file's run
+flowbio api get /data/<data id> --json | jq -r '.execution.id'
 ```
 
-Then:
-- Keep only files whose run is one of those kept in step 2.
-- A file with no sample (`"-"`) comes from a multiplexed run, where outputs are
-  not attached to samples. Leave it out and report how many you left out.
-- A sample often has the same output from several runs. If more than one kept
-  run remains, use the newest.
+Then keep only files whose run is one of those kept in step 2. If more than one
+remains for a sample, use the newest run. Outputs of multiplexed runs are not
+attached to any sample, so they never appear in step 4; if a chosen sample has
+no files, say so rather than matching files to it by name.
+
+Fetch small files first (logs, summaries) and use them to narrow further before
+fetching large ones. Download a large file, reduce it to what you need, and
+delete it before fetching the next rather than keeping them all.
 
 For a run's reference files (genome, annotation, GTFs), take them from the run
 itself, ~2 KB per call:
