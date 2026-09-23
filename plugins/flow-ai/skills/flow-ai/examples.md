@@ -405,21 +405,53 @@ flowbio api get /executions/search --param pipeline=<id> --param status=OK \
 flowbio api get /samples/search --param sample_types=<type> \
   --param full_metadata=true --param count=100 --param page=<p> --json
 
-# Step 4: for each chosen sample, its files of one kind. The list is scoped by
-# sample id, so membership is reliable even when filenames are not. `filter`
-# is a substring on the filename (and on sample, pipeline and owner names), so
-# make it specific.
+```
+
+Step 4 depends on how many samples you chose.
+
+**A few dozen samples: list each sample's files.** The list is scoped by sample
+id, so membership is reliable even when filenames are not. Each call takes ~5 s
+server-side, so this is too slow for hundreds of samples. `filter` is a
+substring on the filename (and on sample, pipeline and owner names), so make it
+specific.
+
+```bash
 flowbio api get /samples/<sample id>/data --param filter=<filename fragment> \
   --param count=100 --json | jq -r '.data[] | .id + " " + .filename'
-
-# Step 5: only when a sample has more than one matching file, find each file's run
+# Only when a sample has more than one matching file, find each file's run:
 flowbio api get /data/<data id> --json | jq -r '.execution.id'
 ```
 
-Then keep only files whose run is one of those kept in step 2. If more than one
-remains for a sample, use the newest run. Outputs of multiplexed runs are not
-attached to any sample, so they never appear in step 4; if a chosen sample has
-no files, say so rather than matching files to it by name.
+**Hundreds of samples: list every run's outputs at once, then resolve one
+anchor file per sample.** About 20 s for the listing plus ~0.7 s per anchor,
+instead of ~5 s per file kind per sample.
+
+```bash
+# 4a. Every output file of every run, with its run and version (Shape B; `return_data`
+# adds each run's files; the response is large, so pipe it straight into jq)
+flowbio api get /executions/search --param pipeline=<id> --param status=OK \
+  --param return_data=true --param count=100 --param page=<p> --json | \
+  jq -r '.executions[] | .id as $e | .pipeline_version as $v |
+         .downstream_data[] | [$e, $v, .id, .filename] | @tsv'
+
+# 4b. Within one run, all outputs for one sample share a filename prefix (e.g.
+# CLIP-Seq: "<prefix>.unique_genome.dedup_UMICollapse.log",
+# "<prefix>.summary_type_premapadjusted.tsv", "<prefix>_genome.clippy...Peaks.bed").
+# Group files by (run id, prefix), then resolve ONE file per group to its sample:
+flowbio api get /data/<data id of one file in the group> --json | \
+  jq -r '[.id, (.sample.id // "-")] | @tsv'
+```
+
+The group, not the prefix text, is what you trust: a prefix can name a
+different sample than the one its files belong to, and step 4b is what finds
+the real one. Check that no group holds two files of the same kind before you
+rely on the prefixes. A group whose anchor has no sample (`"-"`) comes from a
+multiplexed run; leave it out and report how many.
+
+Then keep only files whose run is one of those kept in step 2, and drop samples
+you did not choose in step 3. If more than one run remains for a sample, use the
+newest. If a chosen sample has no files, say so rather than matching files to it
+by name.
 
 Fetch small files first (logs, summaries) and use them to narrow further before
 fetching large ones. Download a large file, reduce it to what you need, and
