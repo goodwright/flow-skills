@@ -377,42 +377,54 @@ correct expectations with the user instead of guessing.
 
 ## Example 18: "Which public samples have outputs from pipeline X, version Y?"
 
-For example "public CLIP samples processed with CLIP-Seq v1.6 or v1.7". Go through
-**executions**, not files: file listings carry a `sample_name` but no pipeline
-version and no sample id, and sample names are not unique. Use the public-only
-prefix (see "Public-only reads" in `SKILL.md`) for every read below.
+For example "public CLIP samples processed with CLIP-Seq v1.6 or v1.7". Use the
+public-only prefix (see "Public-only reads" in `SKILL.md`) for every read below.
+
+**Link files to samples by id, never by filename or sample name.** Output
+filenames do not reliably match sample names: a sample's own data list can hold
+a file named after a different sample. Sample names are not unique either. And a
+run's `upstream_samples` does not tell you which output belongs to which sample.
+The file detail does.
 
 ```bash
 # Step 1: the pipeline id
 flowbio api get /pipelines --json | \
   jq -r '.[].subcategories[].pipelines[] | .id + " | " + .name'
 
-# Step 2: every successful run, with its version (Shape B pagination)
+# Step 2: every successful run, with its version (Shape B pagination).
+# Keep the versions the user asked for.
 flowbio api get /executions/search --param pipeline=<id> --param status=OK \
   --param count=100 --param page=<p> --json | \
   jq -r '.executions[] | [.id, .pipeline_version] | @tsv'
-# Keep the versions the user asked for. Many runs cover several samples, so
-# `sample_name` is often null here; that is expected.
 
-# Step 3: for each kept run, its samples (by id) and its reference files.
-# ~2 KB per call instead of ~2 MB; safe to run a few in parallel.
-flowbio api get /executions/<run id> \
-  --param include=upstream_samples --param include=data_params --json | \
-  jq -c '{samples: [.upstream_samples[] | {id, name}], refs: .data_params}'
+# Step 3: every output file of the kind you need, in one paged listing.
+# `pattern` is a regex on the filename.
+flowbio api get /data/search --param pipeline=<id> --param pattern='<regex>' \
+  --param count=100 --param page=<p> --json | jq -r '.data[] | .id'
 
-# Step 4: join to sample metadata by sample id, never by name
+# Step 4: for each file, its sample and the run that made it (~1 KB per call;
+# run 8 in parallel, a few thousand files take a few minutes)
+flowbio api get /data/<data id> --json | \
+  jq -r '[.id, (.sample.id // "-"), (.execution.id // "-")] | @tsv'
+
+# Step 5: join to sample metadata by sample id
 flowbio api get /samples/search --param sample_types=<type> \
   --param full_metadata=true --param count=100 --param page=<p> --json
 ```
 
-Fetch output files only for the samples you will analyse:
+Then:
+- Keep only files whose run is one of those kept in step 2.
+- A file with no sample (`"-"`) comes from a multiplexed run, where outputs are
+  not attached to samples. Leave it out and report how many you left out.
+- A sample often has the same output from several runs. If more than one kept
+  run remains, use the newest.
+
+For a run's reference files (genome, annotation, GTFs), take them from the run
+itself, ~2 KB per call:
 
 ```bash
-flowbio api get /samples/<sample id>/data --param filter=<filename fragment> \
-  --param count=100 --json | jq -r '.data[] | .id + " " + .filename'
-flowbio api get /data/<data id> --json | jq -r '.execution.id'
+flowbio api get /executions/<run id> --param include=data_params --json
 ```
 
-A sample often has the same output from several runs, including older versions.
-Keep only files whose `execution.id` is one of the runs kept in step 2; if more
-than one remains, use the newest run.
+A reference file a run lists may since have been deleted (`/data/<id>` returns
+404, even logged in). See `endpoints/executions.md` for what to do.

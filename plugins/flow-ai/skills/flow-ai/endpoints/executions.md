@@ -99,7 +99,7 @@ via `/executions/search`, and **polling a run** started via
 | Name      | Type | Default | Behaviour |
 |-----------|------|---------|-----------|
 | `log`     | int  | `0`     | Log **byte offset** to start from — returns log text from that offset onward (for incremental tailing across polls). Non-integer → HTTP 400. |
-| `include` | str  | (none)  | Repeatable. Restrict the response to only these top-level fields. `include=pipeline` returns HTTP 500; take the version from `/executions/search` (`pipeline_version`) instead. `include=upstream_samples&include=data_params` is the cheap way (~a few KB instead of ~2 MB) to get a run's samples and its reference files. |
+| `include` | str  | (none)  | Repeatable. Restrict the response to only these top-level fields. `include=pipeline` returns HTTP 500; take the version from `/executions/search` (`pipeline_version`) instead. `include=data_params` is the cheap way (~2 KB instead of ~2 MB) to get a run's reference files. `upstream_samples` lists a run's input samples but not which output belongs to which; for that use `/data/<id>` (see Example 18 in `examples.md`). |
 | `exclude` | str  | (none)  | Repeatable. Drop these top-level fields. Using both `include` and `exclude` → HTTP 400. |
 
 - **This payload is large.** It nests the full pipeline schema, process
@@ -107,6 +107,12 @@ via `/executions/search`, and **polling a run** started via
   trim it — e.g. `?include=status&include=identifier&include=finished` — and
   only pull `log`/`stderr` when you need to report progress or diagnose a
   failure.
+- **Reference files can be deleted after a run.** `data_params` keeps the ids of
+  the files the run used, but some no longer exist (`/data/<id>` returns 404,
+  even logged in). Runs built on the same source annotation (same
+  `data_params.gtf` id) usually have a surviving copy of the same derived file
+  under another id. Use that copy, check it matches before relying on it (the
+  skill for that data type says how), and tell the user you substituted it.
 - **Response shape:** a single object. The fields relevant to running/polling:
   - `id` (str), `identifier` (str — human-readable slug), `uuid` (str)
   - `status` (str) — **the field to poll.** Terminal values: `OK`, `ERROR`,
