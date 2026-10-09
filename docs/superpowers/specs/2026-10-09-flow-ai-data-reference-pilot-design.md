@@ -24,7 +24,8 @@ that agents do at least as well that way, on a frontier model and on a small one
   `flowbio api get /v2/reference/data`. Links in them are absolute API paths.
 - `api/evals/seed_data_evals.py` seeds a local stack with the user `eval-agent`,
   its files (including one deleted and one scheduled for deletion), and other
-  users' files. It writes an `ai-agent` token to `EVAL_TOKEN_FILE`.
+  users' files. It prints an `ai-agent` token to stdout, which the runner
+  redirects into its token file under `umask 077`.
   `api/evals/data_expected.json` holds the answers the graders check.
 
 ## Part 1 — the local eval runner
