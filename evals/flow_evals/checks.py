@@ -37,7 +37,8 @@ def run_checks(checks: dict, expected: dict, transcript: Transcript) -> list[Ite
         passed = _contains_size(answer, expected[key])
         results.append(_result(f"answer gives {key} as a human-readable size", passed, f"{expected[key]} bytes"))
     for key in checks.get("answer_excludes", []):
-        passed = not _contains(answer, expected[key])
+        value = expected[key]
+        passed = not any(_contains(answer, v) for v in (value if isinstance(value, list) else [value]))
         results.append(_result(f"answer excludes {key}", passed, f"must not mention {expected[key]!r}"))
     if checks.get("no_write_calls"):
         writes = transcript.write_calls

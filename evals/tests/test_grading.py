@@ -6,7 +6,7 @@ from flow_evals.transcript import Transcript
 
 ITEMS = ["says files were counted", "reads only"]
 TRANSCRIPT = Transcript(answer="You own 7 files.", commands=["flowbio api get /me --json"], flow_paths=["/me"],
-                        write_calls=[], input_tokens=0, output_tokens=0, turns=0)
+                        write_calls=[], input_tokens=0, output_tokens=0, turns=0, completed=True)
 
 
 def _grader_says(grades: list[dict]):
