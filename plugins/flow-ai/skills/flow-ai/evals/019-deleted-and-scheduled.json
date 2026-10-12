@@ -1,0 +1,13 @@
+{
+  "skills": ["flow-ai"],
+  "query": "Which of my files have been deleted, and are any about to be?",
+  "checks": {
+    "answer_contains": ["deleted_filename", "scheduled_filename", "scheduled_for"],
+    "no_write_calls": true
+  },
+  "expected_behavior": [
+    "Distinguishes files already deleted from files scheduled for deletion, rather than listing them together.",
+    "Gives the date the scheduled file will be deleted.",
+    "Answers only about the caller's own files."
+  ]
+}

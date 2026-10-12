@@ -18,6 +18,32 @@ format](https://docs.anthropic.com/en/docs/agents-and-tools/agent-skills/best-pr
 Each eval is a single JSON file; one scenario per file for clarity in
 review.
 
+A scenario may also carry a `checks` block, graded by the local runner itself
+against the answers the flow-api eval seed fixes (`api/evals/data_expected.json`
+in flow-api). Each name refers to a key in that file:
+
+```json
+"checks": {
+  "answer_contains": ["owned_count", "scheduled_for"],
+  "answer_contains_size": ["owned_bytes"],
+  "answer_excludes": ["deleted_filename"],
+  "no_write_calls": true
+}
+```
+
+- `answer_contains` — the final answer mentions each value. Numbers match as
+  whole numbers (or their word, up to twelve), ISO datetimes match their date in
+  common renderings, other strings match case-insensitively, and a list needs
+  every element.
+- `answer_contains_size` — the answer gives the byte value as a human-readable
+  size (kB/MB/GB or KiB/MiB/GiB), within 3%.
+- `answer_excludes` — the answer never mentions the value.
+- `no_write_calls` — the agent issued no Flow write: no `flowbio` command other
+  than `api get`, and no mutating `curl`.
+
+When a scenario has `checks`, its `expected_behavior` holds only what a check
+cannot decide; those items go to a grader model.
+
 ## How to read these
 
 Each `expected_behavior` entry is a separately gradable claim about
@@ -30,13 +56,10 @@ behaviour.
 
 ## How to run them
 
-Anthropic does not ship a built-in runner. Today these are exercised
-manually — pick an eval, run the query against the skill in Claude
-Code with a known token state, and grade against the rubric.
-
-When a runner is built (likely a thin wrapper around the existing
-`skill-tests/` harness — see issue tracker), each rubric item becomes
-a separate assertion against the agent's tool-call trace.
+Scenarios with `checks` run against a seeded local Flow stack through the
+runner in `evals/` at the repository root; see `evals/README.md`. The rest are
+still exercised by hand: run the query against the skill in Claude Code with a
+known token state, and grade against the rubric.
 
 ## Why these specific scenarios
 
@@ -46,7 +69,7 @@ skill is designed to support:
 - `001-samples-i-own.json` — auth precheck + `?owned=true` on `/samples/search`.
 - `002-my-username.json` — `/me` body-content auth check.
 - `003-last-successful-execution.json` — auth precheck + `/executions/search` filters + detail drill-down.
-- `004-data-i-own.json` — auth precheck + `/data/search?owned=true` + size aggregation.
+- `004-data-i-own.json` — owned file count and byte total, as a human-readable size, with deleted files excluded and auth confirmed first. Outcome-graded, so it holds whichever data endpoint the skill uses.
 - `005-executions-for-sample.json` — name-to-id discovery + sub-resource navigation.
 - `006-upload-data-file.json` — generic data-file upload: confirmation gate, runner preflight, pinned `uvx` CLI invocation, token discipline, `{"id":...}` / exit-code handling.
 - `007-upload-no-runner.json` — no `uv`/`pipx`/`flowbio` runner found: stop before uploading and return the install message.
@@ -65,6 +88,9 @@ fallback) and the authentication guidance surfaced when a caller-scoped read
 has no token.
 - `017-read-no-runner.json` — defensive: a plain read with no `uv`/`pipx`/`flowbio` runner on PATH; the skill stops with the install message instead of falling back to curl (reads now require the CLI).
 - `018-auth-guidance-when-expected.json` — a caller-scoped read with no token present; the skill declines the misleading anonymous answer and explains how to create and save an API key.
+- `019-deleted-and-scheduled.json` — tells already-deleted files apart from those scheduled for deletion, with the scheduled date.
+- `020-files-i-can-download.json` — lists owned files still downloadable: leaves out the deleted file, keeps the scheduled one and flags it as going away.
+- `021-public-not-mine.json` — counts files visible to the caller but owned by others, without leaking another user's private file.
 
 Evals 001-004 exercise the `/me`-precheck pattern introduced as a
 defensive mitigation for the API's silent auth-degrade behaviour.
@@ -85,3 +111,8 @@ can't run pipelines). Eval 016 exercises the metadata value-discovery flow added
 in `flow-ai/0.7.1`: listing a controlled-vocabulary attribute's legal values via
 `GET /samples/metadata/<identifier>/options` and using an exact option value to
 filter `/samples/search`.
+
+Evals 004 and 019-021 cover data files. Their rubrics grade what the agent
+answered and that it only read, not which endpoint it called, so the same
+scenarios compare the skill on its hand-written data docs against the skill
+reading the API's own reference.
