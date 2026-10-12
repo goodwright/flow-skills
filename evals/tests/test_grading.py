@@ -1,4 +1,5 @@
 import json
+import subprocess
 
 from flow_evals.grading import GRADER_MODEL, grade_rubric
 from flow_evals.transcript import Transcript
@@ -50,3 +51,11 @@ def test_no_items_makes_no_call():
     ask, calls = _grader_says([])
     assert grade_rubric([], TRANSCRIPT, ask) == []
     assert calls == []
+
+
+def test_grader_timeout_fails_every_item():
+    def ask(argv: list[str]) -> str:
+        raise subprocess.TimeoutExpired(argv, 600)
+    results = grade_rubric(ITEMS, TRANSCRIPT, ask)
+    assert [r.passed for r in results] == [False, False]
+    assert all("grader" in r.reason for r in results)

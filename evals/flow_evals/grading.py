@@ -27,7 +27,10 @@ def grade_rubric(items: list[str], transcript: Transcript,
                  ask: Callable[[list[str]], str] | None = None) -> list[ItemResult]:
     if not items:
         return []
-    output = (ask or _ask_claude)(_grader_command(_prompt(items, transcript)))
+    try:
+        output = (ask or _ask_claude)(_grader_command(_prompt(items, transcript)))
+    except subprocess.TimeoutExpired:
+        output = ""
     grades = _grades(output)
     if grades is None or len(grades) != len(items):
         return [ItemResult(item, False, "rubric", "grader returned no usable grades") for item in items]
