@@ -1,0 +1,14 @@
+{
+  "skills": ["flow-ai"],
+  "query": "List the files I own that I can still download.",
+  "checks": {
+    "answer_contains": ["scheduled_filename"],
+    "answer_excludes": ["deleted_filename"],
+    "no_write_calls": true
+  },
+  "expected_behavior": [
+    "Flags the file scheduled for deletion as going away, with its date or a warning that it will not stay downloadable.",
+    "Lists only files the caller owns.",
+    "Does not offer to download, delete or change any file without being asked."
+  ]
+}
