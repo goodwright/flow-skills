@@ -1,6 +1,7 @@
 """Runs flow-ai scenarios against a local Flow stack and reports how the agent did."""
 
 import argparse
+import dataclasses
 import json
 import os
 from datetime import datetime
@@ -34,9 +35,17 @@ def load_scenario(path: Path, expected: dict) -> dict:
     return scenario
 
 
+_NO_RESULT = "agent produced no result"
+
+
 def grade(scenario: dict, expected: dict, transcript: Transcript, ask=None) -> list[ItemResult]:
-    return (run_checks(scenario.get("checks", {}), expected, transcript)
-            + grade_rubric(scenario.get("expected_behavior", []), transcript, ask))
+    checks = run_checks(scenario.get("checks", {}), expected, transcript)
+    rubric = scenario.get("expected_behavior", [])
+    # An unfinished run would pass every "does not…" item on its empty answer.
+    if not transcript.completed:
+        return ([dataclasses.replace(r, passed=False, reason=_NO_RESULT) for r in checks]
+                + [ItemResult(item, False, "rubric", _NO_RESULT) for item in rubric])
+    return checks + grade_rubric(rubric, transcript, ask)
 
 
 def summarise(scenario: str, model: str, results: list[ItemResult], transcript: Transcript) -> dict:
@@ -47,7 +56,7 @@ def summarise(scenario: str, model: str, results: list[ItemResult], transcript: 
         "items": [vars(r) for r in results],
         "flow_calls": len(transcript.flow_paths), "flow_paths": transcript.flow_paths,
         "input_tokens": transcript.input_tokens, "output_tokens": transcript.output_tokens,
-        "turns": transcript.turns,
+        "turns": transcript.turns, "completed": transcript.completed,
     }
 
 
@@ -63,29 +72,44 @@ def format_table(rows: list[dict]) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--scenario", action="append", required=True, help="glob on the scenario file stem")
+    target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument("--scenario", action="append", help="glob on the scenario file stem")
+    target.add_argument("--regrade", type=Path, metavar="RUN_DIR",
+                        help="grade a past run's transcripts again, without running any agent")
     parser.add_argument("--model", action="append", help=f"default: {' '.join(DEFAULT_MODELS)}")
     args = parser.parse_args(argv)
 
-    expected_file = os.environ.get("EVAL_EXPECTED_FILE")
-    if not expected_file:
-        raise SystemExit("Set EVAL_EXPECTED_FILE to flow-api's api/evals/data_expected.json")
-    expected = json.loads(Path(expected_file).read_text())
-    scenarios = {p.stem: load_scenario(p, expected) for p in select_scenarios(_SCENARIO_DIR, args.scenario)}
-    token = read_token(Path(os.environ.get("EVAL_TOKEN_FILE", "~/.config/flow/eval-api-token")).expanduser())
-    api_url = os.environ.get("FLOW_API_URL", "http://localhost:8019")
-    run_dir = _RUNS_DIR / datetime.now().strftime("%Y%m%d-%H%M%S")
+    expected = _expected_answers()
+    if args.regrade:
+        run_dir = args.regrade
+        pairs = [(r["scenario"], r["model"]) for r in json.loads((run_dir / "summary.json").read_text())["runs"]]
+        scenarios = {name: load_scenario(_SCENARIO_DIR / f"{name}.json", expected) for name, _ in pairs}
+    else:
+        scenarios = {p.stem: load_scenario(p, expected) for p in select_scenarios(_SCENARIO_DIR, args.scenario)}
+        pairs = [(name, model) for name in scenarios for model in args.model or DEFAULT_MODELS]
+        run_dir = _RUNS_DIR / datetime.now().strftime("%Y%m%d-%H%M%S")
+        _run_agents(scenarios, pairs, run_dir)
 
     rows = []
-    for name, scenario in scenarios.items():
-        for model in args.model or DEFAULT_MODELS:
-            path = run_dir / f"{name}-{model}.jsonl"
-            print(f"running {name} on {model}", flush=True)
-            run_agent(scenario["query"], model, _PLUGIN_DIR, api_url, token, path)
-            transcript = read_transcript(path)
-            rows.append(summarise(name, model, grade(scenario, expected, transcript), transcript))
-
+    for name, model in pairs:
+        transcript = read_transcript(run_dir / f"{name}-{model}.jsonl")
+        rows.append(summarise(name, model, grade(scenarios[name], expected, transcript), transcript))
     (run_dir / "summary.json").write_text(json.dumps({"runs": rows}, indent=2) + "\n")
     print(format_table(rows))
     print(f"\n{run_dir}")
     return 0
+
+
+def _expected_answers() -> dict:
+    expected_file = os.environ.get("EVAL_EXPECTED_FILE")
+    if not expected_file:
+        raise SystemExit("Set EVAL_EXPECTED_FILE to flow-api's api/evals/data_expected.json")
+    return json.loads(Path(expected_file).read_text())
+
+
+def _run_agents(scenarios: dict, pairs: list[tuple[str, str]], run_dir: Path) -> None:
+    token = read_token(Path(os.environ.get("EVAL_TOKEN_FILE", "~/.config/flow/eval-api-token")).expanduser())
+    api_url = os.environ.get("FLOW_API_URL", "http://localhost:8019")
+    for name, model in pairs:
+        print(f"running {name} on {model}", flush=True)
+        run_agent(scenarios[name]["query"], model, _PLUGIN_DIR, api_url, token, run_dir / f"{name}-{model}.jsonl")

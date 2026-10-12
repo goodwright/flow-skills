@@ -16,18 +16,33 @@ def model_totals(rows: list[dict]) -> dict[str, dict]:
 
 
 def gate_failures(before: list[dict], after: list[dict]) -> list[str]:
-    before_totals, after_totals = model_totals(before), model_totals(after)
-    failures = []
-    for model, b in before_totals.items():
+    failures = _coverage_failures(before, after)
+    after_totals = model_totals(after)
+    for model, b in model_totals(before).items():
         a = after_totals.get(model)
         if a is None:
             failures.append(f"{model}: missing from the after run")
             continue
-        if a["passed"] / a["total"] < b["passed"] / b["total"]:
+        if _rate(a) < _rate(b):
             failures.append(f"{model}: pass rate fell from {b['passed']}/{b['total']} to {a['passed']}/{a['total']}")
         if a["tokens"] > b["tokens"]:
             failures.append(f"{model}: tokens rose from {b['tokens']} to {a['tokens']}")
     return failures
+
+
+def _coverage_failures(before: list[dict], after: list[dict]) -> list[str]:
+    """Totals only compare like with like when both runs hold the same, finished, scenario-model pairs."""
+    before_keys = {(r["scenario"], r["model"]) for r in before}
+    after_keys = {(r["scenario"], r["model"]) for r in after}
+    failures = [f"{s} on {m}: only in the before run" for s, m in sorted(before_keys - after_keys)]
+    failures += [f"{s} on {m}: only in the after run" for s, m in sorted(after_keys - before_keys)]
+    failures += [f"{r['scenario']} on {r['model']}: did not finish in the after run"
+                 for r in after if not r.get("completed", True)]
+    return failures
+
+
+def _rate(totals: dict) -> float:
+    return totals["passed"] / totals["total"] if totals["total"] else 0.0
 
 
 def _rows(path: Path) -> list[dict]:
