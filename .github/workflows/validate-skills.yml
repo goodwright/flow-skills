@@ -14,3 +14,11 @@ jobs:
         with:
           python-version: "3.12"
       - run: python3 scripts/validate_skills.py
+
+  evals-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v10.3.0
+      - run: uv run --locked pytest
+        working-directory: evals
