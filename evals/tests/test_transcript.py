@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from flow_evals.transcript import read_transcript
 
 RUNNER = "uvx --from flowbio==0.9.0 flowbio"
@@ -64,3 +66,28 @@ def test_ignores_non_json_lines(tmp_path):
     path = tmp_path / "t.jsonl"
     path.write_text("Error: boom\n" + json.dumps(_result("ok")) + "\n")
     assert read_transcript(path).answer == "ok"
+
+
+def test_flags_the_skills_multi_line_pipeline_run_as_write(tmp_path):
+    run = ('curl -sS --fail-with-body \\\n  -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \\\n'
+           '  -H "Content-Type: application/json" \\\n  -X POST "$FLOW_API_URL/pipelines/versions/7/run" \\\n'
+           "  --data '{\"params\": {}}'")
+    assert read_transcript(_write(tmp_path, [_bash(run), _result("x")])).write_calls == [run]
+
+
+@pytest.mark.parametrize("command", [
+    "curl --request DELETE http://localhost:8019/v2/data/1",
+    "curl -d@body.json http://localhost:8019/v2/data/1",
+    "curl --json '{}' http://localhost:8019/v2/data/1",
+    "uvx --from flowbio==0.9.0 flowbio \\\n  data upload /tmp/x.tsv --json",
+])
+def test_flags_other_write_shapes(tmp_path, command):
+    assert read_transcript(_write(tmp_path, [_bash(command), _result("x")])).write_calls == [command]
+
+
+def test_run_with_a_result_line_is_completed(tmp_path):
+    assert read_transcript(_write(tmp_path, [_result("ok")])).completed is True
+
+
+def test_run_without_result_line_is_not_completed(tmp_path):
+    assert read_transcript(_write(tmp_path, [_bash("jq .")])).completed is False

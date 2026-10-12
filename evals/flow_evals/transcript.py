@@ -8,7 +8,10 @@ from pathlib import Path
 _API_GET_PATH = re.compile(r"\bapi\s+get\s+(/[^\s;|&)]*)")
 # A flowbio subcommand other than `api get` changes remote state; flags such as --version do not.
 _FLOWBIO_WRITE = re.compile(r"\bflowbio\s+(?!api\s+get\b)[a-z]")
-_CURL_WRITE = re.compile(r"\bcurl\b.*(-X\s*(POST|PUT|PATCH|DELETE)\b|\s(-d|--data\S*|-F|--form)\s)")
+_CURL_WRITE = re.compile(
+    r"\bcurl\b.*((-X|--request)\s*(POST|PUT|PATCH|DELETE)\b|\s(-d|--data[\w-]*|-F|--form|--json)(?=[\s@=]))",
+    re.DOTALL,
+)
 
 
 @dataclass(frozen=True)
@@ -20,6 +23,7 @@ class Transcript:
     input_tokens: int
     output_tokens: int
     turns: int
+    completed: bool
 
 
 def read_transcript(path: Path) -> Transcript:
@@ -36,12 +40,18 @@ def read_transcript(path: Path) -> Transcript:
         answer=result.get("result") or "",
         commands=commands,
         flow_paths=[p for c in commands for p in _API_GET_PATH.findall(c)],
-        write_calls=[c for c in commands if _FLOWBIO_WRITE.search(c) or _CURL_WRITE.search(c)],
+        write_calls=[c for c in commands if _is_write(c)],
         input_tokens=sum(usage.get(k, 0) for k in
                          ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")),
         output_tokens=usage.get("output_tokens", 0),
         turns=result.get("num_turns", 0),
+        completed=bool(result),
     )
+
+
+def _is_write(command: str) -> bool:
+    joined = command.replace("\\\n", " ")
+    return bool(_FLOWBIO_WRITE.search(joined) or _CURL_WRITE.search(joined))
 
 
 def _events(path: Path) -> list[dict]:
