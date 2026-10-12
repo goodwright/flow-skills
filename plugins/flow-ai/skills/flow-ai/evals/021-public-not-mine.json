@@ -1,6 +1,6 @@
 {
   "skills": ["flow-ai"],
-  "query": "How many files can I see that I don't own?",
+  "query": "How many files can I see on Flow that I don't own?",
   "checks": {
     "answer_contains": ["visible_not_owned_count"],
     "answer_excludes": ["private_other_filename"],
