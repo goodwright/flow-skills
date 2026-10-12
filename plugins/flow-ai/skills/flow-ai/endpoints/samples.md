@@ -140,7 +140,11 @@ authentication, also returns the caller's owned and shared samples.
     questions about a sample's metadata, phrase it as "the search
     endpoint exposes these fields" rather than "the sample has no
     metadata".
-  - `project_name` (str|null)
+  - `project_name` (str|null) — **the project field in search results.**
+    There is no `project` key here: `.project` is always `null`, and
+    reading it makes every sample look project-less. (`project` is a
+    *query parameter* on this endpoint, and the key name in the
+    `/samples/<id>` detail, where it is an `{id, name}` object.)
   - `owner_name` (str|null — owner's display name, falling back to
     group owner; `null` if the sample has neither)
   - `is_paired` (bool — `true` if any of the sample's filesets contains
@@ -199,7 +203,8 @@ than `/samples/search`'s list item — most importantly, it carries the
     by the `data` and `downloads` endpoints directly.
   - `owner` — `{username, name, image}` or `null`
   - `group_owner` — `{slug, name}` or `null`
-  - `project` — `{id, name}` or `null`
+  - `project` — `{id, name}` or `null`. The detail has no usable
+    `project_name` (it is `null`); search results are the other way round.
 - **Cross-link to the list view.** `/samples/search` finds samples by
   filter; this endpoint reads the full record for one. The two together
   cover discovery + drill-down.

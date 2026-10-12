@@ -374,3 +374,95 @@ The discovery overhead (steps 1 and 2) feels expensive but
 eliminates the silent-no-op class of bug and lets the agent set
 correct expectations with the user instead of guessing.
 
+
+## Example 18: "Which public samples have outputs from pipeline X, version Y?"
+
+For example "public CLIP samples processed with CLIP-Seq v1.6 or v1.7". Use the
+public-only prefix (see "Public-only reads" in `SKILL.md`) for every read below.
+
+**Narrow the samples before you touch any files.** Every `flowbio` call starts a
+new Python process, and output files can be large, so fetching "everything"
+can take hours and swamp the user's computer. Decide which samples you need
+from their metadata first (drop controls, off-topic samples, other organisms),
+then fetch files for those only. Run at most 4 calls in parallel.
+
+**Link files to samples by id, never by filename or sample name.** Output
+filenames do not reliably match sample names: a sample's own data list can hold
+a file named after a different sample. Sample names are not unique either.
+
+```bash
+# Step 1: the pipeline id
+flowbio api get /pipelines --json | \
+  jq -r '.[].subcategories[].pipelines[] | .id + " | " + .name'
+
+# Step 2: every successful run, with its version (Shape B pagination).
+# Keep the versions the user asked for.
+flowbio api get /executions/search --param pipeline=<id> --param status=OK \
+  --param count=100 --param page=<p> --json | \
+  jq -r '.executions[] | [.id, .pipeline_version] | @tsv'
+
+# Step 3: sample metadata (Shape B), then choose the samples you need
+flowbio api get /samples/search --param sample_types=<type> \
+  --param full_metadata=true --param count=100 --param page=<p> --json
+
+```
+
+Step 4 depends on how many samples you chose.
+
+**A few dozen samples: list each sample's files.** The list is scoped by sample
+id, so membership is reliable even when filenames are not. Each call takes ~5 s
+server-side, so this is too slow for hundreds of samples. `filter` is a
+substring on the filename (and on sample, pipeline and owner names), so make it
+specific.
+
+```bash
+flowbio api get /samples/<sample id>/data --param filter=<filename fragment> \
+  --param count=100 --json | jq -r '.data[] | .id + " " + .filename'
+# Only when a sample has more than one matching file, find each file's run:
+flowbio api get /data/<data id> --json | jq -r '.execution.id'
+```
+
+**Hundreds of samples: list every run's outputs at once, then resolve one
+anchor file per sample.** About 20 s for the listing plus ~0.7 s per anchor,
+instead of ~5 s per file kind per sample.
+
+```bash
+# 4a. Every output file of every run, with its run and version (Shape B; `return_data`
+# adds each run's files; the response is large, so pipe it straight into jq)
+flowbio api get /executions/search --param pipeline=<id> --param status=OK \
+  --param return_data=true --param count=100 --param page=<p> --json | \
+  jq -r '.executions[] | .id as $e | .pipeline_version as $v |
+         .downstream_data[] | [$e, $v, .id, .filename] | @tsv'
+
+# 4b. Within one run, all outputs for one sample share a filename prefix (e.g.
+# CLIP-Seq: "<prefix>.unique_genome.dedup_UMICollapse.log",
+# "<prefix>.summary_type_premapadjusted.tsv", "<prefix>_genome.clippy...Peaks.bed").
+# Group files by (run id, prefix), then resolve ONE file per group to its sample:
+flowbio api get /data/<data id of one file in the group> --json | \
+  jq -r '[.id, (.sample.id // "-")] | @tsv'
+```
+
+The group, not the prefix text, is what you trust: a prefix can name a
+different sample than the one its files belong to, and step 4b is what finds
+the real one. Check that no group holds two files of the same kind before you
+rely on the prefixes. A group whose anchor has no sample (`"-"`) comes from a
+multiplexed run; leave it out and report how many.
+
+Then keep only files whose run is one of those kept in step 2, and drop samples
+you did not choose in step 3. If more than one run remains for a sample, use the
+newest. If a chosen sample has no files, say so rather than matching files to it
+by name.
+
+Fetch small files first (logs, summaries) and use them to narrow further before
+fetching large ones. Download a large file, reduce it to what you need, and
+delete it before fetching the next rather than keeping them all.
+
+For a run's reference files (genome, annotation, GTFs), take them from the run
+itself, ~2 KB per call:
+
+```bash
+flowbio api get /executions/<run id> --param include=data_params --json
+```
+
+A reference file a run lists may since have been deleted (`/data/<id>` returns
+404, even logged in). See `endpoints/executions.md` for what to do.
