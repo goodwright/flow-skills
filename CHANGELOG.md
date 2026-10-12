@@ -8,6 +8,19 @@ The `flow-ai/<version>` User-Agent that survives on the two `curl` remnants
 (the pipeline run and file download) tracks it. Bump both together on every
 release.
 
+## [0.12.0] — 2026-10-12
+
+- **Data files are learned from the API's own reference.** For listing,
+  filtering and counting data files, and reading one, the skill now reads
+  `GET /v2/reference/data` and calls `GET /v2/data` and `GET /v2/data/<id>`,
+  instead of the hand-written `GET /data/search` and `GET /data/<id>` docs,
+  which are removed. The reference states deletion state (`file_deleted_at`,
+  `deletion_scheduled_for`), and the list leaves deleted files out by default,
+  so "how much data do I own" no longer counts files that can't be downloaded.
+  `endpoints/data.md` keeps only contents previews, data types and uploads.
+- The reference also documents writes, such as `PATCH /v2/data/<id>`.
+  `safety.md` now says that a write documented there stays out of scope.
+
 ## [0.10.0] — 2026-07-15
 - Make skill work better with smaller models.
 

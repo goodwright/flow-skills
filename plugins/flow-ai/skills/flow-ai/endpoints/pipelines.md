@@ -147,8 +147,8 @@ For each param, bucket by `type`:
 - **data** → `data_params[cli] = <data_id>`. Resolve the id via discovery,
   honouring the param's filters: `pattern` (filename regex), `category`
   (1 generic, 2 annotation, 3 multiplexed, 4 demultiplexed), `data_types`. Find
-  candidates with `GET /data/search`, `GET /samples/<id>/data`, etc. (see
-  `endpoints/data.md`, `endpoints/samples.md`).
+  candidates with `GET /v2/data` (filters in `GET /v2/reference/data`),
+  `GET /samples/<id>/data`, etc. (see `endpoints/samples.md`).
 - **csv** → `csv_params[cli] = {rows: [...]}`. See below.
 
 ### csv params (samplesheets)
@@ -187,8 +187,7 @@ endpoint**: the API only ever receives concrete ids in `data_params` (and
 them in `data_params`:
 
 - **`from_fileset` section:** if the user names a fileset, read its data files
-  (e.g. via `GET /data/search` scoped to that fileset, or the sample's
-  `GET /samples/<id>/data`) and, for each `data` param in the section, pick the
+  (e.g. via the sample's `GET /samples/<id>/data`) and, for each `data` param in the section, pick the
   file matching the param's `fileset_pattern` (else its `pattern`). Put the
   chosen ids in `data_params`. (The top-level `fileset` body field does **not**
   do this for you.)
@@ -220,7 +219,7 @@ The read/discovery steps (steps 1–4) need no confirmation.
 ### The call
 
 ```bash
-curl -s -A "flow-ai/0.11.0" \
+curl -s -A "flow-ai/0.12.0" \
   -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
   -H "Content-Type: application/json" \
   -X POST \

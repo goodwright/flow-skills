@@ -251,17 +251,6 @@ Data ids are obtained by listing a public sample's files via
 `filename`, `size`, and a few provenance fields (pipeline, process
 execution, sample). Data ids are stringified integers.
 
-**Single-data-file detail.** `GET /data/<id>` returns the full data
-record — `filetype`, `is_binary`, `is_directory`, `size`, `data_type`
-(an object), the `fileset` and producing `execution` (with
-`pipeline_name`, `process_name`, and the bash `process_command`), plus
-the resolved `sample` and `project`. This is distinct from
-`/data/<id>/contents` (text preview) and
-`/downloads/<data_id>/<filename>` (file bytes); use the detail record
-for "what is this file" questions. Visibility rule: any non-private
-parent (sample, project, or execution) admits the call — the same rule
-as the contents and download endpoints.
-
 **Direct single-file download.** A public Data file can be downloaded
 without authentication via `GET /downloads/<data_id>/<filename>`. The
 `<data_id>` is a **Data id**, *not* a `BulkDownloadJob` id — the URL is

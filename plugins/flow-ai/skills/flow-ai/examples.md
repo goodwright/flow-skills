@@ -141,7 +141,7 @@ Before downloading anything large, confirm with the user — the file size
 is in the previous response under `.data[].size` (bytes).
 
 ```bash
-curl -s -A "flow-ai/0.11.0" -o sample.fastq.gz \
+curl -s -A "flow-ai/0.12.0" -o sample.fastq.gz \
   "${FLOW_API_URL:-https://app.flow.bio/api}/downloads/67890/sample.fastq.gz"
 ```
 
@@ -220,16 +220,14 @@ those numbers.
 
 ## Example 11: "Tell me about file 67890"
 
+Read `GET /v2/reference/data` first: it lists every field of the record. Then:
+
 ```bash
-flowbio api get /data/67890 --json | \
-  jq '{id, filename, filetype, size, is_binary, is_directory,
-       sample: .sample.name, project: .project.name, fileset: .fileset.name,
-       pipeline: .execution.pipeline_name, process: .execution.process_name}'
+flowbio api get /v2/data/67890 --json | \
+  jq '{id, filename, filetype, size, is_directory, data_type, deletion_scheduled_for, file_deleted_at}'
 ```
 
-Don't surface `absolute_path` — it's a Flow-internal path. If the user
-asks for the producing process's bash command, it's available at
-`.execution.process_command`; surface it explicitly only when asked.
+Don't surface `absolute_path` — it's a Flow-internal path.
 For text content use Example 8; for the file bytes use Example 7.
 
 ## Example 12: "Find the executions I ran yesterday"

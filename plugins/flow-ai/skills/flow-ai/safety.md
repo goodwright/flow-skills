@@ -41,6 +41,8 @@ allowlist today** and must be refused if asked:
 - making data public or private
 - cancelling an execution
 - modifying metadata, or any upload type not yet documented in `uploading.md`
+- protecting a data file from deletion, or lifting that protection
+  (`PATCH /v2/data/<id>`)
 - creating, listing, or revoking API keys
 - admin operations
 - *any* GET endpoint not in the endpoint table in `SKILL.md` (e.g.
@@ -50,6 +52,11 @@ allowlist today** and must be refused if asked:
 
 This list is illustrative; the principle in the first paragraph is what
 does the work.
+
+**The API's reference describes writes too.** `GET /v2/reference/<topic>`
+documents every operation of a topic, including ones that change remote state,
+such as `PATCH /v2/data/<id>`. Reading about an operation there does not make
+it allowed: only the operations listed below may be called.
 
 **Token discipline.** When a token file is configured (see `SKILL.md` step 0),
 never `cat`, `head`, `echo`, or otherwise print its contents. Reads and
@@ -84,8 +91,9 @@ In-scope endpoints (all `GET`):
 - `GET /organisms/<id>`
 - `GET /me`
 - `GET /users/search`
-- `GET /data/search`
-- `GET /data/<id>` — single-data-file detail (type, size, fileset and execution links)
+- `GET /v2/reference`, `GET /v2/reference/<topic>` — the API's own reference pages
+- `GET /v2/data` — list, filter and count data files
+- `GET /v2/data/<id>` — single-data-file detail
 - `GET /data/<id>/contents`
 - `GET /data/types`
 - `GET /executions/search`
