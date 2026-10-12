@@ -33,8 +33,13 @@ loaded, your own settings, plugins and MCP servers left out, and the README's
 read allowlist, so a write stalls instead of running. The token reaches the
 agent through its environment only.
 
+`uv run run.py --regrade runs/<timestamp>` grades a past run's transcripts
+again with the current scenarios and checks, without running any agent, so a
+before and an after run can be graded by the same code.
+
 `compare.py` exits non-zero when, for any model, the after run has a lower pass
-rate or spends more tokens than the before run.
+rate or spends more tokens than the before run, or when the two runs do not hold
+the same finished scenario and model pairs.
 
 ## Test
 

@@ -1,3 +1,4 @@
+import dataclasses
 import json
 
 import pytest
@@ -8,7 +9,7 @@ from flow_evals.transcript import Transcript
 
 EXPECTED = {"owned_count": 7}
 TRANSCRIPT = Transcript(answer="7 files", commands=[], flow_paths=["/me", "/v2/data"], write_calls=[],
-                        input_tokens=1000, output_tokens=200, turns=4)
+                        input_tokens=1000, output_tokens=200, turns=4, completed=True)
 
 
 def _scenarios(tmp_path, names):
@@ -53,3 +54,19 @@ def test_table_has_a_line_per_row():
     lines = format_table([row, {**row, "model": "opus"}]).splitlines()
     assert "scenario" in lines[0] and len(lines) == 4
     assert "004" in lines[2] and "1/1" in lines[2]
+
+
+def test_grade_fails_every_item_of_a_run_that_never_finished_without_asking_the_grader():
+    scenario = {"checks": {"answer_excludes": ["owned_count"], "no_write_calls": True},
+                "expected_behavior": ["reads only"]}
+    unfinished = dataclasses.replace(TRANSCRIPT, answer="", completed=False)
+
+    def ask(argv):
+        raise AssertionError("grader called for an unfinished run")
+    results = grade(scenario, EXPECTED, unfinished, ask)
+    assert [r.passed for r in results] == [False, False, False]
+    assert all("no result" in r.reason for r in results)
+
+
+def test_summarise_records_whether_the_run_finished():
+    assert summarise("004", "haiku", [], TRANSCRIPT)["completed"] is True
