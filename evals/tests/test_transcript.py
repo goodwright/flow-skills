@@ -5,7 +5,7 @@ import pytest
 
 from flow_evals.transcript import read_transcript
 
-RUNNER = "uvx --from flowbio==0.9.0 flowbio"
+RUNNER = "uvx --from flowbio==0.12.0 flowbio"
 
 
 def _bash(command: str) -> dict:
@@ -79,7 +79,7 @@ def test_flags_the_skills_multi_line_pipeline_run_as_write(tmp_path):
     "curl --request DELETE http://localhost:8019/v2/data/1",
     "curl -d@body.json http://localhost:8019/v2/data/1",
     "curl --json '{}' http://localhost:8019/v2/data/1",
-    "uvx --from flowbio==0.9.0 flowbio \\\n  data upload /tmp/x.tsv --json",
+    "uvx --from flowbio==0.12.0 flowbio \\\n  data upload /tmp/x.tsv --json",
 ])
 def test_flags_other_write_shapes(tmp_path, command):
     assert read_transcript(_write(tmp_path, [_bash(command), _result("x")])).write_calls == [command]
