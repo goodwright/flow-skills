@@ -5,3 +5,4 @@
 *.swp
 evals/runs/
 evals/.venv/
+__pycache__/
