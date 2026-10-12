@@ -27,7 +27,7 @@ case "counts.tsv" in *" "*) echo "Filename has spaces — rename first."; exit 1
 # Step 4: CONFIRM with the user what will be uploaded (path, stored
 # filename, data_type), then run the pinned CLI. The token is read by
 # the CLI from ~/.config/flow/api-token — never passed as --token.
-uvx --from flowbio==0.9.0 flowbio data upload ./counts.tsv \
+uvx --from flowbio==0.12.0 flowbio data upload ./counts.tsv \
   --json --no-progress
 ```
 
@@ -43,7 +43,7 @@ If no runner is found in step 3, stop and tell the user to install one:
 > demand via `uv`. I couldn't find `uv` (or `pipx`, or a compatible
 > `flowbio`) on your PATH. Install `uv` (https://docs.astral.sh/uv/),
 > `pipx` (`pip install --user pipx`), or `flowbio`
-> (`pip install "flowbio>=0.9.0"`), then ask me again.
+> (`pip install "flowbio>=0.12.0"`), then ask me again.
 
 ## Example 19: "Upload a paired-end RNA-Seq sample with metadata"
 
@@ -88,7 +88,7 @@ done
 # Step 7: CONFIRM what will be uploaded (reads files + single/paired, name,
 # sample type, project, organism, metadata), then run the pinned CLI. The
 # token is read by the CLI from ~/.config/flow/api-token — never --token.
-uvx --from flowbio==0.9.0 flowbio samples upload \
+uvx --from flowbio==0.12.0 flowbio samples upload \
   --name liver_rep1 --sample-type RNA-Seq \
   --reads1 ./liver_R1.fastq.gz --reads2 ./liver_R2.fastq.gz \
   --project "$PROJECT_ID" --organism "$HUMAN_ID" \
@@ -133,7 +133,7 @@ done
 # pinned CLI. The annotation is validated and uploaded BEFORE the reads, so
 # an invalid sheet never wastes a reads upload. The token is read by the CLI
 # from ~/.config/flow/api-token — never passed as --token.
-uvx --from flowbio==0.9.0 flowbio samples upload-multiplexed \
+uvx --from flowbio==0.12.0 flowbio samples upload-multiplexed \
   --reads1 ./pool_R1.fastq.gz --reads2 ./pool_R2.fastq.gz \
   --annotation ./annotation.xlsx \
   --json --no-progress
@@ -176,7 +176,7 @@ flowbio api get /samples/types --json | \
 # existing flowbio; otherwise stop with the install message. No confirmation
 # needed — this is a read. The token is read by the CLI from
 # ~/.config/flow/api-token — never passed as --token.
-uvx --from flowbio==0.9.0 flowbio samples annotation-template \
+uvx --from flowbio==0.12.0 flowbio samples annotation-template \
   --sample-type rna_seq -o ./template.xlsx \
   --json --no-progress
 ```

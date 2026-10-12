@@ -20,6 +20,9 @@ release.
   `endpoints/data.md` keeps only contents previews, data types and uploads.
 - The reference also documents writes, such as `PATCH /v2/data/<id>`.
   `safety.md` now says that a write documented there stays out of scope.
+- **Shared flowbio pin bumped `0.9.0` → `0.12.0`**. Errors from `/v2/…`
+  endpoints now arrive as a readable `message` with per-field `errors`
+  instead of the raw envelope. Nothing the skill calls changed shape.
 
 ## [0.10.0] — 2026-07-15
 - Make skill work better with smaller models.

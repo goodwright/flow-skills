@@ -23,7 +23,7 @@ reimplements the protocol in bash, nor improvises Python at runtime.
 > for the upload path.
 
 Installing this plugin does **not** install Python or `flowbio`. The skill
-fetches the CLI on demand, pinned to **`flowbio==0.9.0`** (the release that
+fetches the CLI on demand, pinned to **`flowbio==0.12.0`** (the release that
 carries the read-only `api get` command **and** the upload commands `data
 upload`, `samples upload`, `samples upload-multiplexed`, and `samples
 annotation-template`). The CLI is required for **both reads and uploads** —
@@ -32,14 +32,14 @@ there is no curl fallback for reads. Before the first CLI call of a session
 
 1. `uv` on `PATH` → run via `uvx` (a.k.a. `uv tool run`):
    ```bash
-   uvx --from flowbio==0.9.0 flowbio <command> …
+   uvx --from flowbio==0.12.0 flowbio <command> …
    ```
 2. else `pipx` on `PATH`:
    ```bash
-   pipx run --spec flowbio==0.9.0 flowbio <command> …
+   pipx run --spec flowbio==0.12.0 flowbio <command> …
    ```
 3. else a compatible `flowbio` already on `PATH` (`flowbio --version` reports
-   ≥ `0.9.0`) → call `flowbio <command> …` directly.
+   ≥ `0.12.0`) → call `flowbio <command> …` directly.
 4. else → **stop. Do not attempt the call.** Return this message:
 
    > Using Flow needs the `flowbio` CLI, which this skill runs on demand
@@ -47,7 +47,7 @@ there is no curl fallback for reads. Before the first CLI call of a session
    > your PATH. Install one of:
    >   • `uv`   — https://docs.astral.sh/uv/ (recommended), then re-run; or
    >   • `pipx` — `pip install --user pipx`; or
-   >   • `flowbio` directly — `pip install "flowbio>=0.9.0"`.
+   >   • `flowbio` directly — `pip install "flowbio>=0.12.0"`.
    > Then ask me again.
 
 The `<command>` is `api get …` for reads (`SKILL.md` step 0) and `data upload …`,
