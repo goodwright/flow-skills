@@ -1,6 +1,6 @@
 {
   "skills": ["flow-ai"],
-  "query": "List the files I own that I can still download.",
+  "query": "List the files I own on Flow that I can still download.",
   "checks": {
     "answer_contains": ["scheduled_filename"],
     "answer_excludes": ["deleted_filename"],
