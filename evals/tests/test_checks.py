@@ -15,7 +15,7 @@ EXPECTED = {
 
 def _transcript(answer: str, write_calls: list[str] | None = None) -> Transcript:
     return Transcript(answer=answer, commands=[], flow_paths=[], write_calls=write_calls or [],
-                      input_tokens=0, output_tokens=0, turns=0)
+                      input_tokens=0, output_tokens=0, turns=0, completed=True)
 
 
 def _passed(checks: dict, answer: str) -> list[bool]:
@@ -72,3 +72,7 @@ def test_results_are_tagged_as_checks():
 
 def test_missing_keys_names_unknown_keys():
     assert missing_keys({"answer_contains": ["owned_count", "nope"], "answer_excludes": ["gone"]}, EXPECTED) == ["nope", "gone"]
+
+
+def test_excludes_list_fails_when_any_element_is_mentioned():
+    assert _passed({"answer_excludes": ["run_output_filenames"]}, "only counts.tsv") == [False]
