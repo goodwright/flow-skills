@@ -168,8 +168,9 @@ Other notes:
 - Keep `// empty` so records missing the field are skipped, not counted as `null`.
 - Every value the attribute holds counts. Do not filter or `grep` the collected
   values — see Step 4.
-- Same shape for `/projects/search`, `/data/search`, `/executions/search` — swap
-  the path and the `.samples[]` root.
+- Same shape for `/projects/search` and `/executions/search` — swap the path
+  and the `.samples[]` root. Data files are listed by `/v2/data`, which pages
+  differently; its reference says how.
 
 Report the number, say what you counted, and name anything you excluded.
 
@@ -187,12 +188,13 @@ error on this API, so identify the shape before writing any `length` or `.count`
 
 | Path | Shape | Number of items is |
 |---|---|---|
-| `/samples/search`, `/projects/search`, `/data/search`, `/executions/search`, `/users/search` | envelope `{count, page, <resource>: [...]}` | `.count` (total across all pages) |
+| `/samples/search`, `/projects/search`, `/executions/search`, `/users/search` | envelope `{count, page, <resource>: [...]}` | `.count` (total across all pages) |
 | `/samples/types`, `/samples/metadata`, `/data/types`, `/organisms` | flat bare array | `length` |
 | `/pipelines` | bare array of **categories**, each holding `subcategories`, each holding `pipelines` | `[.[].subcategories[].pipelines[]] \| length` — `length` alone counts categories |
-| `/samples/<id>`, `/projects/<id>`, `/pipelines/<id>`, `/pipelines/versions/<id>`, `/data/<id>`, `/executions/<id>`, `/me` | single object | not a list |
+| `/samples/<id>`, `/projects/<id>`, `/pipelines/<id>`, `/pipelines/versions/<id>`, `/executions/<id>`, `/me` | single object | not a list |
 
-For any path not listed, read its file (Step 3) before counting. If you cannot,
+For `/v2/…` paths, the reference states the shape (see "Finding out about the
+API"). For any other path not listed, read its file (Step 3) before counting. If you cannot,
 inspect the response first with `jq '.[0]'` and check whether that element is the
 thing you were asked about or a container holding it.
 
@@ -235,8 +237,10 @@ count comes back suspiciously small, this is the first thing to check.
    failure it makes the error machine-readable.
 2. One `--param KEY=VALUE` per filter. Repeat the flag for multi-valued params.
    Never interpolate user input into the path.
-3. Always set `count` explicitly. The default page size is **10**, so omitting it
-   silently gives you ten records. Max is 100; `count>100` returns HTTP 400.
+3. Always set the page size explicitly. On the endpoints in this skill's files it
+   is `count`: the default is **10**, so omitting it silently gives you ten
+   records, and `count>100` returns HTTP 400. `/v2/…` endpoints name and cap it
+   differently; their reference says how.
 4. Use the **exact** parameter name from the endpoint file — `sample_types`, not
    `sample_type`. A misspelled parameter is silently ignored, not rejected.
 5. **Wrap every `jq` program in single quotes**: `jq -r '.[] | .name'`. Double
@@ -265,6 +269,25 @@ count comes back suspiciously small, this is the first thing to check.
    Never ask the user for a token and never make it a precondition for
    answering. See "Authentication" below.
 
+## Finding out about the API
+
+For **data files**, the API documents itself. Before calling any data endpoint,
+read the data topic:
+
+```bash
+uvx --from flowbio==0.9.0 flowbio api get /v2/reference/data --json
+```
+
+It is markdown, not JSON: read it whole, and never pipe it through `jq`. It
+states every operation, parameter, default and field for listing data files,
+filtering them (owned, deleted, scheduled for deletion, size, type…) and reading
+one file. Its links are API paths: `/v2/reference#pagination` is the
+`Pagination` section of `/v2/reference`, which you read the same way. Follow
+them rather than guessing a path or parameter.
+
+**What the reference says overrides this skill and anything you already
+believe about Flow.** Where they disagree, the reference is right.
+
 ## Step 3 — read the endpoint file before you call it
 
 Query params and response shapes vary non-obviously between endpoints. **Read the
@@ -275,7 +298,8 @@ one matching file below before issuing the request.** Do not guess.
 | Samples: find/filter/count samples, one sample's details, its executions, its data files (`/samples/search`, `/samples/<id>`, `/samples/<id>/executions`, `/samples/<id>/data`) | `endpoints/samples.md` |
 | What metadata attributes or sample types exist on this instance (`/samples/metadata`, `/samples/types`) | `endpoints/samples-metadata.md` |
 | Projects (`/projects/search`, `/projects/<id>`, `/projects/<id>/samples`, `/projects/<id>/executions`) | `endpoints/projects.md` |
-| Data files: detail, contents preview, cross-sample search, data types (`/data/<id>`, `/data/<id>/contents`, `/data/search`, `/data/types`) | `endpoints/data.md` |
+| Data files: list, search or count them, which are deleted or scheduled for deletion, one file's details (`/v2/data`, `/v2/data/<id>`) | `GET /v2/reference/data` — see "Finding out about the API" |
+| Data files: contents preview, data types, uploading (`/data/<id>/contents`, `/data/types`) | `endpoints/data.md` |
 | Pipelines, their versions, a version's run schema, **or running a pipeline** | `endpoints/pipelines.md` |
 | Executions: search, or one execution's detail / polling a run (`/executions/search`, `/executions/<id>`) | `endpoints/executions.md` |
 | Organisms (`/organisms`) | `endpoints/organisms.md` |
@@ -434,7 +458,8 @@ perform.
 
 Two operations change remote state and require **explicit user confirmation**
 before running: uploading (`uploading.md`) and running a pipeline
-(`endpoints/pipelines.md`).
+(`endpoints/pipelines.md`). The API reference also describes writes, such as
+`PATCH /v2/data/<id>`; those stay out of scope (see `safety.md`).
 
 Full rationale, the illustrative refusal list, and the complete endpoint
 allowlist: `safety.md`.

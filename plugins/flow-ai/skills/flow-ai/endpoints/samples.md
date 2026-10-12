@@ -281,7 +281,7 @@ inputs.
   - `owner_name` (str)
   - `can_delete` (bool — **always `false`** for anonymous callers; ignore)
 - **Chaining.** Each `id` from this endpoint can be passed straight to:
-  - `GET /data/<id>` for the full data record (see `endpoints/data.md`),
+  - `GET /v2/data/<id>` for the full data record (see `GET /v2/reference/data`),
   - `GET /data/<id>/contents` for a text preview (see `endpoints/data.md`),
   - `GET /downloads/<id>/<filename>` for the file bytes (see `endpoints/downloads.md`).
 ## Raw input files vs sample-related data — the trap
