@@ -8,6 +8,22 @@ The `flow-ai/<version>` User-Agent that survives on the two `curl` remnants
 (the pipeline run and file download) tracks it. Bump both together on every
 release.
 
+## [0.12.1] — 2026-10-13
+
+- **A refused download is no longer mistaken for a finished one.** The
+  download recipe now passes `--fail-with-body`. Without it, curl wrote an
+  error response into the output file and exited `0`, so a refused download
+  looked like a successful one with the error text saved under the file's
+  name.
+- **Files whose content was deleted are named as such.** Flow answers `410` with
+  `Data <id> (<filename>) was deleted on <date>` when a download or preview
+  asks for a file whose content the retention policy deleted. The endpoint
+  docs, the errors table and the download example now describe it, and tell
+  the agent to report it without retrying. Execution detail marks such files
+  with `file_deleted_at`, and a pipeline run naming one is refused with the
+  same message.
+- New eval `022-download-deleted-file`.
+
 ## [0.12.0] — 2026-10-12
 
 - **Data files are learned from the API's own reference.** For listing,

@@ -403,6 +403,7 @@ server's `status_code` and `message` as the primary signal, and report the
 | 400 | Wrong filter/type/value, or `count > 100` | Report the message verbatim; lower `count` or use a valid param from the endpoint file. |
 | 401 / 403 | Auth missing, expired, or insufficient | Report it, then give the authentication guidance below. Do not silently retry anonymously. |
 | 404 | Wrong path, or an id not visible to this caller | Re-check the path; fall back to the list endpoint to rediscover the id. |
+| 410 | The file's content was deleted under the retention policy; the message says which file and when | Report it as deleted, with the date. Do not retry, and do not try another endpoint to reach the same file. |
 | 500 | Usually a non-integer `page`/`count`, or an ISO date where a Unix timestamp is required | Fix the type. If already correct, report a server-side error and stop. |
 | other 5xx | Server-side | Report once. Do not retry. |
 | no `status_code`, transport error | Network/DNS/timeout | Report the base URL and ask whether it is reachable. |

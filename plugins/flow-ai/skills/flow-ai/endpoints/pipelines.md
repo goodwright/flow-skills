@@ -219,7 +219,7 @@ The read/discovery steps (steps 1–4) need no confirmation.
 ### The call
 
 ```bash
-curl -s -A "flow-ai/0.12.0" \
+curl -s -A "flow-ai/0.12.1" \
   -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
   -H "Content-Type: application/json" \
   -X POST \
@@ -271,7 +271,7 @@ when the user explicitly asks to be told when it finishes:
 
 | Status | Meaning | What to do |
 |---|---|---|
-| 400 | Form validation — bad/missing param, unknown/unreadable data/sample/fileset id, unknown Nextflow version | Body is `{"error": {field: [messages]}}`. Report the field message verbatim; fix the offending value (e.g. re-resolve the id, pick a valid Nextflow version) and re-confirm before resubmitting. |
+| 400 | Form validation — bad/missing param, unknown/unreadable data/sample/fileset id, an input file whose content was deleted (`Data <id> (<filename>) was deleted on <date>`), unknown Nextflow version | Body is `{"error": {field: [messages]}}`. Report the field message verbatim; fix the offending value (e.g. re-resolve the id, pick another input file, pick a valid Nextflow version) and re-confirm before resubmitting. |
 | 403 | `User cannot run pipelines` **or** `Token not authorised for this endpoint` | Report verbatim and stop (see "Capability & auth"). Do not retry. |
 | 404 | Version id unknown, inactive, or private-to-non-admin | Re-resolve the version via `GET /pipelines/<id>`. |
 

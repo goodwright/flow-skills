@@ -32,13 +32,25 @@ for public data.
 - **Response body.** The file bytes. In prod the response is empty with
   `X-Accel-Redirect` and nginx serves the file — transparent to
   `curl -o <file>` either way.
-- **Refusals.** All failures return bare HTTP **404 with no JSON body**
-  (other endpoints return `{"error": ...}`): id not found / removed /
-  not ready, filename mismatch, or data not anonymous-readable.
+- **Always pass `--fail-with-body`.** Without it curl writes an error
+  response into the `-o` file and exits `0`, so a refused download looks like a
+  successful one. With it, a refusal exits `22` and the `-o` file holds the
+  server's text instead of the file's bytes: read that text, report it, and
+  delete the file.
+- **Refusals.** None of them is JSON (other endpoints return
+  `{"error": ...}`):
+  - **410 Gone**, plain-text body `Data <id> (<filename>) was deleted on
+    <YYYY-MM-DD>` — the file's content was deleted under the data retention
+    policy. Its record stays visible, so the id and filename are right, but
+    the bytes are gone for good. Tell the user the file was deleted and when;
+    don't retry, and don't look for another way to fetch it.
+  - **404, empty body** — id not found / removed / not ready, filename
+    mismatch, or data not readable by this caller.
 - **HTML asset edge case.** If `data.filetype == "html"` and the URL
   filename doesn't match `data.filename`, the view tries the filename as
   a relative href inside the HTML so reports can load their own
   CSS/images. For agent downloads, treat the rule as "filename must
-  match exactly".
+  match exactly". A link to a file whose content was deleted answers 410 as
+  above.
 - **Bulk multi-file downloads (out of scope).** The
   `POST /downloads/...` → tar.gz flow is auth-gated and not covered here.
