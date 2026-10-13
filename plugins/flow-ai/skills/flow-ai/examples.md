@@ -141,7 +141,7 @@ Before downloading anything large, confirm with the user — the file size
 is in the previous response under `.data[].size` (bytes).
 
 ```bash
-curl -s -A "flow-ai/0.12.0" -o sample.fastq.gz \
+curl -s --fail-with-body -A "flow-ai/0.12.1" -o sample.fastq.gz \
   "${FLOW_API_URL:-https://app.flow.bio/api}/downloads/67890/sample.fastq.gz"
 ```
 
@@ -151,6 +151,12 @@ Notes:
   though the URL is under `/downloads/`.
 - The trailing path segment (`sample.fastq.gz`) must equal `data.filename`
   exactly — copy it from the `/samples/<id>/data` response.
+- `--fail-with-body` makes a refused download exit non-zero instead of `0`.
+  The `-o` file then holds the server's error text, not the file: report the
+  text and delete the file. Never report a download as done on a non-zero exit.
+- 410 with `Data 67890 (sample.fastq.gz) was deleted on <date>` means the
+  file's content was deleted under the retention policy. Say so, with the
+  date; there is no other copy to fetch.
 - 404 with empty body means: id wrong, file not ready, filename mismatch,
   or the data is not anonymous-readable. The endpoint does not return
   JSON for errors.

@@ -35,6 +35,9 @@ through this endpoint. URL unchanged.
     not a file.
   - `404 {"error": "Not found"}` — id missing, removed, not yet ready, or no
     parent is non-public for an anonymous caller.
+  - `410 {"error": "Data <id> (<filename>) was deleted on <YYYY-MM-DD>"}` —
+    the file's content was deleted under the retention policy. Report it;
+    there is nothing left to preview.
 - **Reading more.** Iterate `position=0`, `position=1`, … until `has_more`
   is `false`. The index is 0-based and increments by 1, not by 10240.
   Preview only; for full content, use the download endpoint

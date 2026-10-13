@@ -126,6 +126,12 @@ via `/executions/search`, and **polling a run** started via
   - `sample`, `project`, `fileset`, `owner`, `group_owner` (objects | null)
   - `retries` / `retried_by` (`{id, identifier}` | null)
   - `process_executions` — per-step status; useful for pinpointing a failure.
+  - Every file this payload lists — in `data_params`, `csv_params`,
+    `upstream_data` and each process's `upstream_data` / `downstream_data` —
+    carries `file_deleted_at` (ISO 8601, or `null`). A non-null value means the
+    file's content was deleted under the retention policy: the file is still
+    listed because it belongs to the run, but it cannot be downloaded or used
+    as an input. Say so rather than offering it.
 - **Internal fields — do not surface:** `absolute_path` anywhere in nested data,
   and raw server-side paths. Report `command`/`stderr` only when the user asks
   or to explain a failure.
