@@ -109,7 +109,7 @@ data-file call.
 
 - **The call** (using whichever runner the preflight selected):
   ```bash
-  uvx --from flowbio==0.12.0 flowbio data upload <path> \
+  uvx --from flowbio==0.14.0 flowbio data upload <path> \
     [--filename NAME] [--data-type TYPE] [--directory] \
     --json --no-progress
   ```

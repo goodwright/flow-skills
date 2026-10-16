@@ -21,18 +21,18 @@ list you did not fully retrieve, and never state a number you have not seen.
 
 ## Step 0 — resolve the runner (once per session)
 
-The CLI is not installed. It is fetched on demand, pinned to `flowbio==0.12.0`.
+The CLI is not installed. It is fetched on demand, pinned to `flowbio==0.14.0`.
 **Reads need this too — there is no curl fallback for reads.** Run this once:
 
 ```bash
-uvx --from flowbio==0.12.0 flowbio api get /samples/types --json | head -c 300
+uvx --from flowbio==0.14.0 flowbio api get /samples/types --json | head -c 300
 ```
 
-- **It printed JSON** → your runner prefix is `uvx --from flowbio==0.12.0 flowbio`.
+- **It printed JSON** → your runner prefix is `uvx --from flowbio==0.14.0 flowbio`.
   Use that exact prefix on every call for the rest of the session. First call is
   slow (it downloads the package); later calls are fast.
 - **`uvx: command not found`** → try the same call with
-  `pipx run --spec flowbio==0.12.0 flowbio` and use that prefix instead.
+  `pipx run --spec flowbio==0.14.0 flowbio` and use that prefix instead.
 - **Neither exists** → try bare `flowbio api get /samples/types --json`. Only use
   the bare form if that call *actually prints JSON*.
 - **All three failed** → stop and tell the user:
@@ -42,7 +42,7 @@ uvx --from flowbio==0.12.0 flowbio api get /samples/types --json | head -c 300
   > Install one of:
   >   • `uv`   — https://docs.astral.sh/uv/ (recommended); or
   >   • `pipx` — `pip install --user pipx`; or
-  >   • `flowbio` directly — `pip install "flowbio>=0.12.0"`.
+  >   • `flowbio` directly — `pip install "flowbio>=0.14.0"`.
   > Then ask me again.
 
 **Give every call enough time.** If you set a timeout on the bash tool, the value
@@ -53,7 +53,7 @@ exactly like a broken runner.
 
 **Once any call has succeeded, the runner is working.** A later failure is a
 mistake in that command — most often a mistyped version pin (it is exactly
-`flowbio==0.12.0`) or a timeout that was too short. Re-read your command and fix
+`flowbio==0.14.0`) or a timeout that was too short. Re-read your command and fix
 it. Do not conclude the CLI is missing, do not switch runners, and never fall
 back to `pip install`.
 
@@ -85,7 +85,7 @@ For inspecting records, and for "how many **records** match" — the answer is t
 envelope's `count` field.
 
 ```bash
-uvx --from flowbio==0.12.0 flowbio api get /samples/search --param sample_types=TYPE_IDENTIFIER --param ATTRIBUTE_IDENTIFIER=VALUE --param count=1 --json | jq -r '.count'
+uvx --from flowbio==0.14.0 flowbio api get /samples/search --param sample_types=TYPE_IDENTIFIER --param ATTRIBUTE_IDENTIFIER=VALUE --param count=1 --json | jq -r '.count'
 ```
 
 **A filtered count of `0` is never an answer — it is a bug report.** It means one
@@ -118,7 +118,7 @@ the answer either — it counts records, not distinct values.
 **B1. Find the real identifiers first** (Step 4; never guess them):
 
 ```bash
-(  uvx --from flowbio==0.12.0 flowbio api get /samples/types --json | jq -r '.[] | "TYPE | " + .identifier + " | " + .name';  uvx --from flowbio==0.12.0 flowbio api get /samples/metadata --json | jq -r '.[] | "ATTR | " + .identifier + " | " + .name + " | " + (.description // "")'  )
+(  uvx --from flowbio==0.14.0 flowbio api get /samples/types --json | jq -r '.[] | "TYPE | " + .identifier + " | " + .name';  uvx --from flowbio==0.14.0 flowbio api get /samples/metadata --json | jq -r '.[] | "ATTR | " + .identifier + " | " + .name + " | " + (.description // "")'  )
 ```
 
 **B2. Collect the field across every page and deduplicate.** This command
@@ -128,7 +128,7 @@ walks them all:
 ```bash
 # The `for` loop is mandatory. One request returns at most 100 records, so a
 # single call without `for` answers for page 1 only. Never remove it.
-for p in $(seq 1 $(uvx --from flowbio==0.12.0 flowbio api get /samples/search --param sample_types=TYPE_IDENTIFIER --param count=1 --json | jq -r '((.count+99)/100|floor)')); do uvx --from flowbio==0.12.0 flowbio api get /samples/search --param sample_types=TYPE_IDENTIFIER --param full_metadata=true --param count=100 --param page=$p --json | jq -r '.samples[] | .metadata.ATTRIBUTE_IDENTIFIER.value // empty'; done | sort -u | wc -l
+for p in $(seq 1 $(uvx --from flowbio==0.14.0 flowbio api get /samples/search --param sample_types=TYPE_IDENTIFIER --param count=1 --json | jq -r '((.count+99)/100|floor)')); do uvx --from flowbio==0.14.0 flowbio api get /samples/search --param sample_types=TYPE_IDENTIFIER --param full_metadata=true --param count=100 --param page=$p --json | jq -r '.samples[] | .metadata.ATTRIBUTE_IDENTIFIER.value // empty'; done | sort -u | wc -l
 ```
 
 Drop the `| wc -l` to list the values instead of counting them.
@@ -211,7 +211,7 @@ before counting anything.
   Before counting any array, inspect one element:
 
   ```bash
-  uvx --from flowbio==0.12.0 flowbio api get /PATH --json | jq '.[0]'
+  uvx --from flowbio==0.14.0 flowbio api get /PATH --json | jq '.[0]'
   ```
 
   If it holds a nested array — `subcategories`, `pipelines`, `versions`,
@@ -220,7 +220,7 @@ before counting anything.
   flattening every level:
 
   ```bash
-  uvx --from flowbio==0.12.0 flowbio api get /PATH --json | jq '[.[].OUTER[].INNER[]] | length'
+  uvx --from flowbio==0.14.0 flowbio api get /PATH --json | jq '[.[].OUTER[].INNER[]] | length'
   ```
 
   Sanity-check by also counting unique ids (`[.[].OUTER[].INNER[].id] | unique |
@@ -275,7 +275,7 @@ For **data files**, the API documents itself. Before calling any data endpoint,
 read the data topic:
 
 ```bash
-uvx --from flowbio==0.12.0 flowbio api get /v2/reference/data --json
+uvx --from flowbio==0.14.0 flowbio api get /v2/reference/data --json
 ```
 
 It is markdown, not JSON: read it whole, and never pipe it through `jq`. It
@@ -322,7 +322,7 @@ property start with `/samples/metadata` to find which attribute holds it.
 Run these verbatim; both lists are short, so read every row before choosing:
 
 ```bash
-(  uvx --from flowbio==0.12.0 flowbio api get /samples/types --json | jq -r '.[] | "TYPE | " + .identifier + " | " + .name';  uvx --from flowbio==0.12.0 flowbio api get /samples/metadata --json | jq -r '.[] | "ATTR | " + .identifier + " | " + .name + " | " + (.description // "")'  )
+(  uvx --from flowbio==0.14.0 flowbio api get /samples/types --json | jq -r '.[] | "TYPE | " + .identifier + " | " + .name';  uvx --from flowbio==0.14.0 flowbio api get /samples/metadata --json | jq -r '.[] | "ATTR | " + .identifier + " | " + .name + " | " + (.description // "")'  )
 ```
 
 `TYPE` rows are sample types (`.identifier` is the `sample_types` value); `ATTR`
