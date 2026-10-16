@@ -20,6 +20,11 @@ release.
   `/v2/…` read reported the whole problem object as its message and exited `1`
   for invalid input; `0.14.0` reports the problem's `detail`, passes the body
   through under `problem`, and exits `5` for a `validation_error`.
+- **The errors table matches what Flow returns now.** A non-integer `page` or
+  `count`, or an ISO date where a Unix timestamp is required, is a `400` naming
+  the field, not a `500`; a `5xx` is a server fault, reported with its
+  `instance`. A `404` is told to the user as "does not exist or you may not see
+  it", since Flow reports the two alike.
 - New eval `023-v2-problem-not-found`.
 
 ## [0.12.1] — 2026-10-13
