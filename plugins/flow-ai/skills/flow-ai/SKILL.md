@@ -427,7 +427,7 @@ under `problem`, and its entries are `{parameter | pointer, code, detail}`:
 | 400 | Wrong filter/type/value, a non-integer `page`/`count`, `count > 100`, or an ISO date where a Unix timestamp is required | Fix each field `errors` names, using a valid value from the endpoint file. |
 | 422 | A `/v2/…` parameter or body is invalid (`validation_error`) | Fix each entry `errors` names, using the parameter as the reference states it. |
 | 401 / 403 | Auth missing, expired, or insufficient | Report it, then give the authentication guidance below. Do not silently retry anonymously. |
-| 404 | Wrong path, or an id not visible to this caller | Re-check the path; fall back to the list endpoint to rediscover the id. |
+| 404 | Wrong path, or an id that does not exist or is not visible to this caller; Flow reports the two alike | Re-check the path; fall back to the list endpoint to rediscover the id. Tell the user it does not exist or they may not see it, not which. |
 | 410 | The file's content was deleted under the retention policy; the message says which file and when | Report it as deleted, with the date. Do not retry, and do not try another endpoint to reach the same file. |
 | 5xx | Server-side fault | Report once, quoting `problem.instance` if present. Do not retry. |
 | no `status_code`, transport error | Network/DNS/timeout | Report the base URL and ask whether it is reachable. |
