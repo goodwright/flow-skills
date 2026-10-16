@@ -91,6 +91,8 @@ has no token.
 - `019-deleted-and-scheduled.json` — tells already-deleted files apart from those scheduled for deletion, with the scheduled date.
 - `020-files-i-can-download.json` — lists owned files still downloadable: leaves out the deleted file, keeps the scheduled one and flags it as going away.
 - `021-public-not-mine.json` — counts files visible to the caller but owned by others, without leaking another user's private file.
+- `022-download-deleted-file.json` — a download of a file whose content was deleted: reports it as deleted, leaves no error text behind as the file, and does not retry.
+- `023-v2-problem-not-found.json` — a `/v2/…` read of a missing file: reads the Problem Details `code` and `detail` from the error, says the file does not exist or is not visible, and fabricates nothing.
 
 Evals 001-004 exercise the `/me`-precheck pattern introduced as a
 defensive mitigation for the API's silent auth-degrade behaviour.

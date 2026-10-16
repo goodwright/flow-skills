@@ -124,8 +124,8 @@ that match how the CLI resolves on your machine (the skill prefers `uvx`, then
   "permissions": {
     "allow": [
       "Bash(flowbio api get:*)",
-      "Bash(uvx --from flowbio==0.12.0 flowbio api get:*)",
-      "Bash(pipx run --spec flowbio==0.12.0 flowbio api get:*)",
+      "Bash(uvx --from flowbio==0.14.0 flowbio api get:*)",
+      "Bash(pipx run --spec flowbio==0.14.0 flowbio api get:*)",
       "Bash(jq:*)"
     ]
   }
@@ -134,7 +134,7 @@ that match how the CLI resolves on your machine (the skill prefers `uvx`, then
 
 The entries must match the command the skill emits byte-for-byte — Claude Code
 prefix-matches the raw string, so the quoting has to agree (the skill emits the
-pinned spec unquoted, e.g. `uvx --from flowbio==0.12.0 …`).
+pinned spec unquoted, e.g. `uvx --from flowbio==0.14.0 …`).
 
 Pipeline runs (`POST`) and file downloads still use `curl` and keep prompting;
 that is deliberate — a run changes remote state and is confirmation-gated, and
@@ -158,7 +158,7 @@ On each release, bump:
 A pre-release sanity check:
 
 ```sh
-grep -rn "flow-ai/[0-9]" plugins/flow-ai/skills/flow-ai/ | grep -v evals/ | grep -v 0.12.1
+grep -rn "flow-ai/[0-9]" plugins/flow-ai/skills/flow-ai/ | grep -v evals/ | grep -v 0.13.0
 ```
 
 …should return nothing once everything is in lockstep. (The `evals/` are

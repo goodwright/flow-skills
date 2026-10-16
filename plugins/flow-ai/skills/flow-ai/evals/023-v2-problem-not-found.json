@@ -1,0 +1,12 @@
+{
+  "skills": ["flow-ai"],
+  "query": "Tell me about data file 999999999 on Flow.",
+  "checks": {
+    "no_write_calls": true
+  },
+  "expected_behavior": [
+    "Reads the file with `GET /v2/data/999999999` and, when it fails, reports the server's `detail` (e.g. `data 999999999 does not exist`) rather than dumping the raw error JSON.",
+    "Reads the failure from the problem's `code` (`not_found`) and tells the user the file does not exist or they may not read it, without claiming to know which.",
+    "Does not fabricate details of the file, and does not retry the same id through another endpoint."
+  ]
+}
