@@ -398,9 +398,11 @@ server's `status_code` and `message` as the primary signal, and report the
 `message` verbatim. The process exit code is a coarse secondary signal (`0` ok,
 `2` usage, `3` auth, `4` not found, `5` bad request or invalid input).
 
-A `/v2/…` path also returns the server's own error, an RFC 9457 Problem Details
-object, under `problem`, and lists each part of the request at fault under
-`errors`:
+When the server names the parts of the request at fault, they are listed under
+`errors`, and each entry's own message says more than the top-level one. On the
+endpoints in this skill's files an entry is `{field, code, message}`. A `/v2/…`
+path also returns the server's own error, an RFC 9457 Problem Details object,
+under `problem`, and its entries are `{parameter | pointer, code, detail}`:
 
 ```json
 {"message": "Invalid request", "status_code": 422,
@@ -422,13 +424,12 @@ object, under `problem`, and lists each part of the request at fault under
 
 | `status_code` | Meaning | What to do |
 |---|---|---|
-| 400 | Wrong filter/type/value, or `count > 100` | Report the message verbatim; lower `count` or use a valid param from the endpoint file. |
+| 400 | Wrong filter/type/value, a non-integer `page`/`count`, `count > 100`, or an ISO date where a Unix timestamp is required | Fix each field `errors` names, using a valid value from the endpoint file. |
 | 422 | A `/v2/…` parameter or body is invalid (`validation_error`) | Fix each entry `errors` names, using the parameter as the reference states it. |
 | 401 / 403 | Auth missing, expired, or insufficient | Report it, then give the authentication guidance below. Do not silently retry anonymously. |
 | 404 | Wrong path, or an id not visible to this caller | Re-check the path; fall back to the list endpoint to rediscover the id. |
 | 410 | The file's content was deleted under the retention policy; the message says which file and when | Report it as deleted, with the date. Do not retry, and do not try another endpoint to reach the same file. |
-| 500 | Usually a non-integer `page`/`count`, or an ISO date where a Unix timestamp is required | Fix the type. If already correct, report a server-side error and stop. |
-| other 5xx | Server-side | Report once. Do not retry. |
+| 5xx | Server-side fault | Report once, quoting `problem.instance` if present. Do not retry. |
 | no `status_code`, transport error | Network/DNS/timeout | Report the base URL and ask whether it is reachable. |
 
 Two cases exit `0` but still need interpreting:
