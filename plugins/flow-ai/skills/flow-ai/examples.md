@@ -141,7 +141,7 @@ Before downloading anything large, confirm with the user — the file size
 is in the previous response under `.data[].size` (bytes).
 
 ```bash
-curl -s --fail-with-body -A "flow-ai/0.12.1" -o sample.fastq.gz \
+curl -s --fail-with-body -A "flow-ai/0.13.0" -o sample.fastq.gz \
   "${FLOW_API_URL:-https://app.flow.bio/api}/downloads/67890/sample.fastq.gz"
 ```
 

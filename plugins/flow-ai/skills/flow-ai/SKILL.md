@@ -396,11 +396,34 @@ Every read passes `--json`, so a failed `api get` writes
 `{"message": …, "status_code": …}` to **stderr** and exits non-zero. Trust the
 server's `status_code` and `message` as the primary signal, and report the
 `message` verbatim. The process exit code is a coarse secondary signal (`0` ok,
-`2` usage, `3` auth, `4` not found, `5` bad request).
+`2` usage, `3` auth, `4` not found, `5` bad request or invalid input).
+
+A `/v2/…` path also returns the server's own error, an RFC 9457 Problem Details
+object, under `problem`, and lists each part of the request at fault under
+`errors`:
+
+```json
+{"message": "Invalid request", "status_code": 422,
+ "errors": [{"parameter": "page", "code": "int_parsing", "detail": "Input should be a valid integer, …"}],
+ "problem": {"type": "https://app.flow.bio/api/v2/reference#validation_error", "title": "Invalid request",
+             "status": 422, "detail": "Invalid request", "code": "validation_error", "errors": […]}}
+```
+
+- **Branch on `problem.code`**, never on the message. The Errors section of
+  `/v2/reference` says what each code means and what to do; `type` links to
+  that code's section, so `…/v2/reference#not_found` is the `not_found` section
+  of `api get /v2/reference`. Treat a code not documented there as the generic
+  error for its `status_code`.
+- **Each `errors` entry names what to fix**: `parameter` is a query or path
+  parameter, `pointer` a JSON Pointer into the request body (`/imports/0/name`).
+  Report its `detail` with the name.
+- **On a 5xx, quote `problem.instance`** (`urn:uuid:…`) when it is present: it is
+  the id that leads Flow's developers to the fault.
 
 | `status_code` | Meaning | What to do |
 |---|---|---|
 | 400 | Wrong filter/type/value, or `count > 100` | Report the message verbatim; lower `count` or use a valid param from the endpoint file. |
+| 422 | A `/v2/…` parameter or body is invalid (`validation_error`) | Fix each entry `errors` names, using the parameter as the reference states it. |
 | 401 / 403 | Auth missing, expired, or insufficient | Report it, then give the authentication guidance below. Do not silently retry anonymously. |
 | 404 | Wrong path, or an id not visible to this caller | Re-check the path; fall back to the list endpoint to rediscover the id. |
 | 410 | The file's content was deleted under the retention policy; the message says which file and when | Report it as deleted, with the date. Do not retry, and do not try another endpoint to reach the same file. |
