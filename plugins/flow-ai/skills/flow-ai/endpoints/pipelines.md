@@ -219,7 +219,7 @@ The read/discovery steps (steps 1–4) need no confirmation.
 ### The call
 
 ```bash
-curl -s -A "flow-ai/0.13.0" \
+curl -s -A "flow-ai/0.14.0" \
   -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
   -H "Content-Type: application/json" \
   -X POST \

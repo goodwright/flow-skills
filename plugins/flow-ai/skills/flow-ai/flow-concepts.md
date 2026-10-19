@@ -62,8 +62,8 @@ private. An empty result from an unauthenticated request means
 ## Discovery endpoints
 
 Flow exposes runtime discovery for the entities and attributes that
-vary per instance: `GET /samples/metadata` (legal metadata attribute
-identifiers), `GET /organisms` (organism enum), `GET /samples/types`
+vary per instance: `GET /v2/metadata-attributes` (legal metadata attribute
+identifiers), `GET /organisms` (organism enum), `GET /v2/sample-types`
 (sample-type enum), `GET /me` (authenticated identity),
 `GET /users/search` (user directory).
 
@@ -71,8 +71,8 @@ When the user's question involves these concepts, the agent's first
 move is the discovery endpoint, not the search endpoint:
 
 - "human samples" → `/organisms` (resolve "human" to pk) → `/samples/search?organism=<pk>`
-- "rna-seq samples" → `/samples/types` (resolve to identifier) → `/samples/search?sample_types=<identifier>`
-- "samples where tissue is X" → `/samples/metadata` (does `tissue` exist on this instance? what is its actual identifier?) → `/samples/search?<identifier>=<value>`
+- "rna-seq samples" → `/v2/sample-types` (resolve to identifier) → `/samples/search?sample_types=<identifier>`
+- "samples where tissue is X" → `/v2/metadata-attributes` (does `tissue` exist on this instance? what is its actual identifier?) → `/samples/search?<identifier>=<value>`
 - "samples I own" → `/samples/search?owned=true` (or `/me` first if you need the user's pk for cross-resource linking)
 
 Why: metadata attributes are user-defined per Flow instance. There is

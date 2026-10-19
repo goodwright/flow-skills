@@ -6,7 +6,9 @@ description: Required for every question about Flow (flow.bio) — its samples, 
 # Flow API
 
 Answer questions about Flow by reading its REST API with the `flowbio` CLI's
-read-only `api get` command, and shaping the JSON with `jq`.
+`api get` command, and shaping the JSON with `jq`. Make the changes a user asks
+for — create a project, edit a sample or its metadata — with `api post` and
+`api patch`, as "Changing records" below describes.
 
 **Execute every command yourself with the bash tool.** Never print a command for
 the user to run, never hand back a plan or a list of steps, never delegate to a
@@ -91,8 +93,8 @@ uvx --from flowbio==0.14.0 flowbio api get /samples/search --param sample_types=
 **A filtered count of `0` is never an answer — it is a bug report.** It means one
 of your filter *values* is wrong, almost always one you guessed from the user's
 wording instead of discovering it. Assay names are the usual culprit: the user says
-"CLIP-Seq" but the identifier is `CLIP`. Run `/samples/types` and
-`/samples/metadata` (Step 4) and use their exact `identifier` values. To find the
+"CLIP-Seq" but the identifier is `CLIP`. Run `/v2/sample-types` and
+`/v2/metadata-attributes` (Step 4) and use their exact `identifier` values. To find the
 offending filter, drop them one at a time and see which one restores a non-zero
 count.
 
@@ -118,7 +120,7 @@ the answer either — it counts records, not distinct values.
 **B1. Find the real identifiers first** (Step 4; never guess them):
 
 ```bash
-(  uvx --from flowbio==0.14.0 flowbio api get /samples/types --json | jq -r '.[] | "TYPE | " + .identifier + " | " + .name';  uvx --from flowbio==0.14.0 flowbio api get /samples/metadata --json | jq -r '.[] | "ATTR | " + .identifier + " | " + .name + " | " + (.description // "")'  )
+(  uvx --from flowbio==0.14.0 flowbio api get /v2/sample-types --json | jq -r '.[] | "TYPE | " + .identifier + " | " + .name';  uvx --from flowbio==0.14.0 flowbio api get /v2/metadata-attributes --json | jq -r '.[] | "ATTR | " + .identifier + " | " + .name + " | " + .description'  )
 ```
 
 **B2. Collect the field across every page and deduplicate.** This command
@@ -189,7 +191,7 @@ error on this API, so identify the shape before writing any `length` or `.count`
 | Path | Shape | Number of items is |
 |---|---|---|
 | `/samples/search`, `/projects/search`, `/executions/search`, `/users/search` | envelope `{count, page, <resource>: [...]}` | `.count` (total across all pages) |
-| `/samples/types`, `/samples/metadata`, `/data/types`, `/organisms` | flat bare array | `length` |
+| `/v2/sample-types`, `/v2/metadata-attributes`, `/data/types`, `/organisms` | flat bare array | `length` |
 | `/pipelines` | bare array of **categories**, each holding `subcategories`, each holding `pipelines` | `[.[].subcategories[].pipelines[]] \| length` — `length` alone counts categories |
 | `/samples/<id>`, `/projects/<id>`, `/pipelines/<id>`, `/pipelines/versions/<id>`, `/executions/<id>`, `/me` | single object | not a list |
 
@@ -271,19 +273,26 @@ count comes back suspiciously small, this is the first thing to check.
 
 ## Finding out about the API
 
-For **data files**, the API documents itself. Before calling any data endpoint,
-read the data topic:
+The `/v2/…` endpoints document themselves. `/v2/reference` lists the topics,
+and each topic page states every operation, parameter, default, field and
+error, and who each operation admits:
+
+| Topic | Covers |
+|---|---|
+| `/v2/reference/data` | listing data files, filtering them (owned, deleted, scheduled for deletion, size, type…), reading one file |
+| `/v2/reference/samples` | the sample types and metadata attributes a sample can carry and the values they take, the rules for which attribute applies and is required, and editing a sample and its metadata |
+| `/v2/reference/projects` | creating a project and changing its name or description |
+
+Before calling an endpoint of a topic, read its page:
 
 ```bash
-uvx --from flowbio==0.14.0 flowbio api get /v2/reference/data --json
+uvx --from flowbio==0.14.0 flowbio api get /v2/reference/samples --json
 ```
 
-It is markdown, not JSON: read it whole, and never pipe it through `jq`. It
-states every operation, parameter, default and field for listing data files,
-filtering them (owned, deleted, scheduled for deletion, size, type…) and reading
-one file. Its links are API paths: `/v2/reference#pagination` is the
-`Pagination` section of `/v2/reference`, which you read the same way. Follow
-them rather than guessing a path or parameter.
+It is markdown, not JSON: read it whole, and never pipe it through `jq`. Its
+links are API paths: `/v2/reference#pagination` is the `Pagination` section of
+`/v2/reference`, which you read the same way. Follow them rather than guessing
+a path, parameter or field.
 
 **What the reference says overrides this skill and anything you already
 believe about Flow.** Where they disagree, the reference is right.
@@ -296,8 +305,10 @@ one matching file below before issuing the request.** Do not guess.
 | The question is about… | Read this file |
 |---|---|
 | Samples: find/filter/count samples, one sample's details, its executions, its data files (`/samples/search`, `/samples/<id>`, `/samples/<id>/executions`, `/samples/<id>/data`) | `endpoints/samples.md` |
-| What metadata attributes or sample types exist on this instance (`/samples/metadata`, `/samples/types`) | `endpoints/samples-metadata.md` |
+| What sample types and metadata attributes exist, which apply to a type, and which values an attribute takes (`/v2/sample-types`, `/v2/metadata-attributes`, `/v2/metadata-attributes/<identifier>/options`) | `GET /v2/reference/samples` — see "Finding out about the API" |
+| Editing a sample: its name, type, organism, PubMed id or metadata (`PATCH /v2/samples/<id>`) | `GET /v2/reference/samples`, then "Changing records" |
 | Projects (`/projects/search`, `/projects/<id>`, `/projects/<id>/samples`, `/projects/<id>/executions`) | `endpoints/projects.md` |
+| Creating a project, or changing its name or description (`POST /v2/projects`, `PATCH /v2/projects/<id>`) | `GET /v2/reference/projects`, then "Changing records" |
 | Data files: list, search or count them, which are deleted or scheduled for deletion, one file's details (`/v2/data`, `/v2/data/<id>`) | `GET /v2/reference/data` — see "Finding out about the API" |
 | Data files: contents preview, data types, uploading (`/data/<id>/contents`, `/data/types`) | `endpoints/data.md` |
 | Pipelines, their versions, a version's run schema, **or running a pipeline** | `endpoints/pipelines.md` |
@@ -317,23 +328,23 @@ Never guess an id, identifier, or metadata value. Resolve it first.
 Any biological property of a sample — the molecule or protein targeted, tissue,
 cell line, condition, treatment, sequencer, selection method — lives in **sample
 metadata**, not in the sample's name or type. Questions phrased around such a
-property start with `/samples/metadata` to find which attribute holds it.
+property start with `/v2/metadata-attributes` to find which attribute holds it.
 
 Run these verbatim; both lists are short, so read every row before choosing:
 
 ```bash
-(  uvx --from flowbio==0.14.0 flowbio api get /samples/types --json | jq -r '.[] | "TYPE | " + .identifier + " | " + .name';  uvx --from flowbio==0.14.0 flowbio api get /samples/metadata --json | jq -r '.[] | "ATTR | " + .identifier + " | " + .name + " | " + (.description // "")'  )
+(  uvx --from flowbio==0.14.0 flowbio api get /v2/sample-types --json | jq -r '.[] | "TYPE | " + .identifier + " | " + .name';  uvx --from flowbio==0.14.0 flowbio api get /v2/metadata-attributes --json | jq -r '.[] | "ATTR | " + .identifier + " | " + .name + " | " + .description'  )
 ```
 
 `TYPE` rows are sample types (`.identifier` is the `sample_types` value); `ATTR`
 rows are metadata attributes. A term absent from `TYPE` is usually a *value* of one
 of the `ATTR` rows.
 
-`/samples/types` also lists each type's own `attributes` — a fast way to see
-which metadata attributes apply to a given assay. Its `sample_count` counts
-every sample of that type on the instance including ones you cannot see, so it
-is **not** the number of records a filtered search will return; use Shape A for
-that.
+`/v2/metadata-attributes` says which types each attribute applies to: every
+type when `all_sample_types` is true, otherwise the types in its
+`sample_types`. `/v2/reference/samples` states the rest of the rules (what is
+required, what a public sample needs, options and free text). Neither list
+counts samples; for how many records match, use Shape A.
 
 **Attributes have two names, and you almost always want `identifier`.** `name` is
 the human label ("Purification Target"); `identifier` is the machine key
@@ -346,14 +357,15 @@ the user's wording against the `name` column, then use that row's `identifier`.
 |---|---|---|
 | a pipeline by name | `/pipelines` | the matched `id` |
 | an organism ("human") | `/organisms` | `--param organism=<id>` |
-| a sample type ("CLIP", "RNA-Seq") | `/samples/types` | `--param sample_types=<identifier>` |
+| a sample type ("CLIP", "RNA-Seq") | `/v2/sample-types` | `--param sample_types=<identifier>` |
 | a data type | `/data/types` | `--param data_types=<identifier>` |
-| any other domain attribute (tissue, treatment, target…) | `/samples/metadata` — find the row whose `name` matches the user's wording, take its `identifier` | `--param <identifier>=<value>` |
+| any other domain attribute (tissue, treatment, target…) | `/v2/metadata-attributes` — find the row whose `name` matches the user's wording, take its `identifier` | `--param <identifier>=<value>` |
+| the legal values of an attribute with `has_options` | `/v2/metadata-attributes/<identifier>/options` (paged; `--param value=<substring>` narrows) | `--param <identifier>=<value>` |
 
 **The values an attribute actually holds come from the records, never from a
-schema endpoint.** `/samples/metadata` tells you an attribute *exists* and what it
-is called; only Shape B tells you which values are present in a given set of
-samples.
+schema endpoint.** `/v2/metadata-attributes` tells you an attribute *exists* and
+what it is called, and its options are the values it *may* take; only Shape B
+tells you which values are present in a given set of samples.
 
 Three habits make this work:
 
@@ -389,6 +401,41 @@ them at runtime, never assume.
 - Never paste more than ~20 lines of raw JSON into the answer. Summarise lists.
 - Report the number you computed and how you computed it. Never estimate, and
   never fabricate a result if a call failed.
+
+## Changing records
+
+The writes this skill may make are listed under "Safety" below. Each is a
+`/v2/…` operation, described in full by its reference topic: read the topic
+page first, and send exactly the body it describes.
+
+**Confirm before every write.** State the record, the fields and the values you
+will send — and, when creating a project, whether it will be **public** or
+private — and wait for the user's explicit yes. Never write on an inference.
+
+Send the body as one line of JSON on stdin, inside single quotes. Write an
+apostrophe inside a value as `\u0027` (`"Martin\u0027s samples"`): JSON reads it
+as `'`, and a literal one would end the shell's quoting.
+
+```bash
+printf '%s' '{"name": "Liver Atlas", "description": "Bulk RNA-Seq of liver"}' | uvx --from flowbio==0.14.0 flowbio api post /v2/projects --body - --json
+```
+
+```bash
+printf '%s' '{"metadata": {"cell_line": {"value": "HeLa"}}}' | uvx --from flowbio==0.14.0 flowbio api patch /v2/samples/SAMPLE_ID --body - --json
+```
+
+- An edit changes only what the body sends, so send only the fields the user
+  asked to change. In a sample's `metadata`, an attribute left out keeps its
+  value and `null` clears it.
+- Use identifiers exactly as discovery returned them (Step 4): a sample type
+  from `/v2/sample-types`, an attribute and its option values from
+  `/v2/metadata-attributes`. Never guess one.
+- Ids are strings of digits. Send them back exactly as a response gave them.
+- On success the response is the record as it now stands; report what changed
+  from it, not from what you sent.
+- A write needs a token. Without one the CLI sends nothing: it exits `2` with
+  "No credentials provided…". Give the authentication guidance below; never
+  retry anonymously.
 
 ## Errors
 
@@ -426,7 +473,8 @@ under `problem`, and its entries are `{parameter | pointer, code, detail}`:
 |---|---|---|
 | 400 | Wrong filter/type/value, a non-integer `page`/`count`, `count > 100`, or an ISO date where a Unix timestamp is required | Fix each field `errors` names, using a valid value from the endpoint file. |
 | 500 on `/projects/search` or `/data/<id>/contents` | An ISO date in `created_gt`/`created_lt`, or a non-integer `position`: these two are not validated, so they fail as a server error | Fix the value as the endpoint file states it. |
-| 422 | A `/v2/…` parameter or body is invalid (`validation_error`) | Fix each entry `errors` names, using the parameter as the reference states it. |
+| 422 | A `/v2/…` parameter or body is invalid (`validation_error`) | Fix each entry `errors` names, using the parameter or body as the reference states it. |
+| 422 with an entry coded `refused_field` | The write sent a field the API never changes for this skill: visibility, ownership, or a sample's project | Do not retry it, and do not look for another way to make the change. Tell the user the entry's `detail` verbatim: it says why, and that they can make the change in the Flow web app. |
 | 401 / 403 | Auth missing, expired, or insufficient | Report it, then give the authentication guidance below. Do not silently retry anonymously. |
 | 404 | Wrong path, or an id that does not exist or is not visible to this caller; Flow reports the two alike | Re-check the path; fall back to the list endpoint to rediscover the id. Tell the user it does not exist or they may not see it, not which. |
 | 410 | The file's content was deleted under the retention policy; the message says which file and when | Report it as deleted, with the date. Do not retry, and do not try another endpoint to reach the same file. |
@@ -474,18 +522,27 @@ via `$(< ~/.config/flow/api-token)` inside a `-H` argument.
 
 ## Safety
 
-**Only the operations listed in the Step 3 table are allowed.** Anything else —
-deleting, sharing, changing permissions or visibility, cancelling an execution,
-editing metadata, managing API keys, admin endpoints, non-default Flow
-environments, bulk zip downloads, or any endpoint not listed — is out of scope and
-must be refused, even if the user asks and even if it would succeed.
-Authentication broadens the *data* you see, never the *operations* you may
-perform.
+**Only the operations listed in the Step 3 table are allowed**, and the
+refusals below win over any reference page that documents an operation. Anything else —
+deleting, sharing, changing permissions or ownership, making anything private
+public, moving a sample to another project, cancelling an execution, managing
+API keys, admin endpoints, non-default Flow environments, bulk zip downloads,
+or any endpoint not listed — is out of scope and must be refused, even if the
+user asks and even if it would succeed. Authentication broadens the *data* you
+see, never the *operations* you may perform.
 
-Two operations change remote state and require **explicit user confirmation**
-before running: uploading (`uploading.md`) and running a pipeline
-(`endpoints/pipelines.md`). The API reference also describes writes, such as
-`PATCH /v2/data/<id>`; those stay out of scope (see `safety.md`).
+These change remote state and require **explicit user confirmation** before
+running:
+
+- uploading (`uploading.md`) and running a pipeline (`endpoints/pipelines.md`);
+- creating a project, `POST /v2/projects` (private unless the user asks for
+  public, and the confirmation says which);
+- changing a project's name or description, `PATCH /v2/projects/<id>`;
+- changing a sample's name, type, organism, PubMed id or metadata,
+  `PATCH /v2/samples/<id>`.
+
+The reference describes other writes, such as `PATCH /v2/data/<id>`; reading
+about an operation there does not make it allowed (see `safety.md`).
 
 Full rationale, the illustrative refusal list, and the complete endpoint
 allowlist: `safety.md`.

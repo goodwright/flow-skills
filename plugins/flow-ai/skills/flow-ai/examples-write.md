@@ -1,7 +1,9 @@
 # Worked examples — uploads & pipeline runs
 
 Recipes that change remote state. Read `uploading.md` (runner preflight, CLI
-contract, confirmation gate) and `endpoints/pipelines.md` (run flow) first.
+contract, confirmation gate) and `endpoints/pipelines.md` (run flow) first; for
+the record edits (Examples 24-25), "Changing records" in `SKILL.md` and the
+topic's `/v2/reference` page.
 Read-only recipes live in `examples.md`.
 
 ## Example 18: "Upload counts.tsv to Flow as a data file"
@@ -56,17 +58,17 @@ is liver".
 
 ```bash
 # Step 1: resolve the sample type → identifier.
-flowbio api get /samples/types --json | \
+flowbio api get /v2/sample-types --json | \
   jq '[.[] | {identifier, name}]'
 # Match "RNA-Seq" to a row; send its identifier. Ambiguous? ask the user.
 
 # Step 2: discover which metadata attributes are REQUIRED for that type.
-# Required = global `required` true OR a sample_type_links entry for the
+# Required = required_for_every_sample true OR a sample_types entry for the
 # chosen identifier with required:true. Confirm the user supplied them all
 # BEFORE uploading; if any is missing, name it and stop.
-flowbio api get /samples/metadata --json | \
-  jq --arg t "RNA-Seq" '[.[] | select(.required or any(.sample_type_links[];
-       .sample_type_identifier == $t and .required)) | {identifier, name}]'
+flowbio api get /v2/metadata-attributes --json | \
+  jq --arg t "RNA-Seq" '[.[] | select(.required_for_every_sample or any(.sample_types[];
+       .identifier == $t and .required)) | {identifier, name}]'
 
 # Step 3: resolve organism name → id.
 HUMAN_ID=$(flowbio api get /organisms --json | \
@@ -168,7 +170,7 @@ handling stay uniform. Read the `GET /annotation/<sample_type>` section of
 
 ```bash
 # Step 1: resolve the sample type → identifier (skip for the generic template).
-flowbio api get /samples/types --json | \
+flowbio api get /v2/sample-types --json | \
   jq '[.[] | {identifier, name}]'
 # Match "RNA-Seq" to a row; send its identifier. Ambiguous? ask the user.
 
@@ -186,7 +188,7 @@ On exit `0`, parse stdout `{"output": "./template.xlsx", "sample_type":
 should fill in one row per sample (names, file paths, metadata) before running
 the multiplexed upload (Example 20). Omit `--sample-type` for the `generic`
 template (base columns only). On a non-zero exit, read the stderr JSON and the
-exit code (`4` = unknown sample type — re-resolve via `/samples/types`; `3` =
+exit code (`4` = unknown sample type — re-resolve via `/v2/sample-types`; `3` =
 auth; `2` = usage) — never claim success. If no runner is found in step 2, stop
 and give the same install message as Example 18.
 
@@ -232,7 +234,7 @@ samplesheet, you usually only need the sample id per row — the server fills
 explicit "yes". Then:
 
 ```bash
-curl -s -A "flow-ai/0.13.0" \
+curl -s -A "flow-ai/0.14.0" \
   -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
   -H "Content-Type: application/json" \
   -X POST \
@@ -273,3 +275,56 @@ On `OK`, report success (optionally tail the log with `--param log=<offset>`). O
 `ERROR`, fetch and surface `stderr` / `log` / the failing `process_executions`
 entry — never report success on a non-`OK` terminal status. See the
 `GET /executions/<id>` section of `endpoints/executions.md`.
+
+## Example 24: "Set the cell line of sample liver_rep1 to HepG2"
+
+A record edit. Read `/v2/reference/samples` first; it says which attributes
+apply to the sample's type and how the edit reports a refused value.
+
+```bash
+# Step 1: resolve the sample by name to its id.
+flowbio api get /samples/search --param name=liver_rep1 --param count=10 --json | \
+  jq -r '.samples[] | .id + " | " + .name + " | " + .sample_type.identifier'
+# More than one match? Ask the user which.
+
+# Step 2: find the attribute the user means, by its name.
+flowbio api get /v2/metadata-attributes --json | \
+  jq -r '.[] | .identifier + " | " + .name + " | " + (.has_options | tostring)'
+
+# Step 3: it has options, so check the value is one of them.
+flowbio api get /v2/metadata-attributes/cell_line/options --param value=HepG2 --json | \
+  jq -r '.items[].value'
+# The filter matches substrings, so check one value is exactly HepG2 (not
+# HepG2-C3A). None is, and the attribute has no allow_user_terms? Tell the user.
+
+# Step 4: CONFIRM with the user: sample liver_rep1, cell_line → HepG2. Then
+# send only that attribute; everything else on the sample keeps its value.
+# One line of JSON in single quotes; write an apostrophe in a value as \u0027.
+printf '%s' '{"metadata": {"cell_line": {"value": "HepG2"}}}' | \
+  uvx --from flowbio==0.14.0 flowbio api patch /v2/samples/SAMPLE_ID --body - --json | \
+  jq '{id, name, cell_line: .metadata.cell_line}'
+```
+
+Report the value from the response. A 422 lists each problem with its
+`pointer`: `/metadata/cell_line` is a value the attribute refuses (for example,
+one not among its options), `/metadata/<identifier>` with code
+`unknown_attribute` an identifier this instance does not have. Report the
+`detail`; never claim success.
+
+## Example 25: "Create a project called Liver Atlas"
+
+A record creation. Read `/v2/reference/projects` first.
+
+```bash
+# CONFIRM with the user: project "Liver Atlas", description "Bulk RNA-Seq of
+# liver tissue", private (say public only if the user asked for it).
+printf '%s' '{"name": "Liver Atlas", "description": "Bulk RNA-Seq of liver tissue"}' | \
+  uvx --from flowbio==0.14.0 flowbio api post /v2/projects --body - --json | \
+  jq '{id, name}'
+```
+
+Report the new project's id. A 422 pointing at `/name` means the user already
+has a project with that name: report it and ask, rather than picking another
+name. To make the project public, add `"private": false` to the body, and only
+when the user asked for it; an existing project's visibility is changed only in
+the Flow web app.

@@ -2,8 +2,8 @@
   "skills": ["flow-ai"],
   "query": "Upload a paired-end RNA-Seq sample called liver_rep1 from /tmp/liver_rep1_R1.fastq.gz and /tmp/liver_rep1_R2.fastq.gz. It's a human sample in my 'Liver Atlas' project, source is liver.",
   "expected_behavior": [
-    "Resolves the sample type before uploading: calls `GET /samples/types`, matches the user's term ('RNA-Seq') to a type, and sends its `identifier` as `--sample-type`. Surfaces ambiguous matches instead of guessing.",
-    "Discovers which metadata attributes are required for that sample type via `GET /samples/metadata` (an attribute is required if its global `required` is true OR a `sample_type_links` entry for the chosen sample-type identifier has `required: true`), and validates the user's metadata against them before uploading.",
+    "Resolves the sample type before uploading: calls `GET /v2/sample-types`, matches the user's term ('RNA-Seq') to a type, and sends its `identifier` as `--sample-type`. Surfaces ambiguous matches instead of guessing.",
+    "Discovers which metadata attributes are required for that sample type via `GET /v2/metadata-attributes` (an attribute is required if its `required_for_every_sample` is true OR a `sample_types` entry for the chosen sample-type identifier has `required: true`), and validates the user's metadata against them before uploading.",
     "Resolves the organism via `GET /organisms` (matching 'human' to its `id`) and the project via `GET /projects/search` (matching 'Liver Atlas' to its `id`); sends those ids as `--organism` and `--project`. Surfaces ambiguous matches.",
     "Treats the upload as a mutation: shows the user what will be uploaded (the reads files and that it is paired-end, the sample name, the resolved sample type, project, organism, and metadata key/values) and proceeds only after explicit confirmation. Read/discovery steps need no confirmation.",
     "Validates locally before uploading: confirms both reads files exist and that the reads filenames and the sample name contain no spaces. Tells the user to rename rather than attempting the upload if a name contains spaces.",
