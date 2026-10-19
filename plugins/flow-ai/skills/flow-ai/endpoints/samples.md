@@ -9,8 +9,9 @@ Covers:
 
 Related files:
 
-- Metadata attributes, controlled-vocabulary options, sample types ->
-  `endpoints/samples-metadata.md`
+- Metadata attributes, controlled-vocabulary options, sample types, and
+  editing a sample -> `GET /v2/reference/samples` (see "Finding out about the
+  API" in `SKILL.md`)
 - Uploading samples / multiplexed reads / annotation templates ->
   `endpoints/samples-upload.md`
 
@@ -84,7 +85,7 @@ authentication, also returns the caller's owned and shared samples.
 | `created_gt`    | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); sample created on or after this value (`__gte`). Passing an ISO-8601 string → HTTP 400 naming the field. |
 | `created_lt`    | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); sample created on or before this value (`__lte`). Passing an ISO-8601 string → HTTP 400 naming the field. |
 | `full_metadata` | str  | (none)     | When set to `1`, `true`, or `yes`, each item's `metadata` includes every attribute the sample has (richer shape, same as the detail endpoint), not just `in_table=True`. Off by default to keep list responses small. |
-| `<metadata_id>` | str  | (none)     | Any metadata attribute identifier returned by `GET /samples/metadata` on this instance (see that section below). Legal identifiers are **per-instance** — admins curate their own — so always discover at runtime; do not assume a specific identifier exists. Matches metadata values via substring (`__icontains`). `true`/`yes`/`1` filters to samples that have any value for the attribute; `false`/`no`/`0` excludes them. |
+| `<metadata_id>` | str  | (none)     | Any metadata attribute identifier returned by `GET /v2/metadata-attributes` on this instance. Legal identifiers are **per-instance** — admins curate their own — so always discover at runtime; do not assume a specific identifier exists. Matches metadata values via substring (`__icontains`). `true`/`yes`/`1` filters to samples that have any value for the attribute; `false`/`no`/`0` excludes them. |
 
 - **No free-text `filter` parameter.** Unlike the now-deprecated list
   endpoint, `/samples/search` does not accept a single
@@ -100,17 +101,17 @@ authentication, also returns the caller's owned and shared samples.
   `?tissue=brain` on an instance with no `tissue` attribute returns
   the **unfiltered** result set with no error and no warning.
 
-  **Detection:** call `GET /samples/metadata` first to confirm an
+  **Detection:** call `GET /v2/metadata-attributes` first to confirm an
   identifier exists on this instance before issuing a filter against
   it. If you must skip the check, compare the result count to the
   same query without your candidate filter — if they match, the
   filter was ignored.
 
-- **Value discovery depends on the attribute kind.** `GET /samples/metadata`
+- **Value discovery depends on the attribute kind.** `GET /v2/metadata-attributes`
   lists the legal *identifiers*; to learn the *values* an attribute takes:
   - **Controlled-vocabulary attributes (`has_options=true`)** — call
-    `GET /samples/metadata/<identifier>/options` (documented below) for the
-    legal value set, then filter `/samples/search?<identifier>=<value>` with an
+    `GET /v2/metadata-attributes/<identifier>/options` (its reference is
+    `/v2/reference/samples`) for the legal value set, then filter `/samples/search?<identifier>=<value>` with an
     exact option value. This is the precise path.
   - **Free-text attributes (`has_options=false`)** — there are no options;
     values may follow instance-specific conventions that substring search alone

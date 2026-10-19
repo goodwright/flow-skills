@@ -2,7 +2,7 @@
   "skills": ["flow-ai"],
   "query": "Download the RNA-Seq annotation sheet template so I can fill it in for a multiplexed upload. Save it to ./template.xlsx.",
   "expected_behavior": [
-    "Resolves the sample type before downloading: calls `GET /samples/types`, matches the user's term ('RNA-Seq') to a type, and sends its `identifier` as `--sample-type`. Surfaces ambiguous matches instead of guessing. Knows the template defaults to `generic` (base columns only) when no sample type is given.",
+    "Resolves the sample type before downloading: calls `GET /v2/sample-types`, matches the user's term ('RNA-Seq') to a type, and sends its `identifier` as `--sample-type`. Surfaces ambiguous matches instead of guessing. Knows the template defaults to `generic` (base columns only) when no sample type is given.",
     "Treats the template download as a read/helper, not a mutation: it does NOT change remote state, so it needs NO confirmation gate (unlike the uploads).",
     "Runs the runner preflight before invoking the CLI: prefers `uv` (uvx), then `pipx run`, then a compatible `flowbio` already on PATH (>= the pinned version). Does NOT improvise Python.",
     "Invokes the pinned flowbio CLI, e.g. `uvx --from \"flowbio==0.14.0\" flowbio samples annotation-template --sample-type <identifier> -o ./template.xlsx --json --no-progress`. Uses `samples annotation-template`, passes `-o`/`--output` for the destination file, and uses `--json`.",

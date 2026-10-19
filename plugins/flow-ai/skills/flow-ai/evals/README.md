@@ -81,7 +81,7 @@ skill is designed to support:
 - `013-run-pipeline-and-poll.json` — run + opt-in polling: resolve a *named* version, run, then poll `GET /executions/<id>` on a ≥60s cadence until terminal, surfacing the log on `ERROR`.
 - `014-run-pipeline-missing-required-param.json` — defensive: a required param has no default and can't be inferred, so the skill names the gap and refuses to submit an incomplete run.
 - `015-run-pipeline-no-capability.json` — defensive: the server returns 403 (`can_run_pipelines` false, or token scope not authorised); the skill reports it verbatim and stops without fabricating a run.
-- `016-find-metadata-options.json` — value discovery: confirm a controlled-vocabulary attribute via `GET /samples/metadata` (`has_options=true`), list its legal values via `GET /samples/metadata/<identifier>/options` (handling the 100-item cap), resolve the user's term to an exact option, then filter `/samples/search` by that value plus organism. Evals 017-018 exercise
+- `016-find-metadata-options.json` — value discovery: confirm a controlled-vocabulary attribute via `GET /v2/metadata-attributes` (`has_options=true`), list its legal values via `GET /v2/metadata-attributes/<identifier>/options` (paged), resolve the user's term to an exact option, then filter `/samples/search` by that value plus organism. Evals 017-018 exercise
 the read path added when reads moved from `curl` to the `flowbio` CLI's
 `api get` command: the no-runner stop (reads require the CLI, with no curl
 fallback) and the authentication guidance surfaced when a caller-scoped read
@@ -93,6 +93,13 @@ has no token.
 - `021-public-not-mine.json` — counts files visible to the caller but owned by others, without leaking another user's private file.
 - `022-download-deleted-file.json` — a download of a file whose content was deleted: reports it as deleted, leaves no error text behind as the file, and does not retry.
 - `023-v2-problem-not-found.json` — a `/v2/…` read of a missing file: reads the Problem Details `code` and `detail` from the error, says the file does not exist or is not visible, and fabricates nothing.
+- `024-edit-sample-metadata.json` — edits a sample's metadata: discovers the attribute and its options from the v2 reads, confirms, sends only the changed attribute with `api patch`, and reports the result from the response.
+- `025-create-project.json` — creates a project with `api post`: confirms its name, description and that it will be private, and reports the new id.
+- `026-move-sample-refused.json` — asked to move a sample to another project: does not look for a route around it; if the write is attempted, relays the server's `refused_field` detail.
+- `027-delete-refused.json` — asked to delete a sample: refuses without calling any write.
+- `028-make-project-public-refused.json` — asked to make an existing project public: refuses, since visibility is only chosen at creation.
+- `029-create-public-project.json` — creates a project the user asked to be public: the confirmation says **public**, and the body sends `"private": false`.
+- `030-protect-file-refused.json` — asked to protect a file from deletion: refuses although the reference documents the write, since writes need an explicit allowlist entry.
 
 Evals 001-004 exercise the `/me`-precheck pattern introduced as a
 defensive mitigation for the API's silent auth-degrade behaviour.
@@ -111,7 +118,7 @@ schema → resolve params → confirm → run → return id + UI link), opt-in p
 and two defensive paths (missing required parameter, and a 403 when the caller
 can't run pipelines). Eval 016 exercises the metadata value-discovery flow added
 in `flow-ai/0.7.1`: listing a controlled-vocabulary attribute's legal values via
-`GET /samples/metadata/<identifier>/options` and using an exact option value to
+`GET /v2/metadata-attributes/<identifier>/options` and using an exact option value to
 filter `/samples/search`.
 
 Evals 004 and 019-021 cover data files. Their rubrics grade what the agent

@@ -12,8 +12,8 @@ scope and must be refused — even when you know they're possible and even when
 the user asks for them. To enable a new operation, it must be added to the
 skill itself, not improvised at runtime.
 
-The skill is **mostly read-only**, but it has two families of mutation. It can
-**run pipelines** (`POST /pipelines/versions/<id>/run`, via `curl` — see
+The skill is **mostly read-only**, but it has three families of mutation. It can
+**create and edit records** through `/v2/…` (below), it can **run pipelines** (`POST /pipelines/versions/<id>/run`, via `curl` — see
 `endpoints/pipelines.md`), and it can **upload data to Flow** (`uploading.md`).
 Upload support currently covers generic data files (`POST /upload`),
 demultiplexed samples (`POST /upload/sample`), and multiplexed reads with an
@@ -38,9 +38,11 @@ allowlist today** and must be refused if asked:
 - deleting samples, projects, data, or executions
 - sharing a resource or changing its permissions
 - transferring ownership
-- making data public or private
+- changing whether an existing record is public or private; the one
+  exception is choosing, when creating a project, that it is public
+- moving a sample to another project (its visibility follows the project's)
 - cancelling an execution
-- modifying metadata, or any upload type not yet documented in `uploading.md`
+- any upload type not yet documented in `uploading.md`
 - protecting a data file from deletion, or lifting that protection
   (`PATCH /v2/data/<id>`)
 - creating, listing, or revoking API keys
@@ -56,7 +58,15 @@ does the work.
 **The API's reference describes writes too.** `GET /v2/reference/<topic>`
 documents every operation of a topic, including ones that change remote state,
 such as `PATCH /v2/data/<id>`. Reading about an operation there does not make
-it allowed: only the operations listed below may be called.
+it allowed: a `/v2/…` read the reference documents may be called, unless it is
+one of the refusals above, but a write only when it is listed below.
+
+**The server enforces the same line.** Flow refuses an `ai-agent` token any
+deletion, permission or ownership change, or admin write, and the `/v2/…`
+writes refuse `private` on an edit, `owner`, `group_owner`, and a sample's
+`project` with a `refused_field` error that says why. When that happens, relay
+the error's `detail` and stop: never look for another route to the same
+change.
 
 **Token discipline.** When a token file is configured (see `SKILL.md` step 0),
 never `cat`, `head`, `echo`, or otherwise print its contents. Reads and
@@ -75,10 +85,7 @@ In-scope endpoints (all `GET`):
 - `GET /pipelines`
 - `GET /pipelines/<id>` — single-pipeline detail (versions list)
 - `GET /pipelines/versions/<id>` — pipeline-version detail (run schema)
-- `GET /samples/metadata`
-- `GET /samples/metadata/<identifier>/options` — controlled value set for one metadata attribute (value discovery)
-- `GET /samples/types`
-- `GET /samples/types/<identifier>`
+- `GET /samples/types` — only as the runner check in `SKILL.md` step 0; discover sample types with `GET /v2/sample-types`
 - `GET /samples/search`
 - `GET /samples/<id>` — single-sample detail (full metadata bag, inlined filesets)
 - `GET /samples/<id>/executions`
@@ -92,13 +99,25 @@ In-scope endpoints (all `GET`):
 - `GET /me`
 - `GET /users/search`
 - `GET /v2/reference`, `GET /v2/reference/<topic>` — the API's own reference pages
-- `GET /v2/data` — list, filter and count data files
-- `GET /v2/data/<id>` — single-data-file detail
+- every other `GET /v2/…` operation a reference topic documents, among them:
+  - `GET /v2/data`, `GET /v2/data/<id>` — list, filter and count data files; one file's detail
+  - `GET /v2/sample-types` — the sample types
+  - `GET /v2/metadata-attributes` — the metadata attributes, which types they apply to, and their rules
+  - `GET /v2/metadata-attributes/<identifier>/options` — the values one attribute takes
 - `GET /data/<id>/contents`
 - `GET /data/types`
 - `GET /executions/search`
 - `GET /executions/<id>` — single-execution detail (poll a run, drill into a run)
 - `GET /downloads/<data_id>/<filename>` — direct single-file download
+
+In-scope record writes (performed via `flowbio api post|patch`, gated behind
+explicit confirmation; see "Changing records" in `SKILL.md`):
+
+- `POST /v2/projects` — **create a project**, owned by the user and private
+  unless they ask for it to be public. The confirmation names which.
+- `PATCH /v2/projects/<id>` — change a project's **name or description**.
+- `PATCH /v2/samples/<id>` — change a sample's **name, type, organism, PubMed id
+  or metadata** (set, replace or clear an attribute's value and annotation).
 
 In-scope mutation (performed via `curl`, gated behind explicit confirmation):
 

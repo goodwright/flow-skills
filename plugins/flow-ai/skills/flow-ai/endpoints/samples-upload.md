@@ -20,7 +20,7 @@ contract. This section covers only what is specific to the sample call.
   - `--name NAME` (required) — the sample name. Must contain no spaces (the
     server rejects them).
   - `--sample-type IDENTIFIER` (required) — a sample-type **identifier**.
-    Discover and resolve it via `GET /samples/types` (above) — match the user's
+    Discover and resolve it via `GET /v2/sample-types` — match the user's
     term to a `name`/`identifier` and send the `identifier`. Sent as-is and
     validated **server-side**.
   - `--reads1 PATH` (required) — the (first) reads file. A single-end sample
@@ -34,21 +34,23 @@ contract. This section covers only what is specific to the sample call.
   - `--organism ID` (optional) — an organism **id**. Resolve a name / latin
     name → id via `GET /organisms`.
   - `--metadata KEY=VALUE` (optional, repeatable) — one metadata attribute per
-    flag. Keys are attribute `identifier`s from `GET /samples/metadata`.
+    flag. Keys are attribute `identifier`s from `GET /v2/metadata-attributes`.
 
 - **Discovery + local pre-flight (before running the CLI)** — reuse the
   existing read endpoints; **discover before uploading, never guess**:
-  - **Sample type** — `GET /samples/types`; resolve the user's term to an
+  - **Sample type** — `GET /v2/sample-types`; resolve the user's term to an
     `identifier`. Surface ambiguous matches to the user instead of guessing.
-  - **Required metadata** — `GET /samples/metadata`. An attribute is required
-    for the chosen sample type if its global `required` is `true` **OR** a
-    `sample_type_links` entry whose `sample_type_identifier` matches the chosen
-    type has `required: true`. Confirm the user supplied every such attribute
-    **before** uploading; if any is missing, name it (by `identifier`/`name`)
-    and stop. For `has_options` / `regex_validator` attributes, validate what
-    you can locally, but the **server is the final authority** — the skill
-    cannot enumerate an attribute's legal option values today (see the
-    `GET /samples/metadata` notes above).
+  - **Required metadata** — `GET /v2/metadata-attributes`. An attribute is
+    required for the chosen sample type if its `required_for_every_sample` is
+    `true` **OR** a `sample_types` entry whose `identifier` matches the chosen
+    type has `required: true` (`/v2/reference/samples` states the full rules).
+    Confirm the user supplied every such attribute **before** uploading; if any
+    is missing, name it (by `identifier`/`name`) and stop. Into a public
+    project, a sample is public too, so the attributes with
+    `required_for_public` (or a matching link's) are required as well. For an attribute
+    with `has_options`, check the user's value against
+    `GET /v2/metadata-attributes/<identifier>/options`; for `regex_validator`,
+    validate what you can locally. The **server is the final authority**.
   - **Organism** — `GET /organisms`; resolve name / latin name → `id`.
   - **Project** — `GET /projects/search`; resolve name → `id`.
   - **Files & names** — confirm `reads1` (and `reads2` if given) exist, and
@@ -99,13 +101,13 @@ contract.
     **identifier**. A type-specific template (e.g. `rna_seq`) includes columns
     for that type's metadata attributes; `generic` includes only the base
     columns common to all types. Resolve a user's natural-language type via
-    `GET /samples/types` (above) and send the `identifier`. Sent as-is and
+    `GET /v2/sample-types` and send the `identifier`. Sent as-is and
     validated **server-side**.
   - `-o PATH` / `--output PATH` (required) — the file to write the `.xlsx`
     workbook to (the template is binary).
 
 - **Discovery (before running the CLI):** if the user named a sample type,
-  resolve it to an `identifier` via `GET /samples/types`; surface ambiguous
+  resolve it to an `identifier` via `GET /v2/sample-types`; surface ambiguous
   matches instead of guessing. If they gave none, use `generic`.
 
 - **The call** (using whichever runner the preflight selected):
@@ -123,7 +125,7 @@ contract.
 - **Errors:** a non-zero exit carries the cause and any server message on stderr
   (see the CLI contract in `uploading.md`). The template-specific causes:
   - **Not found** (exit `4`) — the sample type does not exist; re-resolve via
-    `GET /samples/types`.
+    `GET /v2/sample-types`.
   - **Auth** (exit `3`) — the token is missing or expired.
   - **Usage** (exit `2`) — e.g. the output path is not writable.
   Never report success on a non-zero exit.

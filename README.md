@@ -8,9 +8,10 @@ your behalf.
 
 ## What `flow-ai` does
 
-`flow-ai` is primarily a read-only skill that can also upload data to
-Flow: generic data files, demultiplexed samples, and multiplexed reads
-with an annotation sheet. With it, an agent can answer questions and run
+`flow-ai` is primarily a read-only skill that can also make a few
+confirmed changes on Flow: create projects, edit samples and their
+metadata, run pipelines, and upload generic data files, demultiplexed
+samples, and multiplexed reads with an annotation sheet. With it, an agent can answer questions and run
 uploads like:
 
 - "What pipelines are available on Flow?"
@@ -136,6 +137,10 @@ The entries must match the command the skill emits byte-for-byte — Claude Code
 prefix-matches the raw string, so the quoting has to agree (the skill emits the
 pinned spec unquoted, e.g. `uvx --from flowbio==0.14.0 …`).
 
+Do **not** allowlist `api post` or `api patch`. Those create and edit
+records, and the prompt is the last check that the change is the one you
+confirmed.
+
 Pipeline runs (`POST`) and file downloads still use `curl` and keep prompting;
 that is deliberate — a run changes remote state and is confirmation-gated, and
 a download can be large.
@@ -158,7 +163,7 @@ On each release, bump:
 A pre-release sanity check:
 
 ```sh
-grep -rn "flow-ai/[0-9]" plugins/flow-ai/skills/flow-ai/ | grep -v evals/ | grep -v 0.13.0
+grep -rn "flow-ai/[0-9]" plugins/flow-ai/skills/flow-ai/ | grep -v evals/ | grep -v 0.14.0
 ```
 
 …should return nothing once everything is in lockstep. (The `evals/` are

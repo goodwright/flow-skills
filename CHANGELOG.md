@@ -8,6 +8,32 @@ The `flow-ai/<version>` User-Agent that survives on the two `curl` remnants
 (the pipeline run and file download) tracks it. Bump both together on every
 release.
 
+## [0.14.0] — 2026-10-19
+
+- **The skill can create projects and edit samples and their metadata.**
+  `POST /v2/projects` creates a project, private unless the user asks for it
+  to be public; `PATCH /v2/projects/<id>` changes its name or description;
+  `PATCH /v2/samples/<id>` changes a sample's name, type, organism, PubMed id
+  and metadata values and annotations. Each write goes through
+  `flowbio api post|patch --body -`, is described by its `/v2/reference` topic,
+  and needs the user's explicit confirmation first. A new "Changing records"
+  section in `SKILL.md` says how.
+- **Visibility, ownership and a sample's project stay out of reach.** The skill
+  refuses them, and Flow refuses them too with a `refused_field` error whose
+  `detail` the skill relays verbatim. Deletion, sharing and admin work stay
+  refused as before.
+- **Metadata discovery reads the v2 API.** Sample types, metadata attributes
+  and an attribute's options come from `/v2/sample-types`,
+  `/v2/metadata-attributes` and `/v2/metadata-attributes/<identifier>/options`,
+  documented by `/v2/reference/samples`, which also states which attributes a
+  type requires. `endpoints/samples-metadata.md` is removed; the upload
+  recipes discover through the same reads.
+- **`/v2/…` reads the reference documents are in scope without a per-endpoint
+  entry**; writes still need an explicit entry in `safety.md`.
+- New evals `024`-`030`: edit a sample's metadata, create a project (private
+  and public), refuse a sample move, a deletion, making a project public, and
+  protecting a file.
+
 ## [0.13.0] — 2026-10-16
 
 - **`/v2/…` errors are read as Problem Details.** Flow now answers every

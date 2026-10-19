@@ -141,7 +141,7 @@ Before downloading anything large, confirm with the user — the file size
 is in the previous response under `.data[].size` (bytes).
 
 ```bash
-curl -s --fail-with-body -A "flow-ai/0.13.0" -o sample.fastq.gz \
+curl -s --fail-with-body -A "flow-ai/0.14.0" -o sample.fastq.gz \
   "${FLOW_API_URL:-https://app.flow.bio/api}/downloads/67890/sample.fastq.gz"
 ```
 
@@ -310,12 +310,12 @@ silently treat a bad token as anonymous (no 401) and return a misleading
 
 ## Example 15: "What filters does this instance support?"
 
-`GET /samples/metadata` is the canonical answer. Project to the
+`GET /v2/metadata-attributes` is the canonical answer. Project to the
 useful fields:
 
 ```bash
-flowbio api get /samples/metadata --json | \
-  jq '[.[] | {identifier, name, description, has_options, allow_user_terms}]'
+flowbio api get /v2/metadata-attributes --json | \
+  jq '[.[] | {identifier, name, description, has_options, allow_user_terms, all_sample_types}]'
 ```
 
 Report the available identifiers to the user. If the user then asks
@@ -353,13 +353,15 @@ where source is brain":
 
 ```bash
 # Step 1: discover whether 'source' exists on this instance
-flowbio api get /samples/metadata --json | \
+flowbio api get /v2/metadata-attributes --json | \
   jq '.[] | select(.identifier == "source")'
 # If no row: tell the user this instance has no 'source' attribute,
 # list the available identifiers, and stop.
 
-# Step 2: inspect a small sample of records to learn the value
-# vocabulary (no values-discovery endpoint today; this is the workaround)
+# Step 2: learn the value vocabulary. If the attribute has_options, its
+# options are the legal values:
+#   flowbio api get /v2/metadata-attributes/source/options --param value=brain --json
+# For free text there is no list, so inspect a small sample of records:
 flowbio api get /samples/search \
   --param count=10 --json | \
   jq '[.samples[] | .metadata.source.value] | unique'
