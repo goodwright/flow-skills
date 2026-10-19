@@ -256,7 +256,7 @@ Notes:
 - `date -d` is GNU (Linux/CI); `date -v` is BSD (macOS). The compound
   command tries GNU first and falls back to BSD.
 - `created_gt` takes a **Unix timestamp integer** — passing an ISO-8601
-  string causes HTTP 500.
+  string is a 400 naming the field.
 - `owned=true` requires authentication. Always verify auth via `/me`
   first (see Example 14 — a missing/invalid token makes `/me` return 401).
   The search endpoint itself does NOT error without auth — it silently filters

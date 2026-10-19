@@ -72,7 +72,7 @@ authentication, also returns the caller's owned and shared samples.
 
 | Name           | Type | Default    | Behaviour |
 |----------------|------|------------|-----------|
-| `page`         | int  | `1`        | Paginator page. Non-integer raises 500. |
+| `page`         | int  | `1`        | Paginator page. Non-integer → HTTP 400 naming the field. |
 | `count`        | int  | `10`       | Page size. Max 100; >100 → HTTP 400 (not silently clamped). |
 | `sort`          | str  | `-created` | Supported values: `-created` (newest first), `name`, `-name`. Other values are passed through to Django's `order_by` and may error if the field doesn't exist. |
 | `owned`         | str  | (none)     | When set to `1`, `true`, or `yes`, restrict to samples owned by the authenticated caller. **Auth required AND must be verified first.** On this search endpoint a missing or invalid token is silently treated as anonymous (no 401), and `?owned=true` then silently filters to `owner=NULL` samples — returning a plausible but wrong number. `/me`, by contrast, returns 401 for a bad token, so gate on it: call `GET /me` first and require a successful response with a non-null `id` before trusting any `?owned=true` result. If `/me` returns 401 (exit 3), the caller is effectively anonymous — tell the user their token is missing or expired and how to authenticate. |
@@ -81,8 +81,8 @@ authentication, also returns the caller's owned and shared samples.
 | `sample_types`  | str  | (none)     | Comma-separated sample-type **identifiers**. Match if the sample's type identifier is in the list. |
 | `owner`         | str  | (none)     | Substring match (`__icontains`) on owner name, username, group-owner name, or group-owner slug. |
 | `project`       | str  | (none)     | Substring match (`__icontains`) on project name. |
-| `created_gt`    | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); sample created on or after this value (`__gte`). Passing an ISO-8601 string causes HTTP 500. |
-| `created_lt`    | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); sample created on or before this value (`__lte`). Passing an ISO-8601 string causes HTTP 500. |
+| `created_gt`    | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); sample created on or after this value (`__gte`). Passing an ISO-8601 string → HTTP 400 naming the field. |
+| `created_lt`    | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); sample created on or before this value (`__lte`). Passing an ISO-8601 string → HTTP 400 naming the field. |
 | `full_metadata` | str  | (none)     | When set to `1`, `true`, or `yes`, each item's `metadata` includes every attribute the sample has (richer shape, same as the detail endpoint), not just `in_table=True`. Off by default to keep list responses small. |
 | `<metadata_id>` | str  | (none)     | Any metadata attribute identifier returned by `GET /samples/metadata` on this instance (see that section below). Legal identifiers are **per-instance** — admins curate their own — so always discover at runtime; do not assume a specific identifier exists. Matches metadata values via substring (`__icontains`). `true`/`yes`/`1` filters to samples that have any value for the attribute; `false`/`no`/`0` excludes them. |
 
@@ -211,7 +211,7 @@ than `/samples/search`'s list item — most importantly, it carries the
 
 | Name     | Type | Default | Behaviour |
 |----------|------|---------|-----------|
-| `page`   | int  | `1`     | Paginator page. Non-integer raises 500. |
+| `page`   | int  | `1`     | Paginator page. Non-integer → HTTP 400 naming the field. |
 | `count`  | int  | `10`    | Page size. Max 100; >100 → HTTP 400. |
 | `filter` | str  | (none)  | Single case-insensitive substring; spans multiple fields. |
 

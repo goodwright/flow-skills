@@ -22,8 +22,10 @@ release.
   through under `problem`, and exits `5` for a `validation_error`.
 - **The errors table matches what Flow returns now.** A non-integer `page` or
   `count`, or an ISO date where a Unix timestamp is required, is a `400` naming
-  the field, not a `500`; a `5xx` is a server fault, reported with its
-  `instance`. A `404` is told to the user as "does not exist or you may not see
+  the field, not a `500`, in the errors table and the endpoint docs alike. The
+  exceptions are an ISO date on `/projects/search` and a non-integer `position`
+  on `/data/<id>/contents`, which are still a `500`. Any other `5xx` is a
+  server fault, reported with its `instance`. A `404` is told to the user as "does not exist or you may not see
   it", since Flow reports the two alike.
 - New eval `023-v2-problem-not-found`.
 

@@ -123,8 +123,8 @@ an integer pk — or a truthy/falsy string for has-any/has-no), `owned`
 (comma-separated sample-type **identifiers**), `owner` (substring across
 owner name / username / group name / slug), `project` (substring on
 project name), `created_gt` and `created_lt` (**Unix timestamp
-integers**, e.g. `1746403200`; passing an ISO-8601 string causes HTTP
-500), and any metadata attribute identifier (substring match against
+integers**, e.g. `1746403200`; passing an ISO-8601 string is a 400
+naming the field), and any metadata attribute identifier (substring match against
 that attribute's values). See `endpoints/samples.md` for the
 authoritative list and exact semantics.
 
@@ -134,9 +134,9 @@ authoritative list and exact semantics.
   and `-name`. User-controllable; sort order is not fixed.
 - `page` (int, default `1`).
 - `count` (int, default `10`, **max 100**). Values >100 return HTTP 400
-  with `{"error": "Cannot request more than 100 items"}` — the cap is
-  rejected, not silently clamped.
-- Non-integer `page`/`count` values raise a 500; always pass integers.
+  naming `count` in its `errors` — the cap is rejected, not silently
+  clamped.
+- Non-integer `page`/`count` values are a 400 naming the field; always pass integers.
 
 **Response envelope:** `{"count": <int>, "page": <int>, "samples": [...]}`.
 The envelope's `count` is the **total matching samples across all pages**,
