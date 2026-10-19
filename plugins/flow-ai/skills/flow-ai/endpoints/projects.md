@@ -21,7 +21,7 @@ with authentication, also returns the caller's owned and shared projects.
 
 | Name          | Type | Default    | Behaviour |
 |---------------|------|------------|-----------|
-| `page`        | int  | `1`        | Paginator page. Non-integer raises 500. |
+| `page`        | int  | `1`        | Paginator page. Non-integer → HTTP 400 naming the field. |
 | `count`       | int  | `10`       | Page size. Max 100; >100 → HTTP 400 (not silently clamped). |
 | `sort`        | str  | `-created` | Supported values: `-created` (newest first), `name`, `-name`. Other values are passed through to Django's `order_by` and may error. |
 | `name`        | str  | (none)     | Substring match (`__icontains`) on project name only. |

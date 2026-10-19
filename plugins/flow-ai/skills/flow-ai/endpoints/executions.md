@@ -46,8 +46,8 @@ executions broadly ("which executions failed last week?",
 | `organism`          | str  | (none)     | Organism id (e.g. `"Hs"`). |
 | `status`            | str  | (none)     | Execution status string (e.g. `"OK"`, `"ERROR"`, `"CANCELED"`). |
 | `owner`             | str  | (none)     | Substring on owner name, username, group name, or group slug. |
-| `created_gt`        | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); created on or after (`__gte`). Passing an ISO-8601 string causes HTTP 500. |
-| `created_lt`        | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); created on or before (`__lte`). Passing an ISO-8601 string causes HTTP 500. |
+| `created_gt`        | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); created on or after (`__gte`). Passing an ISO-8601 string → HTTP 400 naming the field. |
+| `created_lt`        | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); created on or before (`__lte`). Passing an ISO-8601 string → HTTP 400 naming the field. |
 | `duration_gt`       | float| (none)     | Duration in seconds; `finished - started >= value`. Executions without `started` or `finished` are excluded. |
 | `duration_lt`       | float| (none)     | Duration in seconds; `finished - started <= value`. Executions without `started` or `finished` are excluded. |
 | `process_execution` | str  | (none)     | Substring on process execution name (i.e. a step within the pipeline). |
