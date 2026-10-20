@@ -342,7 +342,9 @@ of the `ATTR` rows.
 
 `/v2/metadata-attributes` says which types each attribute applies to: every
 type when `all_sample_types` is true, otherwise the types in its
-`sample_types`. `/v2/reference/samples` states the rest of the rules (what is
+`sample_types`. For one type, ask for just its attributes with
+`--param sample_type=<identifier>`; an identifier no sample type has is
+refused with a `422`, so resolve it from `/v2/sample-types` first. `/v2/reference/samples` states the rest of the rules (what is
 required, what a public sample needs, options and free text). Neither list
 counts samples; for how many records match, use Shape A.
 

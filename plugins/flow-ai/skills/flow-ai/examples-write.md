@@ -66,7 +66,7 @@ flowbio api get /v2/sample-types --json | \
 # Required = required_for_every_sample true OR a sample_types entry for the
 # chosen identifier with required:true. Confirm the user supplied them all
 # BEFORE uploading; if any is missing, name it and stop.
-flowbio api get /v2/metadata-attributes --json | \
+flowbio api get /v2/metadata-attributes --param sample_type=RNA-Seq --json | \
   jq --arg t "RNA-Seq" '[.[] | select(.required_for_every_sample or any(.sample_types[];
        .identifier == $t and .required)) | {identifier, name}]'
 

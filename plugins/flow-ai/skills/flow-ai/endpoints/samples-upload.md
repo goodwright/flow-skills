@@ -40,8 +40,9 @@ contract. This section covers only what is specific to the sample call.
   existing read endpoints; **discover before uploading, never guess**:
   - **Sample type** — `GET /v2/sample-types`; resolve the user's term to an
     `identifier`. Surface ambiguous matches to the user instead of guessing.
-  - **Required metadata** — `GET /v2/metadata-attributes`. An attribute is
-    required for the chosen sample type if its `required_for_every_sample` is
+  - **Required metadata** — `GET /v2/metadata-attributes --param
+    sample_type=<identifier>` lists the attributes the chosen type may carry. An
+    attribute is required for that type if its `required_for_every_sample` is
     `true` **OR** a `sample_types` entry whose `identifier` matches the chosen
     type has `required: true` (`/v2/reference/samples` states the full rules).
     Confirm the user supplied every such attribute **before** uploading; if any
