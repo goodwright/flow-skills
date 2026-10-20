@@ -27,7 +27,7 @@ The CLI is not installed. It is fetched on demand, pinned to `flowbio==0.14.0`.
 **Reads need this too — there is no curl fallback for reads.** Run this once:
 
 ```bash
-uvx --from flowbio==0.14.0 flowbio api get /samples/types --json | head -c 300
+uvx --from flowbio==0.14.0 flowbio api get /v2/sample-types --json | head -c 300
 ```
 
 - **It printed JSON** → your runner prefix is `uvx --from flowbio==0.14.0 flowbio`.
@@ -35,7 +35,7 @@ uvx --from flowbio==0.14.0 flowbio api get /samples/types --json | head -c 300
   slow (it downloads the package); later calls are fast.
 - **`uvx: command not found`** → try the same call with
   `pipx run --spec flowbio==0.14.0 flowbio` and use that prefix instead.
-- **Neither exists** → try bare `flowbio api get /samples/types --json`. Only use
+- **Neither exists** → try bare `flowbio api get /v2/sample-types --json`. Only use
   the bare form if that call *actually prints JSON*.
 - **All three failed** → stop and tell the user:
 
