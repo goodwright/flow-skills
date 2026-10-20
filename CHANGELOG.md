@@ -27,7 +27,8 @@ release.
   `/v2/metadata-attributes` and `/v2/metadata-attributes/<identifier>/options`,
   documented by `/v2/reference/samples`, which also states which attributes a
   type requires. `endpoints/samples-metadata.md` is removed; the upload
-  recipes discover through the same reads.
+  recipes discover through the same reads, asking only for the chosen sample
+  type's attributes with `sample_type`.
 - **`/v2/…` reads the reference documents are in scope without a per-endpoint
   entry**; writes still need an explicit entry in `safety.md`.
 - New evals `024`-`030`: edit a sample's metadata, create a project (private
