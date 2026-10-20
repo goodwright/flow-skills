@@ -28,7 +28,8 @@ release.
   documented by `/v2/reference/samples`, which also states which attributes a
   type requires. `endpoints/samples-metadata.md` is removed; the upload
   recipes discover through the same reads, asking only for the chosen sample
-  type's attributes with `sample_type`.
+  type's attributes with `sample_type`. The runner check in step 0 reads
+  `/v2/sample-types` too, so the skill no longer calls `/samples/types`.
 - **`/v2/…` reads the reference documents are in scope without a per-endpoint
   entry**; writes still need an explicit entry in `safety.md`.
 - New evals `024`-`030`: edit a sample's metadata, create a project (private

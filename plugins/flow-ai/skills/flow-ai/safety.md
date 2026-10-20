@@ -85,7 +85,6 @@ In-scope endpoints (all `GET`):
 - `GET /pipelines`
 - `GET /pipelines/<id>` — single-pipeline detail (versions list)
 - `GET /pipelines/versions/<id>` — pipeline-version detail (run schema)
-- `GET /samples/types` — only as the runner check in `SKILL.md` step 0; discover sample types with `GET /v2/sample-types`
 - `GET /samples/search`
 - `GET /samples/<id>` — single-sample detail (full metadata bag, inlined filesets)
 - `GET /samples/<id>/executions`
