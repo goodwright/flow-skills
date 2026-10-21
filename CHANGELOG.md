@@ -8,6 +8,13 @@ The `flow-ai/<version>` User-Agent that survives on the two `curl` remnants
 (the pipeline run and file download) tracks it. Bump both together on every
 release.
 
+## [0.14.1] — 2026-10-21
+
+- **Shared flowbio pin bumped `0.14.0` → `0.14.1`**. `0.14.0` has no
+  `flowbio api post` or `api patch`, so creating a project or editing a sample
+  failed under it. `0.14.1` adds both, raises on a `422`, exits `5` for a
+  `validation_error`, and honours proxy environment variables.
+
 ## [0.14.0] — 2026-10-19
 
 - **The skill can create projects and edit samples and their metadata.**

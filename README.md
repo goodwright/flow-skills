@@ -163,7 +163,7 @@ On each release, bump:
 A pre-release sanity check:
 
 ```sh
-grep -rn "flow-ai/[0-9]" plugins/flow-ai/skills/flow-ai/ | grep -v evals/ | grep -v 0.14.0
+grep -rn "flow-ai/[0-9]" plugins/flow-ai/skills/flow-ai/ | grep -v evals/ | grep -v 0.14.1
 ```
 
 …should return nothing once everything is in lockstep. (The `evals/` are

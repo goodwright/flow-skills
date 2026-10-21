@@ -234,7 +234,7 @@ samplesheet, you usually only need the sample id per row — the server fills
 explicit "yes". Then:
 
 ```bash
-curl -s -A "flow-ai/0.14.0" \
+curl -s -A "flow-ai/0.14.1" \
   -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
   -H "Content-Type: application/json" \
   -X POST \
