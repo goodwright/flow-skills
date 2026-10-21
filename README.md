@@ -125,8 +125,8 @@ that match how the CLI resolves on your machine (the skill prefers `uvx`, then
   "permissions": {
     "allow": [
       "Bash(flowbio api get:*)",
-      "Bash(uvx --from flowbio==0.14.0 flowbio api get:*)",
-      "Bash(pipx run --spec flowbio==0.14.0 flowbio api get:*)",
+      "Bash(uvx --from flowbio==0.14.1 flowbio api get:*)",
+      "Bash(pipx run --spec flowbio==0.14.1 flowbio api get:*)",
       "Bash(jq:*)"
     ]
   }
@@ -135,7 +135,7 @@ that match how the CLI resolves on your machine (the skill prefers `uvx`, then
 
 The entries must match the command the skill emits byte-for-byte — Claude Code
 prefix-matches the raw string, so the quoting has to agree (the skill emits the
-pinned spec unquoted, e.g. `uvx --from flowbio==0.14.0 …`).
+pinned spec unquoted, e.g. `uvx --from flowbio==0.14.1 …`).
 
 Do **not** allowlist `api post` or `api patch`. Those create and edit
 records, and the prompt is the last check that the change is the one you
