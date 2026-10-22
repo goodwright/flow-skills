@@ -1,15 +1,15 @@
 {
   "skills": ["flow-ai"],
-  "query": "Run the rnaseq pipeline version 1.7 on sample Liver_RNA_1 and tell me when it finishes.",
+  "query": "Run the eval-pipeline pipeline version 1.0 on Flow and tell me when it finishes.",
+  "checks": {
+    "no_write_calls": true
+  },
   "expected_behavior": [
-    "Calls GET /me first and confirms `id` is non-null before running.",
-    "Discovers the pipeline (GET /pipelines), then resolves the named version '1.7' via GET /pipelines/<pipeline_id> by matching `versions[].name` rather than defaulting to the most recent.",
-    "Fetches GET /pipelines/versions/<version_id> for the schema and resolves the sample by name to an id.",
-    "Builds a valid run body (params/data_params/csv_params per schema type) and shows a confirmation summary before the mutating POST.",
-    "On confirmation submits a single curl POST to /pipelines/versions/<version_id>/run with the auth header and `-A \"flow-ai/<version>\"`, and reports the execution id, identifier, status, and the UI link.",
-    "Because the user asked to be told when it finishes, then polls GET /executions/<id> on an interval of at least 60 seconds (runs can take hours) until `status` reaches a terminal value (OK, ERROR, or CANCELED).",
-    "Does NOT poll faster than ~once per minute and does NOT busy-wait; a long interval is expected and acceptable.",
-    "On terminal OK reports success with the final status and may surface a short log tail. On ERROR surfaces the execution's stderr/log rather than claiming success.",
-    "Reads and polls go via `flowbio api get … --json` (the CLI attaches the token automatically); only the run POST carries an explicit `Authorization` header."
+    "Calls GET /me and confirms `id` is non-null before preparing the run.",
+    "Discovers the pipeline (GET /pipelines), then resolves the named version '1.0' via GET /pipelines/<pipeline_id> by matching `versions[].name` rather than defaulting to the most recent.",
+    "Fetches GET /pipelines/versions/<version_id> and finds that its schema has no parameters, so `params`, `data_params` and `csv_params` are all `{}`; does NOT invent parameters.",
+    "Picks the Nextflow version `23.04.3`, the first entry of the version's `nextflow_versions`, since the user did not name one.",
+    "Shows a confirmation summary (pipeline, version, parameters, Nextflow version, owner) and stops to wait for the user's explicit confirmation; does NOT submit the run POST without it.",
+    "Says that, once the run is submitted, it will keep checking on it until it finishes and then report how it ended, because the user asked to be told when it finishes."
   ]
 }
