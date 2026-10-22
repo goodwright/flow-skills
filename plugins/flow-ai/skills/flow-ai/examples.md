@@ -17,7 +17,7 @@ Every recipe below works in two modes:
 No flag changes between the two modes — the CLI reads the token file itself
 if it is there. For a caller-scoped recipe (e.g. `owned=true`), verify auth via
 `/me` first (it returns 401 when unauthenticated); if there is no valid token,
-tell the user how to authenticate (SKILL.md §3) rather than silently reporting
+tell the user how to authenticate ("Authentication" in SKILL.md) rather than silently reporting
 the misleading anonymous result.
 
 ## Example 1: "What pipelines does Flow offer?"
@@ -265,8 +265,8 @@ Notes:
 
 ## Example 13 (negative): "Delete sample 42"
 
-Decline. Sample deletion isn't in the skill's allowlist (see SKILL.md
-§1). The Safety principle refuses any operation not explicitly
+Decline. Sample deletion isn't in the skill's allowlist (see "Safety" in
+SKILL.md). The Safety principle refuses any operation not explicitly
 documented, regardless of HTTP verb or auth state.
 
 ## Example 14: "What samples do I own?"
@@ -292,7 +292,7 @@ flowbio api get /samples/search \
 ```
 
 If `/me` fails (401) or returns no `id`, tell the user their token is missing,
-expired, or invalid, and how to authenticate (SKILL.md §3) — don't fall
+expired, or invalid, and how to authenticate ("Authentication" in SKILL.md) — don't fall
 through to a misleading `owned=true` query.
 
 If the user's intent involves group membership ("samples in groups

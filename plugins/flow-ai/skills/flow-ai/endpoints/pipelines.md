@@ -25,7 +25,7 @@
 **With authentication:** the catalogue broadens to include pipelines
 the caller can see via project access, ownership, or sharing. The path
 is unchanged. This read goes through `flowbio api get` (see `SKILL.md`
-section 3), which attaches the caller's token automatically when the token
+Step 0), which attaches the caller's token automatically when the token
 file is present — broadening is automatic from there.
 
 ## `GET /pipelines/<id>`
