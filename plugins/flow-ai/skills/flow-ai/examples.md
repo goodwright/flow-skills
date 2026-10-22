@@ -32,26 +32,26 @@ flowbio api get /pipelines --json | \
 
 Report a grouped summary by category with pipeline names.
 
-## Example 2: "Find the latest version of the rna-seq pipeline"
+## Example 2: "What's the latest version of the rna-seq pipeline?"
 
-The public `/pipelines` endpoint exposes pipeline names and ids, but it
-does **not** expose per-pipeline version lists — the per-pipeline fields
-are limited to `id`, `name`, `description`, `execution_count`, `is_nfcore`,
-`prepares_genome`. Version listing requires authenticated endpoints, which
-are out of scope for v1.
+You run a *version*, not a pipeline, and `/pipelines` lists pipelines only.
+Find the pipeline's id there, then read its versions from `GET /pipelines/<id>`
+(see `endpoints/pipelines.md`).
 
-Identify the rna-seq pipeline from the catalog:
+List every pipeline and pick the user's by reading the names:
 
 ```bash
-flowbio api get /pipelines --json | \
-  jq '[.. | objects | select(.name? | test("rna.?seq"; "i")) | select(.id?)] | .[] | {id, name, description}'
+uvx --from flowbio==0.14.1 flowbio api get /pipelines --json | jq -r '.[].subcategories[].pipelines[] | .id + " | " + .name'
 ```
 
-Report something like: "I found the rna-seq pipeline (id `<id>`,
-description `<desc>`). The public catalog doesn't expose per-pipeline
-version lists, so I can't tell you the latest version from this endpoint.
-Version listing requires authenticated endpoints, which are out of scope
-for this skill."
+Then list its versions, most recent first:
+
+```bash
+uvx --from flowbio==0.14.1 flowbio api get /pipelines/PIPELINE_ID --json | jq -r '.versions[] | .id + " | " + .name'
+```
+
+The first row is the latest version. Report its name, and its id if the user
+wants to run it.
 
 ## Example 3: "Find public samples mentioning RNA-seq"
 

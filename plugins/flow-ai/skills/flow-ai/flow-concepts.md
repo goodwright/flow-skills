@@ -95,8 +95,8 @@ category objects each contain `subcategories`, each of which contains
 
 Each pipeline item has `id` (stringified pk), `name`, `description` (taken
 from the most recent active version), `execution_count`, `is_nfcore`, and
-`prepares_genome`. The endpoint does not return the version list per
-pipeline; v1 agents should not reason about specific versions.
+`prepares_genome`. The endpoint does not return a pipeline's versions;
+`GET /pipelines/<id>` does (see `endpoints/pipelines.md`).
 
 For unauthenticated callers the catalog is filtered to pipelines that
 have at least one active, non-private version. Categories and
