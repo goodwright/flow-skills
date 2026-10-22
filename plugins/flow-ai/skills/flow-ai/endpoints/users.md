@@ -6,9 +6,8 @@ directory).
 
 ## `GET /me`
 
-The authenticated caller's user record. Use this to resolve "what is
-my user id?" — needed when a recipe references the caller's pk (e.g.
-`/samples/search?owner=<my_id>`).
+The authenticated caller's user record. Use this to answer who the
+caller is, and as the authentication check before any `owned=true` query.
 
 For ownership questions ("samples I own", "projects I own"), still use
 `/me` first as an auth gate: `/samples/search?owned=true` silently treats
@@ -28,7 +27,7 @@ result. `/me` is likewise needed when:
   - success with a non-null `id` → genuinely authenticated.
   - 401 / exit 3 → no valid token; treat as anonymous and tell the user
     their token is missing, expired, or invalid (and how to authenticate,
-    `SKILL.md` step 0).
+    "Authentication" in `SKILL.md`).
 - **Query params:** none.
 - **Response shape:** a single object with:
   - `id` (str — the caller's user pk, **stringified** integer; present on
@@ -55,7 +54,7 @@ Search the user directory by name or username. Useful for:
   names.
 - Getting a user's canonical `username`, which can then be passed as a
   precise substring to `/samples/search?owner=<username>` (the `owner`
-  filter matches across name, username, and email — using the exact
+  filter matches across owner name, username, group name and group slug — using the exact
   username reduces false matches).
 - Inspecting a user's group memberships via the `groups` field in each
   result row.
@@ -88,13 +87,12 @@ For "what samples does `<name>` own?":
 1. `GET /users/search?name=<name>` → pick the right user by `name`
    or `username` (check how many rows came back; refine the search if
    there are too many matches).
-2. Use the `username` to cross-reference. Note that `/users/search`
-   does not expose `id` — to filter samples by owner pk, use
-   `/samples/search?owner=<username_or_name_substring>` directly
-   (samples `owner` filter matches across name, username, and email).
+2. Use the `username` to cross-reference. `/users/search` does not
+   expose `id`, and the samples `owner` filter matches text, not ids, so
+   use `/samples/search?owner=<username_or_name_substring>` directly
+   (it matches across owner name, username, group name and group slug).
 
 For "what samples do I own?":
 
-- `GET /samples/search?owned=true` — simplest path, no `/me` needed.
-- Only call `/me` if you need the caller's pk or group memberships for
-  a cross-resource operation.
+1. `GET /me`, and require a non-null `id` (see "Auth" above).
+2. Only then `GET /samples/search?owned=true`.

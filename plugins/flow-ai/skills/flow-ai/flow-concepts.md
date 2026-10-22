@@ -73,7 +73,7 @@ move is the discovery endpoint, not the search endpoint:
 - "human samples" → `/organisms` (resolve "human" to pk) → `/samples/search?organism=<pk>`
 - "rna-seq samples" → `/v2/sample-types` (resolve to identifier) → `/samples/search?sample_types=<identifier>`
 - "samples where tissue is X" → `/v2/metadata-attributes` (does `tissue` exist on this instance? what is its actual identifier?) → `/samples/search?<identifier>=<value>`
-- "samples I own" → `/samples/search?owned=true` (or `/me` first if you need the user's pk for cross-resource linking)
+- "samples I own" → `/me` (confirm a non-null `id`) → `/samples/search?owned=true`
 
 Why: metadata attributes are user-defined per Flow instance. There is
 no global Flow vocabulary; the same product runs at different
