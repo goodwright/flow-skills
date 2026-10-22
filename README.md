@@ -48,11 +48,11 @@ so an authenticated key dramatically broadens what you can ask about.
    ```
 
 The skill checks for this file on every invocation. When present, the
-`flowbio` CLI reads it and authenticates every read (and upload); when
-absent, reads fall back to public/anonymous access. **The skill never
-prints the token** — the CLI reads the file itself, and the only commands
-that reference it directly (the pipeline-run and file-download `curl`s) do
-so via `$(< ~/.config/flow/api-token)` inside a `-H` flag.
+`flowbio` CLI reads it and authenticates every read, write, pipeline run and
+upload; when absent, reads fall back to public/anonymous access. **The skill
+never prints the token** — the CLI reads the file itself, and the only command
+that references it directly (the file-download `curl`) does so via
+`$(< ~/.config/flow/api-token)` inside a `-H` flag.
 
 ### If on Windows
 <details>
@@ -138,26 +138,24 @@ prefix-matches the raw string, so the quoting has to agree (the skill emits the
 pinned spec unquoted, e.g. `uvx --from flowbio==0.14.1 …`).
 
 Do **not** allowlist `api post` or `api patch`. Those create and edit
-records, and the prompt is the last check that the change is the one you
-confirmed.
+records and run pipelines, and the prompt is the last check that the change is
+the one you confirmed.
 
-Pipeline runs (`POST`) and file downloads still use `curl` and keep prompting;
-that is deliberate — a run changes remote state and is confirmation-gated, and
-a download can be large.
+File downloads still use `curl` and keep prompting; that is deliberate — a
+download can be large.
 
 ## Versioning
 
 The canonical version lives in
 [`plugins/flow-ai/.claude-plugin/plugin.json`](plugins/flow-ai/.claude-plugin/plugin.json).
 Reads go through the `flowbio` CLI, so they no longer carry a `flow-ai`
-User-Agent; the string now survives only on the two `curl` remnants (the
-pipeline run and file download) as `User-Agent: flow-ai/<version>`, kept in
-lockstep so Flow's backend can attribute that traffic to a specific release.
+User-Agent; the string now survives only on the file-download `curl` as
+`User-Agent: flow-ai/<version>`, kept in lockstep so Flow's backend can
+attribute that traffic to a specific release.
 On each release, bump:
 
 1. `plugins/flow-ai/.claude-plugin/plugin.json#version`
-2. The `User-Agent` strings in `examples.md` (run + download recipes) and
-   `endpoints/pipelines.md` (run recipe)
+2. The `User-Agent` string in `examples.md` (download recipe)
 3. `CHANGELOG.md`
 
 A pre-release sanity check:
