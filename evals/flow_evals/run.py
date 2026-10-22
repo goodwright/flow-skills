@@ -18,6 +18,8 @@ _REPO = Path(__file__).resolve().parents[2]
 _PLUGIN_DIR = _REPO / "plugins" / "flow-ai"
 _SCENARIO_DIR = _PLUGIN_DIR / "skills" / "flow-ai" / "evals"
 _RUNS_DIR = _REPO / "evals" / "runs"
+# Unset would make the flowbio CLI fall back to the runner's own ~/.config/flow/api-token.
+_REJECTED_TOKEN = "invalid-eval-token"
 
 
 def select_scenarios(scenario_dir: Path, patterns: list[str]) -> list[Path]:
@@ -112,4 +114,6 @@ def _run_agents(scenarios: dict, pairs: list[tuple[str, str]], run_dir: Path) ->
     api_url = os.environ.get("FLOW_API_URL", "http://localhost:8019")
     for name, model in pairs:
         print(f"running {name} on {model}", flush=True)
-        run_agent(scenarios[name]["query"], model, _PLUGIN_DIR, api_url, token, run_dir / f"{name}-{model}.jsonl")
+        scenario_token = _REJECTED_TOKEN if scenarios[name].get("invalid_token") else token
+        run_agent(scenarios[name]["query"], model, _PLUGIN_DIR, api_url, scenario_token,
+                  run_dir / f"{name}-{model}.jsonl")
