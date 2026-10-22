@@ -242,9 +242,9 @@ than `/samples/search`'s list item — most importantly, it carries the
   - `can_delete` (bool — **always `false`** for anonymous callers; ignore)
 - **Fields NOT exposed here** (without auth): `command`, logs, cost,
   parameters, process executions, `nextflow_id`, `output_data`. Public
-  callers see the table-row summary only. Decline questions about command
-  text or execution outputs — they require authenticated endpoints that
-  are out of scope here.
+  callers see the table-row summary only. For an execution's command, logs
+  or outputs, follow its `id` to `GET /executions/<id>` (see
+  `endpoints/executions.md`).
 
 ## `GET /samples/<id>/data`
 
