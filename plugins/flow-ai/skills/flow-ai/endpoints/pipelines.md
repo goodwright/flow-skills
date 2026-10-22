@@ -79,19 +79,19 @@ run body.
 
 Kicks off an execution of a pipeline version. **This is a mutation** (it changes
 remote state and consumes compute — runs often take hours), and it **always
-requires the token**. Performed with a single `curl` POST of a JSON body — not
-the flowbio CLI, which has no run command.
+requires the token**. Performed with one `flowbio api post` of a JSON body,
+through the runner you resolved in `SKILL.md` Step 0.
 
 ### Capability & auth
 
-- The token is mandatory. With no token file present, do not attempt the run —
-  tell the user a token is required.
-- **403 `{"error": "User cannot run pipelines"}`** — the user's
-  `can_run_pipelines` flag is false. Report verbatim; the user lacks run
-  permission. Do not retry.
-- **403 `{"error": "Token not authorised for this endpoint"}`** — the token's
-  scope does not permit running. Report that the token isn't authorised to run
-  pipelines and stop. Do not retry or try to escalate scope.
+- The token is mandatory. Without one the CLI sends nothing and exits `2`
+  with "No credentials provided…"; give the authentication guidance in
+  `SKILL.md` and stop.
+- **403 `User cannot run pipelines`** — the user's `can_run_pipelines` flag is
+  false. Report verbatim; the user lacks run permission. Do not retry.
+- **403 `Token not authorised for this endpoint`** — the token's scope does not
+  permit running. Report that the token isn't authorised to run pipelines and
+  stop. Do not retry or try to escalate scope.
 
 ### The run flow (chain these calls)
 
@@ -218,13 +218,11 @@ The read/discovery steps (steps 1–4) need no confirmation.
 
 ### The call
 
+Send the body as one line of JSON on stdin, inside single quotes, as
+"Changing records" in `SKILL.md` describes:
+
 ```bash
-curl -s -A "flow-ai/0.14.1" \
-  -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
-  -H "Content-Type: application/json" \
-  -X POST \
-  --data '{"params":{...},"data_params":{...},"csv_params":{...},"nextflow_version":"23.04.3"}' \
-  "${FLOW_API_URL:-https://app.flow.bio/api}/pipelines/versions/<version_id>/run"
+printf '%s' '{"params":{},"data_params":{},"csv_params":{},"nextflow_version":"23.04.3"}' | uvx --from flowbio==0.14.1 flowbio api post /pipelines/versions/VERSION_ID/run --body - --json
 ```
 
 Every value in that body is something you resolved in steps 1–4 — there are no
@@ -233,8 +231,8 @@ version's `nextflow_versions` (default `nextflow_versions[0]`) unless the user
 named a specific one. The `"23.04.3"` above is just an illustrative resolved
 value, not a fixed string to send.
 
-Preserve token discipline (`safety.md`): the token is referenced only via
-`$(< ~/.config/flow/api-token)` inside the header — never `cat`/`echo`/printed.
+The CLI reads the token and the base URL itself, as on every other call: never
+pass `--token` or `--base-url`, and never write the API's address out.
 
 ### Success
 
@@ -269,10 +267,13 @@ when the user explicitly asks to be told when it finishes:
 
 ### Errors
 
-| Status | Meaning | What to do |
-|---|---|---|
-| 400 | Form validation — bad/missing param, unknown/unreadable data/sample/fileset id, an input file whose content was deleted (`Data <id> (<filename>) was deleted on <date>`), unknown Nextflow version | Body is `{"error": {field: [messages]}}`. Report the field message verbatim; fix the offending value (e.g. re-resolve the id, pick another input file, pick a valid Nextflow version) and re-confirm before resubmitting. |
-| 403 | `User cannot run pipelines` **or** `Token not authorised for this endpoint` | Report verbatim and stop (see "Capability & auth"). Do not retry. |
-| 404 | Version id unknown, inactive, or private-to-non-admin | Re-resolve the version via `GET /pipelines/<id>`. |
+A failed run exits non-zero and writes `{"message": …, "status_code": …}` to
+stderr.
 
-Never report a started execution on a non-2xx response.
+| `status_code` (exit) | Meaning | What to do |
+|---|---|---|
+| 400 (`5`) | Form validation — bad/missing param, unknown/unreadable data/sample/fileset id, an input file whose content was deleted (`Data <id> (<filename>) was deleted on <date>`), unknown Nextflow version | `message` maps each field to its errors, e.g. `{"nextflow_version": ["0.0.1 is not a valid Nextflow version"]}`. Report the field message verbatim; fix the offending value (e.g. re-resolve the id, pick another input file, pick a valid Nextflow version) and re-confirm before resubmitting. |
+| 403 (`1`) | `User cannot run pipelines` **or** `Token not authorised for this endpoint` | Report verbatim and stop (see "Capability & auth"). Do not retry. |
+| 404 (`4`) | Version id unknown, inactive, or private-to-non-admin | Re-resolve the version via `GET /pipelines/<id>`. |
+
+Never report a started execution on a non-zero exit.

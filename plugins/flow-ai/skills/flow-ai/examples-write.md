@@ -194,9 +194,9 @@ and give the same install message as Example 18.
 
 ## Example 22: "Run the rna-seq pipeline on sample Liver_RNA_1"
 
-Running a pipeline is a **mutation** done with `curl` (no flowbio CLI) and
-**always needs the token**. The discovery steps are reads via `flowbio api
-get`; only the final POST is curl. Read the "Running a pipeline" section of
+Running a pipeline is a **mutation** and **always needs the token**. The
+discovery steps are reads via `flowbio api get`; the run itself is one
+`flowbio api post`. Read the "Running a pipeline" section of
 `endpoints/pipelines.md` first — it owns the body shape, the schema→body
 mapping, the confirmation gate, and the error table. The chain:
 
@@ -234,13 +234,7 @@ samplesheet, you usually only need the sample id per row — the server fills
 explicit "yes". Then:
 
 ```bash
-curl -s -A "flow-ai/0.14.1" \
-  -H "Authorization: Bearer $(< ~/.config/flow/api-token)" \
-  -H "Content-Type: application/json" \
-  -X POST \
-  --data '{"params":{},"data_params":{},"csv_params":{"input":{"rows":[{"sample":"<sample_id>","values":{}}]}},"nextflow_version":"23.04.3"}' \
-  "${FLOW_API_URL:-https://app.flow.bio/api}/pipelines/versions/<version_id>/run" | \
-  jq '{id, identifier, status}'
+printf '%s' '{"params":{},"data_params":{},"csv_params":{"input":{"rows":[{"sample":"SAMPLE_ID","values":{}}]}},"nextflow_version":"23.04.3"}' | uvx --from flowbio==0.14.1 flowbio api post /pipelines/versions/VERSION_ID/run --body - --json | jq '{id, identifier, status}'
 ```
 
 On success, report the execution `id`, `identifier`, initial `status`, and a
@@ -255,7 +249,7 @@ echo "$WEB/executions/<id>/"   # e.g. https://app.flow.bio/executions/<id>/
 **Do not poll by default** — return the id and the link and stop. On `403`
 (`User cannot run pipelines` or `Token not authorised for this endpoint`) report
 it verbatim and stop; on `400` report the field error and fix the offending
-value before re-confirming. Never claim a run started on a non-2xx response.
+value before re-confirming. Never claim a run started on a non-zero exit.
 
 ## Example 23: "Run the rnaseq pipeline and tell me when it finishes"
 

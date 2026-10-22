@@ -13,8 +13,8 @@ the user asks for them. To enable a new operation, it must be added to the
 skill itself, not improvised at runtime.
 
 The skill is **mostly read-only**, but it has three families of mutation. It can
-**create and edit records** through `/v2/…` (below), it can **run pipelines** (`POST /pipelines/versions/<id>/run`, via `curl` — see
-`endpoints/pipelines.md`), and it can **upload data to Flow** (`uploading.md`).
+**create and edit records** through `/v2/…` (below), it can **run pipelines** (`POST /pipelines/versions/<id>/run`, via
+`flowbio api post` — see `endpoints/pipelines.md`), and it can **upload data to Flow** (`uploading.md`).
 Upload support currently covers generic data files (`POST /upload`),
 demultiplexed samples (`POST /upload/sample`), and multiplexed reads with an
 annotation sheet (`POST /upload/multiplexed`), plus a read-only helper to
@@ -69,13 +69,12 @@ the error's `detail` and stop: never look for another route to the same
 change.
 
 **Token discipline.** When a token file is configured (see `SKILL.md` step 0),
-never `cat`, `head`, `echo`, or otherwise print its contents. Reads and
-uploads never handle the token at all — the flowbio CLI reads the file
-itself (never pass `--token`). The only places the skill references the
-token directly are the two `curl` remnants — the pipeline run
-(`endpoints/pipelines.md`) and an authenticated file download
-(`endpoints/downloads.md`) — and there only via shell expansion
-(`$(< ~/.config/flow/api-token)`) inside a `-H` argument. In every case
+never `cat`, `head`, `echo`, or otherwise print its contents. Reads,
+writes, pipeline runs and uploads never handle the token at all — the
+flowbio CLI reads the file itself (never pass `--token`). The only place the
+skill references the token directly is the one `curl` call, an
+authenticated file download (`endpoints/downloads.md`), and there only via
+shell expansion (`$(< ~/.config/flow/api-token)`) inside a `-H` argument. In every case
 the token must never appear in the agent's transcript.
 
 ## Full scope
@@ -118,12 +117,12 @@ explicit confirmation; see "Changing records" in `SKILL.md`):
 - `PATCH /v2/samples/<id>` — change a sample's **name, type, organism, PubMed id
   or metadata** (set, replace or clear an attribute's value and annotation).
 
-In-scope mutation (performed via `curl`, gated behind explicit confirmation):
+In-scope mutation (performed via `flowbio api post`, gated behind explicit
+confirmation):
 
 - `POST /pipelines/versions/<id>/run` — **run a pipeline version**. Unlike the
-  uploads below, this is a plain JSON `POST` done with `curl` (no chunked-upload
-  protocol, no flowbio CLI). It always requires the token and is gated behind
-  the confirmation rule. See `endpoints/pipelines.md` for the full run flow,
+  uploads below, this is a plain JSON `POST` (no chunked-upload protocol). It
+  always requires the token and is gated behind the confirmation rule. See `endpoints/pipelines.md` for the full run flow,
   the schema→body mapping, and error handling.
 
 In-scope uploads (performed via the flowbio CLI, not curl; more will be added

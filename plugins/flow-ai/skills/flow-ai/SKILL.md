@@ -520,9 +520,9 @@ https://github.com/goodwright/flow-skills/blob/main/README.md#getting-a-flow-api
 treated as anonymous with no error, and the filter then silently matches
 `owner=NULL`. Call `/me` and confirm a non-null `id` first.
 
-The two `curl` remnants — running a pipeline (`endpoints/pipelines.md`) and an
-authenticated file download (`endpoints/downloads.md`) — reference the token only
-via `$(< ~/.config/flow/api-token)` inside a `-H` argument.
+The one `curl` call, an authenticated file download (`endpoints/downloads.md`),
+references the token only via `$(< ~/.config/flow/api-token)` inside a `-H`
+argument.
 
 ## Safety
 
