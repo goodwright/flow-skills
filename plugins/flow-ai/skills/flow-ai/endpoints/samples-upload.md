@@ -4,17 +4,16 @@
 - `POST /upload/multiplexed` — upload multiplexed reads + an annotation sheet
 - `GET /annotation/<sample_type>` — download an annotation-sheet template
 
-All three go through the flowbio CLI. Read `uploading.md` first for the runner
-preflight, auth, CLI contract, and the confirmation gate.
+All three go through the flowbio CLI, with the runner from `SKILL.md` Step 0.
+Read `uploading.md` first for auth, the CLI contract, and the confirmation gate.
 
 ## `POST /upload/sample` — upload a demultiplexed sample
 
 Uploads a single demultiplexed sample (single-end or paired-end reads plus
 metadata). **This is not a `curl` call** — it runs through the flowbio CLI on
-demand. Read `uploading.md` first: it owns the runner preflight
-(`uv`/`uvx` → `pipx` → existing `flowbio` → stop with an install message), the
-pinned version, token discipline, base-URL handling, and the JSON / exit-code
-contract. This section covers only what is specific to the sample call.
+demand. The runner comes from `SKILL.md` Step 0. Read `uploading.md`
+first: it owns the pinned version, token discipline, base-URL handling, and the
+JSON / exit-code contract. This section covers only what is specific to the sample call.
 
 - **Inputs / flags:**
   - `--name NAME` (required) — the sample name. Must contain no spaces (the
@@ -63,7 +62,7 @@ contract. This section covers only what is specific to the sample call.
   project and organism (if given), and the metadata key/values — and upload
   **only on explicit confirmation** (the confirmation gate in `uploading.md`).
 
-- **The call** (using whichever runner the preflight selected):
+- **The call** (using the runner from `SKILL.md` Step 0):
   ```bash
   uvx --from flowbio==0.14.1 flowbio samples upload \
     --name NAME --sample-type IDENTIFIER \
@@ -94,8 +93,7 @@ fill in before a multiplexed upload (`POST /upload/multiplexed`, below). This is
 a **read** helper — it changes no remote state, so it needs **no** confirmation
 gate — but it still runs through the flowbio CLI (not `curl`) so auth and
 base-URL handling stay uniform with the uploads. Read `uploading.md`
-first for the runner preflight, token discipline, and the JSON / exit-code
-contract.
+first for token discipline and the JSON / exit-code contract.
 
 - **Inputs / flags:**
   - `--sample-type IDENTIFIER` (optional, default `generic`) — a sample-type
@@ -111,7 +109,7 @@ contract.
   resolve it to an `identifier` via `GET /v2/sample-types`; surface ambiguous
   matches instead of guessing. If they gave none, use `generic`.
 
-- **The call** (using whichever runner the preflight selected):
+- **The call** (using the runner from `SKILL.md` Step 0):
   ```bash
   uvx --from flowbio==0.14.1 flowbio samples annotation-template \
     --sample-type IDENTIFIER -o ./template.xlsx \
@@ -135,9 +133,9 @@ contract.
 
 Uploads one or two multiplexed reads files plus a completed annotation sheet for
 server-side demultiplexing. **This is not a `curl` call** — it runs through the
-flowbio CLI on demand. Read `uploading.md` first: it owns the runner
-preflight, the pinned version, token discipline, base-URL handling, and the JSON
-/ exit-code contract. This section covers only what is specific to the
+flowbio CLI on demand. The runner comes from `SKILL.md` Step 0. Read
+`uploading.md` first: it owns the pinned version, token discipline, base-URL
+handling, and the JSON / exit-code contract. This section covers only what is specific to the
 multiplexed call.
 
 **Annotation-first.** The library uploads and validates the **annotation sheet
@@ -170,7 +168,7 @@ Surface this in your messaging: if validation fails, no reads were uploaded.
   auto-accepted (default) or rejected — and upload **only on explicit
   confirmation** (the confirmation gate in `uploading.md`).
 
-- **The call** (using whichever runner the preflight selected):
+- **The call** (using the runner from `SKILL.md` Step 0):
   ```bash
   uvx --from flowbio==0.14.1 flowbio samples upload-multiplexed \
     --reads1 PATH [--reads2 PATH] \

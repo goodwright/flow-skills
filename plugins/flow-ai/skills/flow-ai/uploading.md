@@ -15,47 +15,16 @@ success/error shapes) live in the matching endpoint file — generic files →
 Uploads are **not** done with `curl`. The chunked/resumable upload protocol
 (retry, backoff, token refresh) is owned by the **flowbio** Python library; the
 skill shells out to that library's command-line interface and never
-reimplements the protocol in bash, nor improvises Python at runtime.
+reimplements the protocol in bash, nor improvises Python at runtime. The
+pinned `flowbio==0.14.1` carries the upload commands `data upload`,
+`samples upload`, `samples upload-multiplexed` and `samples annotation-template`.
 
-## Runner preflight
+## Runner
 
-> The full preflight, including reads, is in `SKILL.md` step 0. Repeated here
-> for the upload path.
-
-Installing this plugin does **not** install Python or `flowbio`. The skill
-fetches the CLI on demand, pinned to **`flowbio==0.14.1`** (the release that
-carries the read-only `api get` command **and** the upload commands `data
-upload`, `samples upload`, `samples upload-multiplexed`, and `samples
-annotation-template`). The CLI is required for **both reads and uploads** —
-there is no curl fallback for reads. Before the first CLI call of a session
-(read or upload), run this preflight and use the first runner that is present:
-
-1. `uv` on `PATH` → run via `uvx` (a.k.a. `uv tool run`):
-   ```bash
-   uvx --from flowbio==0.14.1 flowbio <command> …
-   ```
-2. else `pipx` on `PATH`:
-   ```bash
-   pipx run --spec flowbio==0.14.1 flowbio <command> …
-   ```
-3. else a compatible `flowbio` already on `PATH` (`flowbio --version` reports
-   ≥ `0.14.1`) → call `flowbio <command> …` directly.
-4. else → **stop. Do not attempt the call.** Return this message:
-
-   > Using Flow needs the `flowbio` CLI, which this skill runs on demand
-   > via `uv`. I couldn't find `uv` (or `pipx`, or a compatible `flowbio`) on
-   > your PATH. Install one of:
-   >   • `uv`   — https://docs.astral.sh/uv/ (recommended), then re-run; or
-   >   • `pipx` — `pip install --user pipx`; or
-   >   • `flowbio` directly — `pip install "flowbio>=0.14.1"`.
-   > Then ask me again.
-
-The `<command>` is `api get …` for reads (`SKILL.md` step 0) and `data upload …`,
-`samples upload …`, etc. for uploads (the CLI contract and confirmation gate below). Whichever runner
-resolves, use it consistently for every call — the prefix is stable, which is
-what lets the operator allowlist it (see `README.md`). Never fail opaquely —
-no bare "command not found", no traceback. The message names the missing tool
-and the next step.
+Uploads use the same `flowbio` runner as every other call. Resolve it once per
+session with `SKILL.md` Step 0, before the first call of any kind, and use
+that prefix for every upload command below. If Step 0 finds no runner, stop
+with its install message; never attempt the upload another way.
 
 ##  Auth & base URL (token discipline preserved)
 
