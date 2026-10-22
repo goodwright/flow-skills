@@ -1,0 +1,14 @@
+{
+  "skills": ["flow-ai"],
+  "query": "Which steps did the last pipeline run on sample liver_rep1 go through on Flow, and which files did it produce?",
+  "checks": {
+    "answer_contains": ["run_output_filenames"],
+    "no_write_calls": true
+  },
+  "expected_behavior": [
+    "Finds the run through the sample: resolves liver_rep1 to its id, then lists `GET /samples/<id>/executions`.",
+    "Reads the run's detail from `GET /executions/<id>` for its steps and outputs.",
+    "Names the run's one step, `COUNT`.",
+    "Does NOT refuse, or say the run's steps or outputs need endpoints that are out of scope."
+  ]
+}
