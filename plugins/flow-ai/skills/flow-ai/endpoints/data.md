@@ -76,10 +76,9 @@ endpoint and match by `identifier` client-side.
 
 Uploads a single generic data file (counts table, BAM, archive, …).
 **This is not a `curl` call** — it runs through the flowbio CLI on demand.
-Read `uploading.md` first: it owns
-the runner preflight (`uv`/`uvx` → `pipx` → existing `flowbio` → stop with an
-install message), the pinned version, token discipline, base-URL handling, and
-the JSON / exit-code contract. This section covers only what is specific to the
+The runner comes from `SKILL.md` Step 0. Read
+`uploading.md` first: it owns the pinned version, token discipline, base-URL
+handling, and the JSON / exit-code contract. This section covers only what is specific to the
 data-file call.
 
 - **Inputs:**
@@ -107,7 +106,7 @@ data-file call.
   overridden), and the `data_type` (if any), and upload **only on explicit
   confirmation** (the confirmation gate in `uploading.md`).
 
-- **The call** (using whichever runner the preflight selected):
+- **The call** (using the runner from `SKILL.md` Step 0):
   ```bash
   uvx --from flowbio==0.14.1 flowbio data upload <path> \
     [--filename NAME] [--data-type TYPE] [--directory] \

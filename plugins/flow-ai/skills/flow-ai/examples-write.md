@@ -1,7 +1,7 @@
 # Worked examples — uploads & pipeline runs
 
-Recipes that change remote state. Read `uploading.md` (runner preflight, CLI
-contract, confirmation gate) and `endpoints/pipelines.md` (run flow) first; for
+Recipes that change remote state. Read `uploading.md` (CLI contract,
+confirmation gate) and `endpoints/pipelines.md` (run flow) first; for
 the record edits (Examples 24-25), "Changing records" in `SKILL.md` and the
 topic's `/v2/reference` page.
 Read-only recipes live in `examples.md`.
@@ -39,13 +39,8 @@ JSON `{"message": …, "status_code": …}` and the exit code (5 =
 validation/bad request, 3 = auth, 2 = usage) and report the server
 message — never claim success.
 
-If no runner is found in step 3, stop and tell the user to install one:
-
-> Using Flow needs the `flowbio` CLI, which this skill runs on
-> demand via `uv`. I couldn't find `uv` (or `pipx`, or a compatible
-> `flowbio`) on your PATH. Install `uv` (https://docs.astral.sh/uv/),
-> `pipx` (`pip install --user pipx`), or `flowbio`
-> (`pip install "flowbio>=0.14.1"`), then ask me again.
+If no runner is found in step 3, stop and give the install message from
+`SKILL.md` Step 0.
 
 ## Example 19: "Upload a paired-end RNA-Seq sample with metadata"
 
