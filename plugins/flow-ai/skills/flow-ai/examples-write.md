@@ -55,14 +55,16 @@ is liver".
 # Step 1: resolve the sample type → identifier.
 flowbio api get /v2/sample-types --json | \
   jq '[.[] | {identifier, name}]'
-# Match "RNA-Seq" to a row; send its identifier. Ambiguous? ask the user.
+# Match the user's "RNA-Seq" to a row's name and use that row's identifier as
+# TYPE_IDENTIFIER below. Identifiers differ between Flow instances, so look it up
+# in this session every time. Ambiguous? ask the user.
 
 # Step 2: discover which metadata attributes are REQUIRED for that type.
 # Required = required_for_every_sample true OR a sample_types entry for the
 # chosen identifier with required:true. Confirm the user supplied them all
 # BEFORE uploading; if any is missing, name it and stop.
-flowbio api get /v2/metadata-attributes --param sample_type=RNA-Seq --json | \
-  jq --arg t "RNA-Seq" '[.[] | select(.required_for_every_sample or any(.sample_types[];
+flowbio api get /v2/metadata-attributes --param sample_type=TYPE_IDENTIFIER --json | \
+  jq --arg t "TYPE_IDENTIFIER" '[.[] | select(.required_for_every_sample or any(.sample_types[];
        .identifier == $t and .required)) | {identifier, name}]'
 
 # Step 3: resolve organism name → id.
@@ -86,7 +88,7 @@ done
 # sample type, project, organism, metadata), then run the pinned CLI. The
 # token is read by the CLI from ~/.config/flow/api-token — never --token.
 uvx --from flowbio==0.14.1 flowbio samples upload \
-  --name liver_rep1 --sample-type RNA-Seq \
+  --name liver_rep1 --sample-type TYPE_IDENTIFIER \
   --reads1 ./liver_R1.fastq.gz --reads2 ./liver_R2.fastq.gz \
   --project "$PROJECT_ID" --organism "$HUMAN_ID" \
   --metadata source=liver \
@@ -167,19 +169,21 @@ handling stay uniform. Read the `GET /annotation/<sample_type>` section of
 # Step 1: resolve the sample type → identifier (skip for the generic template).
 flowbio api get /v2/sample-types --json | \
   jq '[.[] | {identifier, name}]'
-# Match "RNA-Seq" to a row; send its identifier. Ambiguous? ask the user.
+# Match the user's "RNA-Seq" to a row's name and use that row's identifier as
+# TYPE_IDENTIFIER below. Identifiers differ between Flow instances, so look it up
+# in this session every time. Ambiguous? ask the user.
 
 # Step 2: runner preflight (`SKILL.md` step 0) — prefer uv, then pipx, then an
 # existing flowbio; otherwise stop with the install message. No confirmation
 # needed — this is a read. The token is read by the CLI from
 # ~/.config/flow/api-token — never passed as --token.
 uvx --from flowbio==0.14.1 flowbio samples annotation-template \
-  --sample-type rna_seq -o ./template.xlsx \
+  --sample-type TYPE_IDENTIFIER -o ./template.xlsx \
   --json --no-progress
 ```
 
 On exit `0`, parse stdout `{"output": "./template.xlsx", "sample_type":
-"rna_seq"}` and report where the template was written, plus that the user
+"TYPE_IDENTIFIER"}` and report where the template was written, plus that the user
 should fill in one row per sample (names, file paths, metadata) before running
 the multiplexed upload (Example 20). Omit `--sample-type` for the `generic`
 template (base columns only). On a non-zero exit, read the stderr JSON and the
