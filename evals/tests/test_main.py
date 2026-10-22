@@ -6,10 +6,12 @@ import pytest
 from flow_evals import compare, run
 
 FAKE_CLAUDE = """#!/usr/bin/env python3
-import json, sys
+import json, os, sys
 if "--json-schema" in sys.argv:
     print(json.dumps({"structured_output": {"items": [{"pass": True, "reason": "fine"}]}}))
 else:
+    with open(os.environ["TOKENS_SEEN"], "a") as seen:
+        print(sys.argv[2], os.environ.get("FLOW_API_TOKEN"), sep="\\t", file=seen)
     print(json.dumps({"type": "result", "result": "You own 7 files.", "num_turns": 2,
                       "usage": {"input_tokens": 5, "output_tokens": 3}}))
 """
@@ -34,6 +36,7 @@ def stack(tmp_path, monkeypatch):
     (tmp_path / "token").write_text(TOKEN)
     monkeypatch.setenv("EVAL_EXPECTED_FILE", str(tmp_path / "expected.json"))
     monkeypatch.setenv("EVAL_TOKEN_FILE", str(tmp_path / "token"))
+    monkeypatch.setenv("TOKENS_SEEN", str(tmp_path / "tokens-seen"))
     return tmp_path
 
 
@@ -49,6 +52,16 @@ def test_main_runs_each_scenario_on_each_model_and_writes_a_summary(stack, capsy
         ("004-data-i-own", "haiku", 2, 2), ("004-data-i-own", "opus", 2, 2)]
     assert (run_dir / "004-data-i-own-haiku.jsonl").exists()
     assert TOKEN not in capsys.readouterr().out
+
+
+def test_an_invalid_token_scenario_runs_with_a_token_flow_rejects(stack):
+    rejected_query = "Show me the samples I own."
+    (stack / "scenarios" / "018-auth.json").write_text(json.dumps({**SCENARIO, "query": rejected_query,
+                                                                   "invalid_token": True}))
+    run.main(["--scenario", "*", "--model", "haiku"])
+    seen = dict(line.split("\t") for line in (stack / "tokens-seen").read_text().splitlines())
+    assert seen[SCENARIO["query"]] == TOKEN
+    assert seen[rejected_query] not in (TOKEN, "", "None")
 
 
 def test_main_stops_without_the_expected_answers(stack, monkeypatch):
