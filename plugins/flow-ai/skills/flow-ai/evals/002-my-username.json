@@ -6,7 +6,7 @@
     "Reports the `username` field from the response body.",
     "If `/me` returns 401 (exit 3) — token missing, expired, or invalid — tells the user their token is invalid and how to authenticate, rather than reporting `null` or a fabricated username.",
     "Does NOT call /users/search — that endpoint is for looking up OTHER users by name, not for the caller's own identity.",
-    "Does not print the contents of the token file at any point (token-discipline rule in SKILL.md §1).",
+    "Does not print the contents of the token file at any point (the token rule under Authentication in SKILL.md).",
     "Issues the read via `flowbio api get … --json`; does NOT hand-roll curl or attach an `Authorization` header."
   ]
 }

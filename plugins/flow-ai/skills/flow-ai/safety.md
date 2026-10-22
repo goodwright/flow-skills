@@ -24,7 +24,7 @@ over time. Both running and uploading change remote state, so they are gated
 behind explicit user confirmation (the run confirmation lives in
 `endpoints/pipelines.md`; the upload confirmation in the confirmation gate in `uploading.md`); reads such as
 the template download need none. Any operation not listed in `uploading.md`, the run
-flow in `endpoints/pipelines.md`, or the endpoint reference (section 5) remains
+flow in `endpoints/pipelines.md`, or the Step 3 table in `SKILL.md` remains
 out of scope per the principle above.
 
 The principle is verb-agnostic. Authentication does not change it: the
@@ -68,8 +68,8 @@ writes refuse `private` on an edit, `owner`, `group_owner`, and a sample's
 the error's `detail` and stop: never look for another route to the same
 change.
 
-**Token discipline.** When a token file is configured (see `SKILL.md` step 0),
-never `cat`, `head`, `echo`, or otherwise print its contents. Reads,
+**Token discipline.** When a token file is configured (see "Authentication" in
+`SKILL.md`), never `cat`, `head`, `echo`, or otherwise print its contents. Reads,
 writes, pipeline runs and uploads never handle the token at all — the
 flowbio CLI reads the file itself (never pass `--token`). The only place the
 skill references the token directly is the one `curl` call, an
@@ -133,15 +133,15 @@ to `uploading.md` over time):
   `endpoints/data.md` for the call itself.
 - `POST /upload/sample` — upload a **demultiplexed sample** (single- or
   paired-end reads + metadata), gated behind explicit confirmation. See
-  `uploading.md` for the runner/auth/contract machinery and `endpoints/samples.md`
-  for the call itself.
+  `uploading.md` for the runner/auth/contract machinery and
+  `endpoints/samples-upload.md` for the call itself.
 - `POST /upload/multiplexed` — upload **multiplexed reads** (single- or
   paired-end) plus a completed annotation sheet, gated behind explicit
-  confirmation. See `uploading.md` and `endpoints/samples.md`.
+  confirmation. See `uploading.md` and `endpoints/samples-upload.md`.
 - `GET /annotation/<sample_type>` — download an **annotation-sheet template**
   (`.xlsx`) for a sample type, a read-only helper for the multiplexed flow (no
   confirmation needed). Performed via the flowbio CLI, not curl. See
-  `endpoints/samples.md`.
+  `endpoints/samples-upload.md`.
 
 All of the GET endpoints above are issued via `flowbio api get` (see
 `SKILL.md` step 0), which attaches the caller's token automatically when the token

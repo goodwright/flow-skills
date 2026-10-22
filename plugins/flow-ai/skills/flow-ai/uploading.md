@@ -29,7 +29,7 @@ with its install message; never attempt the upload another way.
 ##  Auth & base URL (token discipline preserved)
 
 - **Token.** The CLI reads `~/.config/flow/api-token` itself — the same file
-  the read endpoints use (`SKILL.md` step 0). **Do not pass `--token`, and never
+  the read endpoints use ("Authentication" in `SKILL.md`). **Do not pass `--token`, and never
   `cat`/`echo`/print the token.** Let the CLI read the file. If the file is
   absent the CLI exits with an auth error (exit `3`); report that the token is
   missing rather than improvising one.

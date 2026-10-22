@@ -46,7 +46,7 @@ If no runner is found in step 3, stop and give the install message from
 
 An upload, not a query — it runs through the on-demand flowbio CLI (the
 `samples upload` command). Read `uploading.md` and the `POST /upload/sample`
-section of `endpoints/samples.md` for the full contract. Suppose the user says:
+section of `endpoints/samples-upload.md` for the full contract. Suppose the user says:
 "upload a paired-end RNA-Seq sample `liver_rep1` from `liver_R1.fastq.gz`
 and `liver_R2.fastq.gz`, it's human, in my 'Liver Atlas' project, source
 is liver".
@@ -109,7 +109,7 @@ Example 18.
 
 An upload, not a query — it runs through the on-demand flowbio CLI (the
 `samples upload-multiplexed` command). Read `uploading.md` and the
-`POST /upload/multiplexed` section of `endpoints/samples.md` for the full
+`POST /upload/multiplexed` section of `endpoints/samples-upload.md` for the full
 contract. Suppose the user says: "upload multiplexed reads `pool_R1.fastq.gz`
 and `pool_R2.fastq.gz` with my annotation sheet `annotation.xlsx`, accept any
 warnings".
@@ -162,7 +162,7 @@ A helper for the multiplexed flow (Example 20). It changes no remote state,
 so there is **no** confirmation gate. It still runs through the on-demand
 flowbio CLI (the `samples annotation-template` command) so auth and base-URL
 handling stay uniform. Read the `GET /annotation/<sample_type>` section of
-`endpoints/samples.md`. Suppose: "download the RNA-Seq annotation template to
+`endpoints/samples-upload.md`. Suppose: "download the RNA-Seq annotation template to
 `./template.xlsx`".
 
 ```bash
