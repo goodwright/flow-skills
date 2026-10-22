@@ -6,6 +6,29 @@ Covers:
 - `GET /executions/<id>` — single-execution detail, used to **poll a run** you
   started via `POST /pipelines/versions/<id>/run` (see `endpoints/pipelines.md`).
 
+## Where a run is in its life
+
+`status` alone does not say whether a run is still going: a queued run and one
+that has only just started both have an empty status.
+
+| The run is… | `status` | `started` | `finished` |
+|---|---|---|---|
+| queued, not yet started | `""` | null | null |
+| running | `-` once Nextflow has reported on it, `""` before that | set | null |
+| finished | `OK`, `ERROR` or `CANCELED` | set | set |
+
+There is no `RUNNING` status. Flow's web app tells a running run from a
+finished one by its timestamps: `started` set and `finished` null means
+running, and a `CANCELED` run is over whatever its timestamps say.
+
+To find runs in progress, filter on `status=-`. That misses a run started so
+recently that Nextflow has not reported on it yet; to include those, list the
+runs and keep those with `started` set and `finished` null. A queued run cannot
+be filtered for: an empty `status=` is ignored and returns every run.
+
+A run's steps (`process_executions[].status`) are `-` until they end, then
+`COMPLETED`, `FAILED`, `ERROR` or `CANCELED`.
+
 ## `GET /executions/search`
 
 Cross-sample executions search. Distinct from `/samples/<id>/executions`
@@ -44,7 +67,7 @@ executions broadly ("which executions failed last week?",
 | `pipeline`          | str  | (none)     | Exact pipeline pk (integer as string). |
 | `pipeline_version`  | str  | (none)     | Exact pipeline-version pk. |
 | `organism`          | str  | (none)     | Organism id (e.g. `"Hs"`). |
-| `status`            | str  | (none)     | Execution status string (e.g. `"OK"`, `"ERROR"`, `"CANCELED"`). |
+| `status`            | str  | (none)     | Exact match: `-` for runs in progress, or `OK`, `ERROR`, `CANCELED`. An empty value is ignored. See "Where a run is in its life". |
 | `owner`             | str  | (none)     | Substring on owner name, username, group name, or group slug. |
 | `created_gt`        | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); created on or after (`__gte`). Passing an ISO-8601 string → HTTP 400 naming the field. |
 | `created_lt`        | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); created on or before (`__lte`). Passing an ISO-8601 string → HTTP 400 naming the field. |
@@ -67,7 +90,7 @@ executions broadly ("which executions failed last week?",
   - `created` (int — Unix timestamp)
   - `started` (float | null — Unix timestamp)
   - `finished` (float | null — Unix timestamp)
-  - `status` (str — e.g. `"OK"`, `"ERROR"`, `"CANCELED"`, `"RUNNING"`)
+  - `status` (str — see "Where a run is in its life")
   - `can_delete` (bool — always false for unauthenticated callers)
   - `retries` (object | null — `{id, identifier}` of the retry execution)
   - `retried_by` (object | null — `{id, identifier}` of the execution that retried this one)
@@ -79,7 +102,10 @@ executions broadly ("which executions failed last week?",
 
 - "Executions of the rna-seq pipeline" — find the pipeline pk from
   `/pipelines`, then `/executions/search?pipeline=<pk>`.
-- "Failed executions last week" — `/executions/search?status=ERROR&created_gt=1746403200` (Unix timestamp; 2026-05-05T00:00:00Z = 1746403200).
+- "Failed executions last week" — `/executions/search?status=ERROR&created_gt=<Unix time a week ago>`.
+  Compute it when asked: `date -v-7d +%s` (macOS) or `date -d '7 days ago' +%s` (Linux).
+- "Which of my runs are still running?" — `/executions/search?owned=true&status=-`
+  (see "Where a run is in its life").
 - "My executions" — `/executions/search?owned=true` (requires auth).
 - "Long-running executions (>1 hour)" — `/executions/search?duration_gt=3600`.
 
@@ -109,12 +135,9 @@ via `/executions/search`, and **polling a run** started via
   failure.
 - **Response shape:** a single object. The fields relevant to running/polling:
   - `id` (str), `identifier` (str — human-readable slug), `uuid` (str)
-  - `status` (str) — **the field to poll.** Terminal values: `OK`, `ERROR`,
-    `CANCELED`. While the run is pending/in-flight it is **not** one of those —
-    typically an empty string `""` or `-`. (There is no `RUNNING` value at the
-    execution level; per-step progress like `RUNNING`/`COMPLETED` lives on
-    `process_executions[].status`.) Poll until `status` is one of the three
-    terminal values.
+  - `status` (str) — **the field to poll.** Poll until it is `OK`, `ERROR` or
+    `CANCELED`; until then it is `""` or `-` (see "Where a run is in its
+    life").
   - `created` / `started` / `finished` (int | null — Unix timestamps;
     `finished` is set once terminal)
   - `nextflow_version` (str)
