@@ -20,8 +20,10 @@ JSON / exit-code contract. This section covers only what is specific to the samp
     server rejects them).
   - `--sample-type IDENTIFIER` (required) — a sample-type **identifier**.
     Discover and resolve it via `GET /v2/sample-types` — match the user's
-    term to a `name`/`identifier` and send the `identifier`. Sent as-is and
-    validated **server-side**.
+    term to a `name`/`identifier` and send the `identifier`. Identifiers
+    differ between Flow instances, so confirm it from `/v2/sample-types` in this
+    session before sending; never reuse one from memory or an example. Sent
+    as-is and validated **server-side**.
   - `--reads1 PATH` (required) — the (first) reads file. A single-end sample
     has only `--reads1`. A generic / non-sequencing file uploaded as a sample
     also goes here.
@@ -97,10 +99,11 @@ first for token discipline and the JSON / exit-code contract.
 
 - **Inputs / flags:**
   - `--sample-type IDENTIFIER` (optional, default `generic`) — a sample-type
-    **identifier**. A type-specific template (e.g. `rna_seq`) includes columns
+    **identifier**. A type-specific template includes columns
     for that type's metadata attributes; `generic` includes only the base
     columns common to all types. Resolve a user's natural-language type via
-    `GET /v2/sample-types` and send the `identifier`. Sent as-is and
+    `GET /v2/sample-types` and send the `identifier`, confirmed in this
+    session as for an upload. Sent as-is and
     validated **server-side**.
   - `-o PATH` / `--output PATH` (required) — the file to write the `.xlsx`
     workbook to (the template is binary).
