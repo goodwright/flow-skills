@@ -70,7 +70,7 @@ liver".
    uploading; if any is missing, name it and stop.
 
    ```bash
-   flow-cli api get /v2/metadata-attributes --param sample_type=TYPE_IDENTIFIER --json | jq -r --arg t TYPE_IDENTIFIER '.[] | .identifier + " | " + .name + " | required: " + ((.required_for_every_sample or any(.sample_types[]; .identifier == $t and .required)) | tostring)'
+   flow-cli api get /v2/metadata-attributes --param sample_type=TYPE_IDENTIFIER --json | jq -r --arg t TYPE_IDENTIFIER '.[] | .identifier + " | " + .name + " | " + (.description // "") + " | required: " + ((.required_for_every_sample or any(.sample_types[]; .identifier == $t and .required)) | tostring)'
    ```
 
 3. **The organism.** Pick the user's from the list by reading the rows:
@@ -79,11 +79,21 @@ liver".
    flow-cli api get /organisms --json | jq -r '.[] | .id + " | " + .name + " | " + .latin_name'
    ```
 
-4. **The project.** `name` is a substring match, so pick the row whose name is
-   exactly the user's ("Liver Atlas" also matches "Public Liver Atlas"):
+4. **The project.** "My project" needs a working token: without one the search
+   sees public projects only, and a private project looks missing. Check it
+   first; on a 401 (exit 3) or `NO ID`, stop and tell the user how to
+   authenticate:
 
    ```bash
-   flow-cli api get /projects/search --param name=NAME --param count=100 --json | jq -r '.projects[] | .id + " | " + .name'
+   flow-cli api get /me --json | jq -r '.id // "NO ID"'
+   ```
+
+   `name` is a substring match, so pick the row whose name is exactly the
+   user's ("Liver Atlas" also matches "Public Liver Atlas"). Quote a value that
+   contains a space. No exact match, or more than one? Ask the user.
+
+   ```bash
+   flow-cli api get /projects/search --param "name=Liver Atlas" --param count=100 --json | jq -r '.projects[] | .id + " | " + .name'
    ```
 
 5. **The files.** Check both exist, and that neither the filenames nor the
@@ -190,11 +200,12 @@ discovery steps are reads; the run itself is one `flow-cli api post`. Read the
 body shape, the schema→body mapping, the confirmation gate, and the error
 table.
 
-1. **Check the token.** If this fails with a 401 (exit 3) or prints `NO ID`,
-   stop and tell the user how to authenticate:
+1. **Check the token and who you are.** If this fails with a 401 (exit 3) or
+   prints `NO ID`, stop and tell the user how to authenticate. If
+   `can_run_pipelines` is false, stop: Flow will refuse the run.
 
    ```bash
-   flow-cli api get /me --json | jq -r '.id // "NO ID"'
+   flow-cli api get /me --json | jq -r '(.id // "NO ID") + " | " + (.username // "") + " | can_run_pipelines: " + (.can_run_pipelines | tostring)'
    ```
 
 2. **The pipeline.** List every pipeline and pick the user's by reading the
@@ -232,17 +243,22 @@ samplesheet, you usually only need the sample id per row — the server fills
 input that takes a sample, tell the user rather than inventing one.
 
 **Confirm first** — show the pipeline, version (name + id), the resolved params
-(sample *names*, not just ids), and the Nextflow version, and proceed only on
-explicit "yes". Then:
+(sample *names*, not just ids), the Nextflow version, and the user it will run
+as (the `username` from step 1), and proceed only on explicit "yes". Then:
 
 ```bash
 printf '%s' '{"params":{},"data_params":{},"csv_params":{"input":{"rows":[{"sample":"SAMPLE_ID","values":{}}]}},"nextflow_version":"NEXTFLOW_VERSION"}' | flow-cli api post /pipelines/versions/VERSION_ID/run --body - --json | jq '{id, identifier, status}'
 ```
 
 On success, report the execution `id`, `identifier`, initial `status`, and a
-link to the run in the UI: the base URL without its trailing `/api`, then
-`/executions/<id>/` — `https://app.flow.bio/executions/<id>/` unless
-`FLOW_API_URL` points elsewhere.
+link to the run in the UI: the API's base URL without its trailing `/api`, then
+`/executions/<id>/`. This prints the base URL in use:
+
+```bash
+echo "${FLOW_API_URL:-https://app.flow.bio/api}"
+```
+
+So by default the link is `https://app.flow.bio/executions/<id>/`.
 
 **Do not poll by default** — return the id and the link and stop. On `403`
 (`User cannot run pipelines` or `Token not authorised for this endpoint`) report
@@ -277,10 +293,12 @@ apply to the sample's type and how the edit reports a refused value.
    flow-cli api get /samples/search --param name=liver_rep1 --param count=100 --json | jq -r '.samples[] | .id + " | " + .name + " | " + .sample_type.identifier'
    ```
 
-2. **The attribute.** Match the user's "cell line" to a row's name:
+2. **The attribute.** List the attributes this sample's type can carry, using
+   the type step 1 printed, and match the user's "cell line" to a row's name;
+   the description tells similar attributes apart:
 
    ```bash
-   flow-cli api get /v2/metadata-attributes --json | jq -r '.[] | .identifier + " | " + .name + " | has_options: " + (.has_options | tostring)'
+   flow-cli api get /v2/metadata-attributes --param sample_type=SAMPLE_TYPE --json | jq -r '.[] | .identifier + " | " + .name + " | " + (.description // "") + " | has_options: " + (.has_options | tostring)'
    ```
 
 3. **The value.** The attribute has options, so check the value is one of them.
@@ -294,7 +312,8 @@ apply to the sample's type and how the edit reports a refused value.
 
 4. **Confirm with the user**: sample liver_rep1, cell line → HepG2. Then send
    only that attribute; everything else on the sample keeps its value. One line
-   of JSON in single quotes; write an apostrophe in a value as `'`.
+   of JSON in single quotes; write an apostrophe in a value as `\u0027`
+   (`"Martin\u0027s samples"`), since a literal `'` would end the shell's quoting.
 
    ```bash
    printf '%s' '{"metadata": {"IDENTIFIER": {"value": "HepG2"}}}' | flow-cli api patch /v2/samples/SAMPLE_ID --body - --json | jq '{id, name, value: .metadata.IDENTIFIER}'
