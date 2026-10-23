@@ -129,11 +129,11 @@ In-scope uploads (performed via the flowbio CLI, not curl; more will be added
 to `uploading.md` over time):
 
 - `POST /upload` — upload a **generic data file**, gated behind explicit
-  confirmation. See `uploading.md` for the runner/auth/contract machinery and
+  confirmation. See `uploading.md` for the CLI, auth and contract machinery and
   `endpoints/data.md` for the call itself.
 - `POST /upload/sample` — upload a **demultiplexed sample** (single- or
   paired-end reads + metadata), gated behind explicit confirmation. See
-  `uploading.md` for the runner/auth/contract machinery and
+  `uploading.md` for the CLI, auth and contract machinery and
   `endpoints/samples-upload.md` for the call itself.
 - `POST /upload/multiplexed` — upload **multiplexed reads** (single- or
   paired-end) plus a completed annotation sheet, gated behind explicit

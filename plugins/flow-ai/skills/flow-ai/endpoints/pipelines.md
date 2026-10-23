@@ -80,7 +80,7 @@ run body.
 Kicks off an execution of a pipeline version. **This is a mutation** (it changes
 remote state and consumes compute — runs often take hours), and it **always
 requires the token**. Performed with one `flowbio api post` of a JSON body,
-through the runner you resolved in `SKILL.md` Step 0.
+via `flow-cli`, like every other call.
 
 ### Capability & auth
 
@@ -222,7 +222,7 @@ Send the body as one line of JSON on stdin, inside single quotes, as
 "Changing records" in `SKILL.md` describes:
 
 ```bash
-printf '%s' '{"params":{},"data_params":{},"csv_params":{},"nextflow_version":"23.04.3"}' | uvx --from flowbio==0.14.1 flowbio api post /pipelines/versions/VERSION_ID/run --body - --json
+printf '%s' '{"params":{},"data_params":{},"csv_params":{},"nextflow_version":"23.04.3"}' | flow-cli api post /pipelines/versions/VERSION_ID/run --body - --json
 ```
 
 Every value in that body is something you resolved in steps 1–4 — there are no

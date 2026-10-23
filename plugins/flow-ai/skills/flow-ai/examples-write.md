@@ -24,12 +24,11 @@ flowbio api get /data/types --json | \
 test -f ./counts.tsv || { echo "File not found: ./counts.tsv"; exit 1; }
 case "counts.tsv" in *" "*) echo "Filename has spaces — rename first."; exit 1;; esac
 
-# Step 3: runner preflight (`SKILL.md` step 0) — prefer uv, then pipx, then
-# an existing flowbio; otherwise stop with the install message.
+# Step 3: check the CLI once per session (`SKILL.md` Step 0).
 # Step 4: CONFIRM with the user what will be uploaded (path, stored
 # filename, data_type), then run the pinned CLI. The token is read by
 # the CLI from ~/.config/flow/api-token — never passed as --token.
-uvx --from flowbio==0.14.1 flowbio data upload ./counts.tsv \
+flow-cli data upload ./counts.tsv \
   --json --no-progress
 ```
 
@@ -39,8 +38,7 @@ JSON `{"message": …, "status_code": …}` and the exit code (5 =
 validation/bad request, 3 = auth, 2 = usage) and report the server
 message — never claim success.
 
-If no runner is found in step 3, stop and give the install message from
-`SKILL.md` Step 0.
+If Step 0 finds no working CLI, stop and give the user its message.
 
 ## Example 19: "Upload a paired-end RNA-Seq sample with metadata"
 
@@ -82,12 +80,11 @@ for f in ./liver_R1.fastq.gz ./liver_R2.fastq.gz; do
   test -f "$f" || { echo "File not found: $f"; exit 1; }
 done
 
-# Step 6: runner preflight (`SKILL.md` step 0) — prefer uv, then pipx, then an
-# existing flowbio; otherwise stop with the install message.
+# Step 6: check the CLI once per session (`SKILL.md` Step 0).
 # Step 7: CONFIRM what will be uploaded (reads files + single/paired, name,
 # sample type, project, organism, metadata), then run the pinned CLI. The
 # token is read by the CLI from ~/.config/flow/api-token — never --token.
-uvx --from flowbio==0.14.1 flowbio samples upload \
+flow-cli samples upload \
   --name liver_rep1 --sample-type TYPE_IDENTIFIER \
   --reads1 ./liver_R1.fastq.gz --reads2 ./liver_R2.fastq.gz \
   --project "$PROJECT_ID" --organism "$HUMAN_ID" \
@@ -102,8 +99,7 @@ omit `--reads2`. On a non-zero exit, read the stderr JSON
 request such as an invalid sample type or missing required metadata, 3 =
 auth, 2 = usage) and report the server message — never claim success.
 
-If no runner is found in step 6, stop and give the same install message as
-Example 18.
+If Step 0 finds no working CLI, stop and give the user its message.
 
 ## Example 20: "Upload multiplexed reads with an annotation sheet"
 
@@ -125,14 +121,13 @@ for f in ./pool_R1.fastq.gz ./pool_R2.fastq.gz ./annotation.xlsx; do
   case "$f" in *" "*) echo "Filename has spaces — rename first."; exit 1;; esac
 done
 
-# Step 2: runner preflight (`SKILL.md` step 0) — prefer uv, then pipx, then an
-# existing flowbio; otherwise stop with the install message.
+# Step 2: check the CLI once per session (`SKILL.md` Step 0).
 # Step 3: CONFIRM what will be uploaded (reads files + single/paired, the
 # annotation sheet, and that warnings are auto-accepted), then run the
 # pinned CLI. The annotation is validated and uploaded BEFORE the reads, so
 # an invalid sheet never wastes a reads upload. The token is read by the CLI
 # from ~/.config/flow/api-token — never passed as --token.
-uvx --from flowbio==0.14.1 flowbio samples upload-multiplexed \
+flow-cli samples upload-multiplexed \
   --reads1 ./pool_R1.fastq.gz --reads2 ./pool_R2.fastq.gz \
   --annotation ./annotation.xlsx \
   --json --no-progress
@@ -153,8 +148,8 @@ On a non-zero exit, read the stderr JSON and the exit code. A bad request /
 annotation validation error (exit `5`) carries an `errors` array of per-row
 issues — show them and tell the user to fix the sheet. Because the annotation
 is validated first, **no reads were uploaded** on a validation failure; never
-claim success. If no runner is found in step 2, stop and give the same install
-message as Example 18.
+claim success. If Step 0 finds no working CLI, stop and give the user its
+message.
 
 ## Example 21: "Download an annotation-sheet template"
 
@@ -173,11 +168,10 @@ flowbio api get /v2/sample-types --json | \
 # TYPE_IDENTIFIER below. Identifiers differ between Flow instances, so look it up
 # in this session every time. Ambiguous? ask the user.
 
-# Step 2: runner preflight (`SKILL.md` step 0) — prefer uv, then pipx, then an
-# existing flowbio; otherwise stop with the install message. No confirmation
+# Step 2: check the CLI once per session (`SKILL.md` Step 0). No confirmation
 # needed — this is a read. The token is read by the CLI from
 # ~/.config/flow/api-token — never passed as --token.
-uvx --from flowbio==0.14.1 flowbio samples annotation-template \
+flow-cli samples annotation-template \
   --sample-type TYPE_IDENTIFIER -o ./template.xlsx \
   --json --no-progress
 ```
@@ -188,8 +182,8 @@ should fill in one row per sample (names, file paths, metadata) before running
 the multiplexed upload (Example 20). Omit `--sample-type` for the `generic`
 template (base columns only). On a non-zero exit, read the stderr JSON and the
 exit code (`4` = unknown sample type — re-resolve via `/v2/sample-types`; `3` =
-auth; `2` = usage) — never claim success. If no runner is found in step 2, stop
-and give the same install message as Example 18.
+auth; `2` = usage) — never claim success. If Step 0 finds no working CLI,
+stop and give the user its message.
 
 ## Example 22: "Run the rna-seq pipeline on sample Liver_RNA_1"
 
@@ -233,7 +227,7 @@ samplesheet, you usually only need the sample id per row — the server fills
 explicit "yes". Then:
 
 ```bash
-printf '%s' '{"params":{},"data_params":{},"csv_params":{"input":{"rows":[{"sample":"SAMPLE_ID","values":{}}]}},"nextflow_version":"23.04.3"}' | uvx --from flowbio==0.14.1 flowbio api post /pipelines/versions/VERSION_ID/run --body - --json | jq '{id, identifier, status}'
+printf '%s' '{"params":{},"data_params":{},"csv_params":{"input":{"rows":[{"sample":"SAMPLE_ID","values":{}}]}},"nextflow_version":"23.04.3"}' | flow-cli api post /pipelines/versions/VERSION_ID/run --body - --json | jq '{id, identifier, status}'
 ```
 
 On success, report the execution `id`, `identifier`, initial `status`, and a
@@ -294,7 +288,7 @@ flowbio api get /v2/metadata-attributes/cell_line/options --param value=HepG2 --
 # send only that attribute; everything else on the sample keeps its value.
 # One line of JSON in single quotes; write an apostrophe in a value as \u0027.
 printf '%s' '{"metadata": {"cell_line": {"value": "HepG2"}}}' | \
-  uvx --from flowbio==0.14.1 flowbio api patch /v2/samples/SAMPLE_ID --body - --json | \
+  flow-cli api patch /v2/samples/SAMPLE_ID --body - --json | \
   jq '{id, name, cell_line: .metadata.cell_line}'
 ```
 
@@ -312,7 +306,7 @@ A record creation. Read `/v2/reference/projects` first.
 # CONFIRM with the user: project "Liver Atlas", description "Bulk RNA-Seq of
 # liver tissue", private (say public only if the user asked for it).
 printf '%s' '{"name": "Liver Atlas", "description": "Bulk RNA-Seq of liver tissue"}' | \
-  uvx --from flowbio==0.14.1 flowbio api post /v2/projects --body - --json | \
+  flow-cli api post /v2/projects --body - --json | \
   jq '{id, name}'
 ```
 
