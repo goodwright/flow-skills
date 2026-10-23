@@ -5,7 +5,7 @@ import pytest
 
 from flow_evals.transcript import read_transcript
 
-RUNNER = "uvx --from flowbio==0.14.1 flowbio"
+RUNNER = "flow-cli"
 
 
 def _bash(command: str) -> dict:
@@ -47,6 +47,14 @@ def test_flags_flowbio_commands_other_than_api_get_as_writes(tmp_path):
     upload = f"{RUNNER} data upload /tmp/x.tsv --json"
     events = [_bash(f"{RUNNER} api get /me --json"), _bash(upload), _bash("flowbio --version"), _result("x")]
     assert read_transcript(_write(tmp_path, events)).write_calls == [upload]
+
+
+def test_flags_flow_cli_commands_other_than_api_get_as_writes(tmp_path):
+    run = "printf '%s' '{}' | flow-cli api post /pipelines/versions/1/run --body - --json"
+    events = [_bash("flow-cli api get /me --json | jq -r '.id'"), _bash(run), _result("x")]
+    transcript = read_transcript(_write(tmp_path, events))
+    assert transcript.write_calls == [run]
+    assert transcript.flow_paths == ["/me"]
 
 
 def test_flags_mutating_curl_as_write(tmp_path):

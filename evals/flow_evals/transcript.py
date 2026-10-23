@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 _API_GET_PATH = re.compile(r"\bapi\s+get\s+(/[^\s;|&)]*)")
-# A flowbio subcommand other than `api get` changes remote state; flags such as --version do not.
-_FLOWBIO_WRITE = re.compile(r"\bflowbio\s+(?!api\s+get\b)[a-z]")
+# A flowbio or flow-cli subcommand other than `api get` changes remote state; flags such as --version do not.
+_FLOWBIO_WRITE = re.compile(r"\b(?:flowbio|flow-cli)\s+(?!api\s+get\b)[a-z]")
 _CURL_WRITE = re.compile(
     r"\bcurl\b.*((-X|--request)\s*(POST|PUT|PATCH|DELETE)\b|\s(-d|--data[\w-]*|-F|--form|--json)(?=[\s@=]))",
     re.DOTALL,
