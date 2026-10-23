@@ -8,6 +8,12 @@ Bump it on every release.
 
 ## [Unreleased]
 
+- **SKILL.md is under 500 lines**, the length Anthropic recommends for a
+  skill's main file. What each failed status means and what to do now lives
+  in `errors.md`, which SKILL.md points to when a call fails; it keeps the rules
+  that apply to every error. The discovery command and the token rules are
+  each stated once.
+
 - **Every Flow call goes through `flow-cli`**, a launcher the plugin puts on
   `PATH`. It runs `flowbio` at the version pinned in
   `skills/flow-ai/scripts/flow-cli`, the only place the skill names it, through
