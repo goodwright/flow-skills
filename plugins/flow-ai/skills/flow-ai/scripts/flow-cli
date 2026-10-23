@@ -8,12 +8,19 @@ if command -v uvx >/dev/null 2>&1; then
 elif command -v pipx >/dev/null 2>&1; then
   exec pipx run --spec "flowbio==$FLOWBIO_VERSION" flowbio "$@"
 elif command -v flowbio >/dev/null 2>&1; then
-  exec flowbio "$@"
+  if installed=$(flowbio --version 2>/dev/null); then
+    [ "$installed" = "flowbio $FLOWBIO_VERSION" ] && exec flowbio "$@"
+    found="The flowbio on your PATH reports \"$installed\", not $FLOWBIO_VERSION."
+  else
+    found="The flowbio on your PATH doesn't run (flowbio --version failed)."
+  fi
+else
+  found="I couldn't find uv (or pipx, or flowbio) on your PATH."
 fi
 
 cat >&2 <<MESSAGE
 Using Flow needs the flowbio CLI, which this skill runs on demand via uv.
-I couldn't find uv (or pipx, or flowbio) on your PATH. Install one of:
+$found Install one of:
   • uv   — https://docs.astral.sh/uv/ (recommended); or
   • pipx — pip install --user pipx; or
   • flowbio directly — pip install "flowbio==$FLOWBIO_VERSION".
