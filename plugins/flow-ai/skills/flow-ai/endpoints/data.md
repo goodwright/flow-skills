@@ -77,7 +77,7 @@ endpoint and match by `identifier` client-side.
 Uploads a single generic data file (counts table, BAM, archive, …).
 **This is not a `curl` call** — it runs through the flowbio CLI on demand.
 It runs via `flow-cli` (`SKILL.md` Step 0). Read
-`uploading.md` first: it owns the pinned version, token discipline, base-URL
+`uploading.md` first: it owns token discipline, base-URL
 handling, and the JSON / exit-code contract. This section covers only what is specific to the
 data-file call.
 

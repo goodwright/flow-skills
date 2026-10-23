@@ -21,7 +21,7 @@ result. `/me` is likewise needed when:
 - You want to check whether the caller is an admin (`is_admin`).
 
 - **Auth:** required. With a missing, expired, or invalid token, `/me`
-  returns **401** (`flowbio api get` exit `3`) — unlike the search
+  returns **401** (`flow-cli api get` exit `3`) — unlike the search
   endpoints, which accept a bad token as anonymous and return 200. So a
   failed `/me` is the reliable "not authenticated" signal:
   - success with a non-null `id` → genuinely authenticated.

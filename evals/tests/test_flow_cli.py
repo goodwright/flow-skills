@@ -1,4 +1,5 @@
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -7,8 +8,9 @@ import pytest
 PLUGIN = Path(__file__).resolve().parents[2] / "plugins" / "flow-ai"
 LAUNCHER = PLUGIN / "skills" / "flow-ai" / "scripts" / "flow-cli"
 SHIM = PLUGIN / "bin" / "flow-cli"
-# Only system tools, so a uvx, pipx or flowbio on the developer's PATH never answers.
-SYSTEM_PATH = "/usr/bin:/bin"
+# The scripts' only external tools. PATH holds just these and the fakes, so a uvx,
+# pipx or flowbio installed on the machine, as pipx is in /usr/bin on Ubuntu, never answers.
+SCRIPT_TOOLS = ["cat", "dirname"]
 
 
 def _pinned_version() -> str:
@@ -18,6 +20,8 @@ def _pinned_version() -> str:
 def _fake_bin(tmp_path: Path, *names: str) -> Path:
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
+    for tool in SCRIPT_TOOLS:
+        (bin_dir / tool).symlink_to(shutil.which(tool))
     for name in names:
         tool = bin_dir / name
         tool.write_text(f'#!/bin/sh\necho "{name} $*"\n')
@@ -27,7 +31,7 @@ def _fake_bin(tmp_path: Path, *names: str) -> Path:
 
 def _run(command: Path, bin_dir: Path) -> subprocess.CompletedProcess:
     return subprocess.run([str(command), "api", "get", "/me", "--json"], capture_output=True, text=True,
-                          env={"PATH": f"{bin_dir}:{SYSTEM_PATH}"})
+                          env={"PATH": str(bin_dir)})
 
 
 def test_uses_uvx_with_the_pinned_version_first(tmp_path):

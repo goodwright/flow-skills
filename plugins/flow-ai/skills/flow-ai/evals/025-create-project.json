@@ -4,7 +4,7 @@
   "expected_behavior": [
     "Reads `/v2/reference/projects` before creating the project.",
     "Asks the user to confirm before creating it, stating the name, the description it will send, and that the project will be private (the user did not ask for public), and writes only after an explicit yes.",
-    "Creates it with `flowbio api post /v2/projects --body -`, sending `name` and `description` and no `owner`, `group_owner` or `private: false`.",
+    "Creates it with `flow-cli api post /v2/projects --body -`, sending `name` and `description` and no `owner`, `group_owner` or `private: false`.",
     "Reports the new project's id from the response; if the name is already in use, reports the `validation_error` entry for `/name` rather than retrying under another name without asking."
   ]
 }
