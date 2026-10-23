@@ -69,7 +69,10 @@ count into the command text yourself. Multi-line scripts and `VAR=...`
 assignments get mangled and fail silently.
 
 Call shape: `flow-cli api get <PATH> --param KEY=VALUE … --json`. One `--param` per
-filter; the CLI URL-encodes each value. **Never put a `?` in the path** — the CLI
+filter; the CLI URL-encodes each value. Put the pair in double quotes when the
+value has a space or any other character the shell would act on:
+`--param "name=Liver Atlas"`. Unquoted, the shell splits it and the CLI fails
+with `unrecognized arguments`. **Never put a `?` in the path** — the CLI
 rejects it.
 
 ### Shape A — one request
