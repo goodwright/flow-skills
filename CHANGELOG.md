@@ -16,6 +16,11 @@ Bump it on every release.
   runs every call in that environment. Elsewhere it still stops and shows the
   message.
 
+- **`flow-cli` only runs an installed `flowbio` at the pinned version.** Any
+  other version, or one that doesn't run, gets the install message naming what
+  it found, so an older install no longer runs unpinned after a release bumps
+  the pin.
+
 ## [0.15.0] — 2026-10-23
 
 - **SKILL.md is under 500 lines**, the length Anthropic recommends for a
