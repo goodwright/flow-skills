@@ -190,8 +190,8 @@ Surface this in your messaging: if validation fails, no reads were uploaded.
   JSON error shape. The multiplexed-specific causes to recognise:
   - **Annotation validation** (exit `5`, bad request) — the sheet has hard
     validation errors, or it has warnings and the user chose `--reject-warnings`.
-    The error JSON carries an `errors` array of per-row/field issues
-    (`{"row": …, "message": …}`); show them. **No reads were uploaded**
+    Show each row's problems from the error JSON's `errors` (shape in
+    `uploading.md`). **No reads were uploaded**
     (annotation-first), so tell the user to fix the sheet and retry; if the
     failure was warnings-only, offer to retry **without** `--reject-warnings` to
     accept them.

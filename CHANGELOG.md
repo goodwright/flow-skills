@@ -18,6 +18,11 @@ tracks it. Bump both together on every release.
   with `Bash(flow-cli api get *)`; `Bash(jq *)` stays. The skill needs macOS,
   Linux or WSL.
 
+- **Multiplexed upload validation errors are described as they arrive**: one
+  entry per sheet row mapping column headers to messages (`{}` for a clean
+  row), or a single string for a problem with the whole sheet. The skill
+  described `{"row": …, "message": …}` objects, which the CLI never sends.
+
 ## [0.14.1] — 2026-10-21
 
 - **Shared flowbio pin bumped `0.14.0` → `0.14.1`**. `0.14.0` has no
