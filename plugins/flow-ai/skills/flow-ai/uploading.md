@@ -52,9 +52,16 @@ its message; never attempt the upload another way.
     Report where the template was written. No `id` key.
 - **Failure:** non-zero exit; stderr carries `{"message": …, "status_code": …}`
   when the error came from the server. Annotation validation failures
-  additionally carry an `errors` array of per-row/field issues
-  (`{"row": …, "message": …}`) — surface those. Report the server `message`
-  verbatim and map the exit code to the cause — never fabricate success:
+  additionally carry `errors`: a list with one entry per sample row, in sheet
+  order, mapping a column header to that cell's messages, and `{}` for a row
+  with no problems — e.g. `[{}, {"Sample Name": ["'Sample 1' has spaces in
+  it."], "Source": ["This field is required."]}]` means the second sample is
+  wrong. A problem with the sheet as a whole (unknown columns, no rows) comes
+  as a single string instead. Surface each problem with its sample. The
+  `message` here ("Annotation has N validation error(s)") counts rows, not
+  problems, so count the non-empty entries yourself. Otherwise report the
+  server `message` verbatim. Map the exit code to the cause — never fabricate
+  success:
 
   | Exit | Meaning |
   |------|---------|
