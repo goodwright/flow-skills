@@ -349,10 +349,10 @@ ignores the filter and returns every sample.
      sample with the loop in SKILL.md Shape B, with the attribute's identifier
      in the `jq` program (`.metadata.IDENTIFIER.value // empty`). A handful of
      records is not enough: a value absent from them is not absent from Flow.
-3. **Filter.** `--param IDENTIFIER=VALUE` matches a substring of the value:
+3. **Filter.** `--param "IDENTIFIER=VALUE"` matches a substring of the value:
 
    ```bash
-   flow-cli api get /samples/search --param IDENTIFIER=VALUE --param count=1 --json | jq -r '.count'
+   flow-cli api get /samples/search --param "IDENTIFIER=VALUE" --param count=1 --json | jq -r '.count'
    ```
 
    Check that the count dropped from the unfiltered total: an identifier this
