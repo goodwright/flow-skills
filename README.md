@@ -147,30 +147,12 @@ download can be large.
 
 The canonical version lives in
 [`plugins/flow-ai/.claude-plugin/plugin.json`](plugins/flow-ai/.claude-plugin/plugin.json).
-Reads go through the `flowbio` CLI, so they no longer carry a `flow-ai`
-User-Agent; the string now survives only on the file-download `curl` as
-`User-Agent: flow-ai/<version>`, kept in lockstep so Flow's backend can
-attribute that traffic to a specific release.
-On each release, bump:
-
-1. `plugins/flow-ai/.claude-plugin/plugin.json#version`
-2. The `User-Agent` string in `examples.md` (download recipe)
-3. `CHANGELOG.md`
+On each release, bump it and add the release to `CHANGELOG.md`.
 
 The `flowbio` version the skill runs is pinned in one place,
 `FLOWBIO_VERSION` in
 [`plugins/flow-ai/skills/flow-ai/scripts/flow-cli`](plugins/flow-ai/skills/flow-ai/scripts/flow-cli).
 To move to a new `flowbio`, change it there.
-
-A pre-release sanity check:
-
-```sh
-grep -rn "flow-ai/[0-9]" plugins/flow-ai/skills/flow-ai/ | grep -v evals/ | grep -v 0.14.1
-```
-
-…should return nothing once everything is in lockstep. (The `evals/` are
-excluded: they use a `flow-ai/<version>` placeholder and cite historical
-release numbers, neither of which tracks the current version.)
 
 ## Contributing
 
