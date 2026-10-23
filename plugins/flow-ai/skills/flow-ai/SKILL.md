@@ -111,11 +111,8 @@ X" — anything needing a *field* from every record.
 request sees at most 100 of possibly thousands of records. Envelope `count` is not
 the answer either — it counts records, not distinct values.
 
-**B1. Find the real identifiers first** (Step 4; never guess them):
-
-```bash
-(  flow-cli api get /v2/sample-types --json | jq -r '.[] | "TYPE | " + .identifier + " | " + .name';  flow-cli api get /v2/metadata-attributes --json | jq -r '.[] | "ATTR | " + .identifier + " | " + .name + " | " + .description'  )
-```
+**B1. Find the real identifiers first** with the discovery command in Step 4;
+never guess them.
 
 **B2. Collect the field across every page and deduplicate.** This command
 paginates by itself — it asks for the record total, computes the page count, and
@@ -128,7 +125,6 @@ for p in $(seq 1 $(flow-cli api get /samples/search --param sample_types=TYPE_ID
 ```
 
 Drop the `| wc -l` to list the values instead of counting them.
-
 
 **`sort -u | wc -l` goes after `done`, never inside the loop.** Inside, it
 deduplicates each page separately and the counts are then summed, inflating the
@@ -194,38 +190,31 @@ API"). For any other path not listed, read its file (Step 3) before counting. If
 inspect the response first with `jq '.[0]'` and check whether that element is the
 thing you were asked about or a container holding it.
 
+Not every endpoint is a paginated list. If `.count` came back `null`, there is no
+pagination envelope: do not fall back to `length`, which answers a different
+question. Read the endpoint's file (Step 3) first. And before counting any array,
+inspect one element — its elements may be containers, not the thing you were
+asked about:
 
+```bash
+flow-cli api get /PATH --json | jq '.[0]'
+```
 
-Not every endpoint is a paginated list. Two signals tell you that you are on the
-wrong shape, and both have the same remedy: read the endpoint's file (Step 3)
-before counting anything.
+If it holds a nested array — `subcategories`, `pipelines`, `versions`,
+`filesets`, `samples` — then the items you want are the **leaves**, and the
+top-level `length` counts *groups* instead. Descend and count the leaves,
+flattening every level:
 
-- **`.count` came back `null`.** That endpoint has no pagination envelope, so
-  Shape A does not apply. Do not silently fall back to `length` — that answers a
-  different question. Find out what the response actually is first.
-- **The array's elements are containers, not the thing you were asked about.**
-  Before counting any array, inspect one element:
+```bash
+flow-cli api get /PATH --json | jq '[.[].OUTER[].INNER[]] | length'
+```
 
-  ```bash
-  flow-cli api get /PATH --json | jq '.[0]'
-  ```
+Sanity-check by also counting unique ids (`[.[].OUTER[].INNER[].id] | unique |
+length`); if the two differ, the tree repeats entries and you should report the
+unique figure.
 
-  If it holds a nested array — `subcategories`, `pipelines`, `versions`,
-  `filesets`, `samples` — then the items you want are the **leaves**, and the
-  top-level `length` counts *groups* instead. Descend and count the leaves,
-  flattening every level:
-
-  ```bash
-  flow-cli api get /PATH --json | jq '[.[].OUTER[].INNER[]] | length'
-  ```
-
-  Sanity-check by also counting unique ids (`[.[].OUTER[].INNER[].id] | unique |
-  length`); if the two differ, the tree repeats entries and you should report the
-  unique figure.
-
-**Counting containers instead of leaves is the most common way to report a number
-that is far too small.** A catalogue of four categories is not four items. If a
-count comes back suspiciously small, this is the first thing to check.
+A catalogue of four categories is not four items: if a count comes back
+suspiciously small, check for containers first.
 
 ## Step 2 — rules for every call
 
@@ -258,12 +247,8 @@ count comes back suspiciously small, this is the first thing to check.
    indistinguishable from "this instance has none of those" — see Step 4.
 8. `FLOW_API_URL` overrides the base URL; forward it only if the user set it.
    Never pass `--base-url` otherwise.
-9. **Auth is optional and needs no decision up front.** The CLI reads
-   `~/.config/flow/api-token` by itself — never pass `--token`, never print the
-   token. If the file is absent the CLI reads anonymously; carry on, because
-   Flow's public catalogue is large and anonymous access is the normal case.
-   Never ask the user for a token and never make it a precondition for
-   answering. See "Authentication" below.
+9. **Auth is optional and needs no decision up front**, and the CLI handles the
+   token itself. See "Authentication" below.
 
 ## Finding out about the API
 
@@ -314,6 +299,7 @@ one matching file below before issuing the request.** Do not guess.
 | Multi-step recipes for read questions | `examples.md` |
 | Multi-step recipes for uploads and pipeline runs | `examples-write.md` |
 | What a project / sample / fileset / execution *is* | `flow-concepts.md` |
+| A call failed: what its status means and what to do | `errors.md` |
 
 ## Step 4 — discover before you filter
 
@@ -435,47 +421,15 @@ printf '%s' '{"metadata": {"cell_line": {"value": "HeLa"}}}' | flow-cli api patc
 
 ## Errors
 
-Every read passes `--json`, so a failed `api get` writes
-`{"message": …, "status_code": …}` to **stderr** and exits non-zero. Trust the
-server's `status_code` and `message` as the primary signal, and report the
-`message` verbatim. The process exit code is a coarse secondary signal (`0` ok,
-`2` usage, `3` auth, `4` not found, `5` bad request or invalid input).
+Every call passes `--json`, so a failed call writes
+`{"message": …, "status_code": …}` to **stderr** and exits non-zero. **When a
+call fails, read `errors.md`** for what each status means and what to do. In
+every case:
 
-When the server names the parts of the request at fault, they are listed under
-`errors`, and each entry's own message says more than the top-level one. On the
-endpoints in this skill's files an entry is `{field, code, message}`. A `/v2/…`
-path also returns the server's own error, an RFC 9457 Problem Details object,
-under `problem`, and its entries are `{parameter | pointer, code, detail}`:
-
-```json
-{"message": "Invalid request", "status_code": 422,
- "errors": [{"parameter": "page", "code": "int_parsing", "detail": "Input should be a valid integer, …"}],
- "problem": {"type": "https://app.flow.bio/api/v2/reference#validation_error", "title": "Invalid request",
-             "status": 422, "detail": "Invalid request", "code": "validation_error", "errors": […]}}
-```
-
-- **Branch on `problem.code`**, never on the message. The Errors section of
-  `/v2/reference` says what each code means and what to do; `type` links to
-  that code's section, so `…/v2/reference#not_found` is the `not_found` section
-  of `api get /v2/reference`. Treat a code not documented there as the generic
-  error for its `status_code`.
-- **Each `errors` entry names what to fix**: `parameter` is a query or path
-  parameter, `pointer` a JSON Pointer into the request body (`/imports/0/name`).
-  Report its `detail` with the name.
-- **On a 5xx, quote `problem.instance`** (`urn:uuid:…`) when it is present: it is
-  the id that leads Flow's developers to the fault.
-
-| `status_code` | Meaning | What to do |
-|---|---|---|
-| 400 | Wrong filter/type/value, a non-integer `page`/`count`, `count > 100`, or an ISO date where a Unix timestamp is required | Fix each field `errors` names, using a valid value from the endpoint file. |
-| 500 on `/projects/search` or `/data/<id>/contents` | An ISO date in `created_gt`/`created_lt`, or a non-integer `position`: these two are not validated, so they fail as a server error | Fix the value as the endpoint file states it. |
-| 422 | A `/v2/…` parameter or body is invalid (`validation_error`) | Fix each entry `errors` names, using the parameter or body as the reference states it. |
-| 422 with an entry coded `refused_field` | The write sent a field the API never changes for this skill: visibility, ownership, or a sample's project | Do not retry it, and do not look for another way to make the change. Tell the user the entry's `detail` verbatim: it says why, and that they can make the change in the Flow web app. |
-| 401 / 403 | Auth missing, expired, or insufficient | Report it, then give the authentication guidance below. Do not silently retry anonymously. |
-| 404 | Wrong path, or an id that does not exist or is not visible to this caller; Flow reports the two alike | Re-check the path; fall back to the list endpoint to rediscover the id. Tell the user it does not exist or they may not see it, not which. |
-| 410 | The file's content was deleted under the retention policy; the message says which file and when | Report it as deleted, with the date. Do not retry, and do not try another endpoint to reach the same file. |
-| 5xx | Server-side fault | Report once, quoting `problem.instance` if present. Do not retry. |
-| no `status_code`, transport error | Network/DNS/timeout | Report the base URL and ask whether it is reachable. |
+- Report the server's `message` verbatim, and trust its `status_code` over the
+  exit code.
+- On a `/v2/…` path, branch on `problem.code`, never on the message.
+- Never swallow an error. Report it and stop; never fabricate a result.
 
 Two cases exit `0` but still need interpreting:
 
@@ -485,9 +439,6 @@ Two cases exit `0` but still need interpreting:
 | `count` unchanged after adding a filter | The filter was silently ignored (unknown identifier) | Confirm it via the relevant discovery endpoint (Step 4). |
 
 A missing CLI is not an API error — handle it with Step 0.
-
-Never swallow an error. If the CLI exits non-zero, report the server `message`
-(or the transport error) and stop — do not fabricate a result.
 
 **Never re-run a command unchanged.** Empty output means your `jq` program, your
 param name, or your quoting was wrong — repeating it produces the same empty
@@ -500,7 +451,9 @@ continuing to retry.
 Presence of the file `~/.config/flow/api-token` is the only switch. The CLI reads
 it itself: **never pass `--token`, never `cat`/`head`/`echo` the token.** When
 present, every read is authenticated and broadens uniformly; when absent, reads
-are anonymous and return public resources only.
+are anonymous and return public resources only. Carry on anonymously: Flow's
+public catalogue is large and anonymous access is the normal case. Never ask
+the user for a token, and never make one a precondition for answering.
 
 If a read fails authentication, or the user's request implies they expect to be
 authenticated ("my samples", `owned=true`) but no token file exists, tell them how
