@@ -6,6 +6,12 @@ the record edits (Examples 24-25), "Changing records" in `SKILL.md` and the
 topic's `/v2/reference` page.
 Read-only recipes live in `examples.md`.
 
+Every command follows SKILL.md's rules: one line, no `VAR=…` assignments, and
+`flow-cli` for every Flow call. Words in capitals (`TYPE_IDENTIFIER`,
+`PROJECT_ID`) are placeholders: replace each with the value a previous command
+printed, never with a guess. Check the CLI once per session first (SKILL.md
+Step 0); if Step 0 finds no working CLI, stop and give the user its message.
+
 ## Example 18: "Upload counts.tsv to Flow as a data file"
 
 An upload, not a query. It runs through the on-demand flowbio CLI (the
@@ -13,93 +19,95 @@ An upload, not a query. It runs through the on-demand flowbio CLI (the
 `endpoints/data.md` for the full contract; the recipe below is the end-to-end
 shape.
 
+If the user named a data type, find its identifier; skip this otherwise:
+
 ```bash
-# Step 1 (optional): resolve a named data type to its identifier.
-# Skip if the user gave no data type.
-flow-cli api get /data/types --json | \
-  jq '[.[] | {identifier, name}]'
-
-# Step 2: local pre-flight. Confirm the file exists and the stored
-# filename has no spaces (the server rejects spaces with a 400).
-test -f ./counts.tsv || { echo "File not found: ./counts.tsv"; exit 1; }
-case "counts.tsv" in *" "*) echo "Filename has spaces — rename first."; exit 1;; esac
-
-# Step 3: check the CLI once per session (`SKILL.md` Step 0).
-# Step 4: CONFIRM with the user what will be uploaded (path, stored
-# filename, data_type), then run the pinned CLI. The token is read by
-# the CLI from ~/.config/flow/api-token — never passed as --token.
-flow-cli data upload ./counts.tsv \
-  --json --no-progress
+flow-cli api get /data/types --json | jq -r '.[] | .identifier + " | " + .name'
 ```
 
-On exit `0`, parse stdout `{"id": "<data_id>"}` and report: "Uploaded
-`counts.tsv` — data id `<data_id>`." On a non-zero exit, read the stderr
-JSON `{"message": …, "status_code": …}` and the exit code (5 =
-validation/bad request, 3 = auth, 2 = usage) and report the server
-message — never claim success.
+Check the file exists and that its name has no spaces (the server rejects
+spaces with a 400; tell the user to rename it rather than uploading):
 
-If Step 0 finds no working CLI, stop and give the user its message.
+```bash
+ls -l ./counts.tsv
+```
+
+**Confirm with the user** what will be uploaded — the path, the stored filename
+if overridden, the data type if given — then upload. The CLI reads the token
+itself; never pass `--token`.
+
+```bash
+flow-cli data upload ./counts.tsv --json --no-progress
+```
+
+Add `--data-type DATA_TYPE` when the user named one. On exit `0`, parse stdout
+`{"id": "<data_id>"}` and report: "Uploaded `counts.tsv` — data id
+`<data_id>`." On a non-zero exit, read the stderr JSON
+`{"message": …, "status_code": …}` and the exit code (5 = validation/bad
+request, 3 = auth, 2 = usage) and report the server message — never claim
+success.
 
 ## Example 19: "Upload a paired-end RNA-Seq sample with metadata"
 
 An upload, not a query — it runs through the on-demand flowbio CLI (the
 `samples upload` command). Read `uploading.md` and the `POST /upload/sample`
-section of `endpoints/samples-upload.md` for the full contract. Suppose the user says:
-"upload a paired-end RNA-Seq sample `liver_rep1` from `liver_R1.fastq.gz`
-and `liver_R2.fastq.gz`, it's human, in my 'Liver Atlas' project, source
-is liver".
+section of `endpoints/samples-upload.md` for the full contract. Suppose the user
+says: "upload a paired-end RNA-Seq sample `liver_rep1` from `liver_R1.fastq.gz`
+and `liver_R2.fastq.gz`, it's human, in my 'Liver Atlas' project, source is
+liver".
 
-```bash
-# Step 1: resolve the sample type → identifier.
-flow-cli api get /v2/sample-types --json | \
-  jq '[.[] | {identifier, name}]'
-# Match the user's "RNA-Seq" to a row's name and use that row's identifier as
-# TYPE_IDENTIFIER below. Identifiers differ between Flow instances, so look it up
-# in this session every time. Ambiguous? ask the user.
+1. **The sample type.** Match the user's "RNA-Seq" to a row's name and use that
+   row's identifier as `TYPE_IDENTIFIER`. Identifiers differ between Flow
+   instances, so look it up in this session every time. Ambiguous? Ask the user.
 
-# Step 2: discover which metadata attributes are REQUIRED for that type.
-# Required = required_for_every_sample true OR a sample_types entry for the
-# chosen identifier with required:true. Confirm the user supplied them all
-# BEFORE uploading; if any is missing, name it and stop.
-flow-cli api get /v2/metadata-attributes --param sample_type=TYPE_IDENTIFIER --json | \
-  jq --arg t "TYPE_IDENTIFIER" '[.[] | select(.required_for_every_sample or any(.sample_types[];
-       .identifier == $t and .required)) | {identifier, name}]'
+   ```bash
+   flow-cli api get /v2/sample-types --json | jq -r '.[] | .identifier + " | " + .name'
+   ```
 
-# Step 3: resolve organism name → id.
-HUMAN_ID=$(flow-cli api get /organisms --json | \
-  jq -r '.[] | select(.name | ascii_downcase == "human") | .id')
+2. **The metadata that type requires.** An attribute is required when
+   `required_for_every_sample` is true or its `sample_types` entry for this type
+   says `required`. Check the user gave every required one **before**
+   uploading; if any is missing, name it and stop.
 
-# Step 4: resolve project name → id.
-PROJECT_ID=$(flow-cli api get /projects/search \
-  --param "name=Liver Atlas" --json | \
-  jq -r '.projects[0].id')
+   ```bash
+   flow-cli api get /v2/metadata-attributes --param sample_type=TYPE_IDENTIFIER --json | jq -r --arg t TYPE_IDENTIFIER '.[] | .identifier + " | " + .name + " | required: " + ((.required_for_every_sample or any(.sample_types[]; .identifier == $t and .required)) | tostring)'
+   ```
 
-# Step 5: local pre-flight. Reads files exist; no spaces in filenames or
-# the sample name (the server rejects spaces).
-for f in ./liver_R1.fastq.gz ./liver_R2.fastq.gz; do
-  test -f "$f" || { echo "File not found: $f"; exit 1; }
-done
+3. **The organism.** Pick the user's from the list by reading the rows:
 
-# Step 6: check the CLI once per session (`SKILL.md` Step 0).
-# Step 7: CONFIRM what will be uploaded (reads files + single/paired, name,
-# sample type, project, organism, metadata), then run the pinned CLI. The
-# token is read by the CLI from ~/.config/flow/api-token — never --token.
-flow-cli samples upload \
-  --name liver_rep1 --sample-type TYPE_IDENTIFIER \
-  --reads1 ./liver_R1.fastq.gz --reads2 ./liver_R2.fastq.gz \
-  --project "$PROJECT_ID" --organism "$HUMAN_ID" \
-  --metadata source=liver \
-  --json --no-progress
-```
+   ```bash
+   flow-cli api get /organisms --json | jq -r '.[] | .id + " | " + .name + " | " + .latin_name'
+   ```
+
+4. **The project.** `name` is a substring match, so pick the row whose name is
+   exactly the user's ("Liver Atlas" also matches "Public Liver Atlas"):
+
+   ```bash
+   flow-cli api get /projects/search --param name=NAME --param count=100 --json | jq -r '.projects[] | .id + " | " + .name'
+   ```
+
+5. **The files.** Check both exist, and that neither the filenames nor the
+   sample name contain spaces (the server rejects spaces):
+
+   ```bash
+   ls -l ./liver_R1.fastq.gz ./liver_R2.fastq.gz
+   ```
+
+6. **Confirm with the user** what will be uploaded — the reads files and that
+   the sample is paired-end, the name, the sample type, the project, the
+   organism and the metadata — then upload. For a single-end sample, leave out
+   `--reads2`.
+
+   ```bash
+   flow-cli samples upload --name liver_rep1 --sample-type TYPE_IDENTIFIER --reads1 ./liver_R1.fastq.gz --reads2 ./liver_R2.fastq.gz --project PROJECT_ID --organism ORGANISM_ID --metadata source=liver --json --no-progress
+   ```
 
 On exit `0`, parse stdout `{"id": "<sample_id>"}` and report: "Uploaded
-sample `liver_rep1` — sample id `<sample_id>`." For a single-end sample,
-omit `--reads2`. On a non-zero exit, read the stderr JSON
-`{"message": …, "status_code": …}` and the exit code (5 = validation/bad
-request such as an invalid sample type or missing required metadata, 3 =
-auth, 2 = usage) and report the server message — never claim success.
-
-If Step 0 finds no working CLI, stop and give the user its message.
+sample `liver_rep1` — sample id `<sample_id>`." On a non-zero exit, read the
+stderr JSON `{"message": …, "status_code": …}` and the exit code (5 =
+validation/bad request such as an invalid sample type or missing required
+metadata, 3 = auth, 2 = usage) and report the server message — never claim
+success.
 
 ## Example 20: "Upload multiplexed reads with an annotation sheet"
 
@@ -113,24 +121,20 @@ warnings".
 If the user still needs an annotation sheet, download a template first
 (Example 21) and let them fill it in before this step.
 
-```bash
-# Step 1: local pre-flight. Reads files and the annotation sheet exist;
-# no spaces in any filename (the server rejects spaces).
-for f in ./pool_R1.fastq.gz ./pool_R2.fastq.gz ./annotation.xlsx; do
-  test -f "$f" || { echo "File not found: $f"; exit 1; }
-  case "$f" in *" "*) echo "Filename has spaces — rename first."; exit 1;; esac
-done
+Check the reads files and the sheet exist, and that no filename contains a
+space (the server rejects spaces):
 
-# Step 2: check the CLI once per session (`SKILL.md` Step 0).
-# Step 3: CONFIRM what will be uploaded (reads files + single/paired, the
-# annotation sheet, and that warnings are auto-accepted), then run the
-# pinned CLI. The annotation is validated and uploaded BEFORE the reads, so
-# an invalid sheet never wastes a reads upload. The token is read by the CLI
-# from ~/.config/flow/api-token — never passed as --token.
-flow-cli samples upload-multiplexed \
-  --reads1 ./pool_R1.fastq.gz --reads2 ./pool_R2.fastq.gz \
-  --annotation ./annotation.xlsx \
-  --json --no-progress
+```bash
+ls -l ./pool_R1.fastq.gz ./pool_R2.fastq.gz ./annotation.xlsx
+```
+
+**Confirm with the user** what will be uploaded — the reads files and that the
+upload is paired-end, the annotation sheet, and that warnings are
+auto-accepted — then upload. The sheet is validated and uploaded **before** the
+reads, so an invalid sheet never wastes a reads upload.
+
+```bash
+flow-cli samples upload-multiplexed --reads1 ./pool_R1.fastq.gz --reads2 ./pool_R2.fastq.gz --annotation ./annotation.xlsx --json --no-progress
 ```
 
 On exit `0`, parse stdout
@@ -148,8 +152,7 @@ On a non-zero exit, read the stderr JSON and the exit code. A bad request /
 annotation validation error (exit `5`) carries an `errors` array of per-row
 issues — show them and tell the user to fix the sheet. Because the annotation
 is validated first, **no reads were uploaded** on a validation failure; never
-claim success. If Step 0 finds no working CLI, stop and give the user its
-message.
+claim success.
 
 ## Example 21: "Download an annotation-sheet template"
 
@@ -157,157 +160,160 @@ A helper for the multiplexed flow (Example 20). It changes no remote state,
 so there is **no** confirmation gate. It still runs through the on-demand
 flowbio CLI (the `samples annotation-template` command) so auth and base-URL
 handling stay uniform. Read the `GET /annotation/<sample_type>` section of
-`endpoints/samples-upload.md`. Suppose: "download the RNA-Seq annotation template to
-`./template.xlsx`".
+`endpoints/samples-upload.md`. Suppose: "download the RNA-Seq annotation
+template to `./template.xlsx`".
+
+Find the sample type's identifier as in Example 19 (skip this for the
+`generic` template):
 
 ```bash
-# Step 1: resolve the sample type → identifier (skip for the generic template).
-flow-cli api get /v2/sample-types --json | \
-  jq '[.[] | {identifier, name}]'
-# Match the user's "RNA-Seq" to a row's name and use that row's identifier as
-# TYPE_IDENTIFIER below. Identifiers differ between Flow instances, so look it up
-# in this session every time. Ambiguous? ask the user.
+flow-cli api get /v2/sample-types --json | jq -r '.[] | .identifier + " | " + .name'
+```
 
-# Step 2: check the CLI once per session (`SKILL.md` Step 0). No confirmation
-# needed — this is a read. The token is read by the CLI from
-# ~/.config/flow/api-token — never passed as --token.
-flow-cli samples annotation-template \
-  --sample-type TYPE_IDENTIFIER -o ./template.xlsx \
-  --json --no-progress
+```bash
+flow-cli samples annotation-template --sample-type TYPE_IDENTIFIER -o ./template.xlsx --json --no-progress
 ```
 
 On exit `0`, parse stdout `{"output": "./template.xlsx", "sample_type":
-"TYPE_IDENTIFIER"}` and report where the template was written, plus that the user
-should fill in one row per sample (names, file paths, metadata) before running
-the multiplexed upload (Example 20). Omit `--sample-type` for the `generic`
-template (base columns only). On a non-zero exit, read the stderr JSON and the
-exit code (`4` = unknown sample type — re-resolve via `/v2/sample-types`; `3` =
-auth; `2` = usage) — never claim success. If Step 0 finds no working CLI,
-stop and give the user its message.
+"TYPE_IDENTIFIER"}` and report where the template was written, plus that the
+user should fill in one row per sample (names, file paths, metadata) before
+running the multiplexed upload (Example 20). Omit `--sample-type` for the
+`generic` template (base columns only). On a non-zero exit, read the stderr
+JSON and the exit code (`4` = unknown sample type — re-resolve via
+`/v2/sample-types`; `3` = auth; `2` = usage) — never claim success.
 
-## Example 22: "Run the rna-seq pipeline on sample Liver_RNA_1"
+## Example 22: "Run the rna-seq pipeline on sample liver_rep1"
 
 Running a pipeline is a **mutation** and **always needs the token**. The
-discovery steps are reads via `flow-cli api get`; the run itself is one
-`flow-cli api post`. Read the "Running a pipeline" section of
-`endpoints/pipelines.md` first — it owns the body shape, the schema→body
-mapping, the confirmation gate, and the error table. The chain:
+discovery steps are reads; the run itself is one `flow-cli api post`. Read the
+"Running a pipeline" section of `endpoints/pipelines.md` first — it owns the
+body shape, the schema→body mapping, the confirmation gate, and the error
+table.
 
-```bash
-# Step 0: confirm auth — running always needs the token.
-flow-cli api get /me --json | jq '.id'
-# null → token missing/expired; stop and tell the user how to authenticate.
+1. **Check the token.** If this fails with a 401 (exit 3) or prints `NO ID`,
+   stop and tell the user how to authenticate:
 
-# Step 1: find the pipeline id by name.
-flow-cli api get /pipelines --json | \
-  jq '[.. | objects | select(.name? | test("rna.?seq"; "i")) | select(.id?)] | .[] | {id, name}'
+   ```bash
+   flow-cli api get /me --json | jq -r '.id // "NO ID"'
+   ```
 
-# Step 2: pick the version — default to the most recent (versions[0]).
-flow-cli api get /pipelines/<pipeline_id> --json | \
-  jq '{name, default_version: .versions[0], nextflow: .versions[0].nextflow_versions[0]}'
+2. **The pipeline.** List every pipeline and pick the user's by reading the
+   names:
 
-# Step 3: read the version schema to learn the params.
-flow-cli api get /pipelines/versions/<version_id> --json | \
-  jq '{nextflow_versions, inputs: [.schema.inputs[] | {name, params: (.params|keys)}]}'
+   ```bash
+   flow-cli api get /pipelines --json | jq -r '.[].subcategories[].pipelines[] | .id + " | " + .name'
+   ```
 
-# Step 4: resolve the sample name → id (for the samplesheet csv param).
-flow-cli api get /samples/search \
-  --param name=Liver_RNA_1 --json | \
-  jq '.samples[] | {id, name}'
-```
+3. **The version.** The user named none, so take the first row, the most
+   recent:
+
+   ```bash
+   flow-cli api get /pipelines/PIPELINE_ID --json | jq -r '.versions[] | .id + " | " + .name'
+   ```
+
+4. **What the version takes.** Its Nextflow versions, and each input section
+   with its parameters:
+
+   ```bash
+   flow-cli api get /pipelines/versions/VERSION_ID --json | jq '{nextflow_versions, inputs: [.schema.inputs[]? | {name, params: (.params | keys)}]}'
+   ```
+
+5. **The sample.** Pick the row whose name is exactly the user's:
+
+   ```bash
+   flow-cli api get /samples/search --param name=liver_rep1 --param count=100 --json | jq -r '.samples[] | .id + " | " + .name'
+   ```
 
 Now build the body from the schema (see the mapping in `endpoints/pipelines.md`).
 For a typical nf-core-style pipeline whose input is a `csv` `takes_samples`
 samplesheet, you usually only need the sample id per row — the server fills
 `from_sample` columns itself. Default the Nextflow version to
-`nextflow_versions[0]` since the user didn't name one.
+`nextflow_versions[0]` since the user didn't name one. If the schema has no
+input that takes a sample, tell the user rather than inventing one.
 
 **Confirm first** — show the pipeline, version (name + id), the resolved params
 (sample *names*, not just ids), and the Nextflow version, and proceed only on
 explicit "yes". Then:
 
 ```bash
-printf '%s' '{"params":{},"data_params":{},"csv_params":{"input":{"rows":[{"sample":"SAMPLE_ID","values":{}}]}},"nextflow_version":"23.04.3"}' | flow-cli api post /pipelines/versions/VERSION_ID/run --body - --json | jq '{id, identifier, status}'
+printf '%s' '{"params":{},"data_params":{},"csv_params":{"input":{"rows":[{"sample":"SAMPLE_ID","values":{}}]}},"nextflow_version":"NEXTFLOW_VERSION"}' | flow-cli api post /pipelines/versions/VERSION_ID/run --body - --json | jq '{id, identifier, status}'
 ```
 
 On success, report the execution `id`, `identifier`, initial `status`, and a
-link to the run in the UI — derive it by stripping a trailing `/api` from the
-base URL:
-
-```bash
-WEB="${FLOW_API_URL:-https://app.flow.bio/api}"; WEB="${WEB%/api}"
-echo "$WEB/executions/<id>/"   # e.g. https://app.flow.bio/executions/<id>/
-```
+link to the run in the UI: the base URL without its trailing `/api`, then
+`/executions/<id>/` — `https://app.flow.bio/executions/<id>/` unless
+`FLOW_API_URL` points elsewhere.
 
 **Do not poll by default** — return the id and the link and stop. On `403`
 (`User cannot run pipelines` or `Token not authorised for this endpoint`) report
 it verbatim and stop; on `400` report the field error and fix the offending
 value before re-confirming. Never claim a run started on a non-zero exit.
 
-## Example 23: "Run the rnaseq pipeline and tell me when it finishes"
+## Example 23: "Run the rna-seq pipeline and tell me when it finishes"
 
 Same as Example 22 through the POST, but the user asked to be notified on
 completion, so **poll** afterwards. Poll on a slow cadence — runs commonly take
-hours.
+hours. Check the run's status, then wait at least 60 seconds before the next
+check, until `status` is `OK`, `ERROR` or `CANCELED`:
 
 ```bash
-# After the run returns <id>, poll status on a >=60s interval until terminal.
-flow-cli api get /executions/<id> \
-  --param include=status --param include=finished --json | \
-  jq '{status, finished}'
-# Repeat (sleep >= 60s between calls) until status is OK, ERROR, or CANCELED.
+flow-cli api get /executions/EXECUTION_ID --param include=status --param include=finished --json | jq -r '.status + " | finished: " + (.finished | tostring)'
 ```
 
-On `OK`, report success (optionally tail the log with `--param log=<offset>`). On
-`ERROR`, fetch and surface `stderr` / `log` / the failing `process_executions`
-entry — never report success on a non-`OK` terminal status. See the
-`GET /executions/<id>` section of `endpoints/executions.md`.
+Until then `status` is `""` or `-` (see "Where a run is in its life" in
+`endpoints/executions.md`). On `OK`, report success (optionally tail the log
+with `--param log=<offset>`). On `ERROR`, fetch and surface `stderr` / `log` /
+the failing `process_executions` entry — never report success on a non-`OK`
+terminal status.
 
 ## Example 24: "Set the cell line of sample liver_rep1 to HepG2"
 
 A record edit. Read `/v2/reference/samples` first; it says which attributes
 apply to the sample's type and how the edit reports a refused value.
 
-```bash
-# Step 1: resolve the sample by name to its id.
-flow-cli api get /samples/search --param name=liver_rep1 --param count=10 --json | \
-  jq -r '.samples[] | .id + " | " + .name + " | " + .sample_type.identifier'
-# More than one match? Ask the user which.
+1. **The sample.** More than one match? Ask the user which.
 
-# Step 2: find the attribute the user means, by its name.
-flow-cli api get /v2/metadata-attributes --json | \
-  jq -r '.[] | .identifier + " | " + .name + " | " + (.has_options | tostring)'
+   ```bash
+   flow-cli api get /samples/search --param name=liver_rep1 --param count=100 --json | jq -r '.samples[] | .id + " | " + .name + " | " + .sample_type.identifier'
+   ```
 
-# Step 3: it has options, so check the value is one of them.
-flow-cli api get /v2/metadata-attributes/cell_line/options --param value=HepG2 --json | \
-  jq -r '.items[].value'
-# The filter matches substrings, so check one value is exactly HepG2 (not
-# HepG2-C3A). None is, and the attribute has no allow_user_terms? Tell the user.
+2. **The attribute.** Match the user's "cell line" to a row's name:
 
-# Step 4: CONFIRM with the user: sample liver_rep1, cell_line → HepG2. Then
-# send only that attribute; everything else on the sample keeps its value.
-# One line of JSON in single quotes; write an apostrophe in a value as \u0027.
-printf '%s' '{"metadata": {"cell_line": {"value": "HepG2"}}}' | \
-  flow-cli api patch /v2/samples/SAMPLE_ID --body - --json | \
-  jq '{id, name, cell_line: .metadata.cell_line}'
-```
+   ```bash
+   flow-cli api get /v2/metadata-attributes --json | jq -r '.[] | .identifier + " | " + .name + " | has_options: " + (.has_options | tostring)'
+   ```
+
+3. **The value.** The attribute has options, so check the value is one of them.
+   The filter matches substrings, so check one row is exactly `HepG2` (not
+   `HepG2-C3A`). None is, and the attribute has no `allow_user_terms`? Tell the
+   user.
+
+   ```bash
+   flow-cli api get /v2/metadata-attributes/IDENTIFIER/options --param value=HepG2 --param page_size=100 --json | jq -r '.items[].value'
+   ```
+
+4. **Confirm with the user**: sample liver_rep1, cell line → HepG2. Then send
+   only that attribute; everything else on the sample keeps its value. One line
+   of JSON in single quotes; write an apostrophe in a value as `'`.
+
+   ```bash
+   printf '%s' '{"metadata": {"IDENTIFIER": {"value": "HepG2"}}}' | flow-cli api patch /v2/samples/SAMPLE_ID --body - --json | jq '{id, name, value: .metadata.IDENTIFIER}'
+   ```
 
 Report the value from the response. A 422 lists each problem with its
-`pointer`: `/metadata/cell_line` is a value the attribute refuses (for example,
-one not among its options), `/metadata/<identifier>` with code
-`unknown_attribute` an identifier this instance does not have. Report the
-`detail`; never claim success.
+`pointer`: `/metadata/<identifier>` is a value the attribute refuses (for
+example, one not among its options), or, with code `unknown_attribute`, an
+identifier this instance does not have. Report the `detail`; never claim
+success.
 
 ## Example 25: "Create a project called Liver Atlas"
 
-A record creation. Read `/v2/reference/projects` first.
+A record creation. Read `/v2/reference/projects` first. **Confirm with the
+user**: project "Liver Atlas", description "Bulk RNA-Seq of liver tissue",
+private (say public only if the user asked for it). Then:
 
 ```bash
-# CONFIRM with the user: project "Liver Atlas", description "Bulk RNA-Seq of
-# liver tissue", private (say public only if the user asked for it).
-printf '%s' '{"name": "Liver Atlas", "description": "Bulk RNA-Seq of liver tissue"}' | \
-  flow-cli api post /v2/projects --body - --json | \
-  jq '{id, name}'
+printf '%s' '{"name": "Liver Atlas", "description": "Bulk RNA-Seq of liver tissue"}' | flow-cli api post /v2/projects --body - --json | jq '{id, name}'
 ```
 
 Report the new project's id. A 422 pointing at `/name` means the user already
