@@ -26,8 +26,8 @@ with authentication, also returns the caller's owned and shared projects.
 | `name`        | str  | (none)     | Case-insensitive substring match on project name only. |
 | `description` | str  | (none)     | Case-insensitive substring match on project description. |
 | `owner`       | str  | (none)     | Case-insensitive substring match across owner name, owner username, group-owner name, and group-owner slug. |
-| `created_gt`  | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); project created on or after this value (`__gte`, inclusive). Passing an ISO-8601 string causes HTTP 500. |
-| `created_lt`  | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); project created on or before this value (`__lte`, inclusive). Passing an ISO-8601 string causes HTTP 500. |
+| `created_gt`  | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); project created on or after this value (inclusive). Passing an ISO-8601 string causes HTTP 500. |
+| `created_lt`  | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); project created on or before this value (inclusive). Passing an ISO-8601 string causes HTTP 500. |
 | `sample_types`| str  | (none)     | Comma-separated sample-type **identifiers**. Matches projects that contain at least one sample whose type identifier is in the list. |
 | `pipeline`    | str  | (none)     | Pipeline **pk** (exact match). Matches projects that have a sample-level or project-level execution whose pipeline version belongs to this pipeline id. |
 

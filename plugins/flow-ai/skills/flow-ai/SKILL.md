@@ -186,15 +186,9 @@ error on this API, so identify the shape before writing any `length` or `.count`
 | `/samples/<id>`, `/projects/<id>`, `/pipelines/<id>`, `/pipelines/versions/<id>`, `/executions/<id>`, `/me` | single object | not a list |
 
 For `/v2/…` paths, the reference states the shape (see "Finding out about the
-API"). For any other path not listed, read its file (Step 3) before counting. If you cannot,
-inspect the response first with `jq '.[0]'` and check whether that element is the
-thing you were asked about or a container holding it.
-
-Not every endpoint is a paginated list. If `.count` came back `null`, there is no
-pagination envelope: do not fall back to `length`, which answers a different
-question. Read the endpoint's file (Step 3) first. And before counting any array,
-inspect one element — its elements may be containers, not the thing you were
-asked about:
+API"). For any other path not listed, read its file (Step 3) before counting. If
+you cannot, inspect one element first — it may be a container holding the thing
+you were asked about, not the thing itself:
 
 ```bash
 flow-cli api get /PATH --json | jq '.[0]'

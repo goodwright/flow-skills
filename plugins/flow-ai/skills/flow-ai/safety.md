@@ -13,18 +13,19 @@ the user asks for them. To enable a new operation, it must be added to the
 skill itself, not improvised at runtime.
 
 The skill is **mostly read-only**, but it has three families of mutation. It can
-**create and edit records** through `/v2/…` (below), it can **run pipelines** (`POST /pipelines/versions/<id>/run`, via
-`flow-cli api post` — see `endpoints/pipelines.md`), and it can **upload data to Flow** (`uploading.md`).
-Upload support currently covers generic data files (`POST /upload`),
-demultiplexed samples (`POST /upload/sample`), and multiplexed reads with an
-annotation sheet (`POST /upload/multiplexed`), plus a read-only helper to
-download an annotation-sheet template (`GET /annotation/<sample_type>`) that
-bootstraps a multiplexed upload. Both running and uploading change remote state, so they are gated
-behind explicit user confirmation (the run confirmation lives in
-`endpoints/pipelines.md`; the upload confirmation in the confirmation gate in `uploading.md`); reads such as
-the template download need none. Any operation not listed in `uploading.md`, the run
-flow in `endpoints/pipelines.md`, or the Step 3 table in `SKILL.md` remains
-out of scope per the principle above.
+**create and edit records** through `/v2/…` (below), it can **run pipelines**
+(`POST /pipelines/versions/<id>/run`, via `flow-cli api post` — see
+`endpoints/pipelines.md`), and it can **upload data to Flow** (`uploading.md`).
+Upload support covers generic data files (`POST /upload`), demultiplexed samples
+(`POST /upload/sample`), and multiplexed reads with an annotation sheet
+(`POST /upload/multiplexed`), plus a read-only helper to download an
+annotation-sheet template (`GET /annotation/<sample_type>`) that bootstraps a
+multiplexed upload. Both running and uploading change remote state, so they are
+gated behind explicit user confirmation (the run confirmation lives in
+`endpoints/pipelines.md`; the upload confirmation in the confirmation gate in
+`uploading.md`); reads such as the template download need none. Any operation
+not listed in `uploading.md`, the run flow in `endpoints/pipelines.md`, or the
+Step 3 table in `SKILL.md` remains out of scope per the principle above.
 
 The principle is verb-agnostic. Authentication does not change it: the
 same rules apply whether the token file is present or absent. Authentication

@@ -1,14 +1,14 @@
 # Uploading data to Flow
 
-The skill can upload data to Flow. Upload support currently covers a
-**generic data file** (`POST /upload`), a **demultiplexed sample**
-(`POST /upload/sample`), and **multiplexed reads + an annotation sheet**
-(`POST /upload/multiplexed`), plus a read-only **annotation-sheet template**
-download (`GET /annotation/<sample_type>`) that bootstraps the multiplexed flow.
-An upload type not documented here is not available. This section holds the
-cross-cutting upload machinery; the per-resource specifics (inputs, local validation,
-success/error shapes) live in the matching endpoint file — generic files →
-`endpoints/data.md`, samples / multiplexed / annotation templates →
+The skill can upload data to Flow. Upload support covers a **generic data file**
+(`POST /upload`), a **demultiplexed sample** (`POST /upload/sample`), and
+**multiplexed reads + an annotation sheet** (`POST /upload/multiplexed`), plus a
+read-only **annotation-sheet template** download
+(`GET /annotation/<sample_type>`) that bootstraps the multiplexed flow. An
+upload type not documented here is not available. This section holds the
+cross-cutting upload machinery; the per-resource specifics (inputs, local
+validation, success/error shapes) live in the matching endpoint file — generic
+files → `endpoints/data.md`, samples / multiplexed / annotation templates →
 `endpoints/samples-upload.md`.
 
 Uploads are **not** done with `curl`. The chunked/resumable upload protocol

@@ -83,8 +83,8 @@ authentication, also returns the caller's owned and shared samples.
 | `sample_types`  | str  | (none)     | Comma-separated sample-type **identifiers**. Match if the sample's type identifier is in the list. |
 | `owner`         | str  | (none)     | Case-insensitive substring match on owner name, username, group-owner name, or group-owner slug. |
 | `project`       | str  | (none)     | Case-insensitive substring match on project name. |
-| `created_gt`    | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); sample created on or after this value (`__gte`). Passing an ISO-8601 string → HTTP 400 naming the field. |
-| `created_lt`    | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); sample created on or before this value (`__lte`). Passing an ISO-8601 string → HTTP 400 naming the field. |
+| `created_gt`    | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); sample created on or after this value. Passing an ISO-8601 string → HTTP 400 naming the field. |
+| `created_lt`    | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); sample created on or before this value. Passing an ISO-8601 string → HTTP 400 naming the field. |
 | `full_metadata` | str  | (none)     | When set to `1`, `true`, or `yes`, each item's `metadata` includes every attribute the sample has (richer shape, same as the detail endpoint), not just `in_table=True`. Off by default to keep list responses small. |
 | `<metadata_id>` | str  | (none)     | Any metadata attribute identifier returned by `GET /v2/metadata-attributes` on this instance. Legal identifiers are **per-instance** — admins curate their own — so always discover at runtime; do not assume a specific identifier exists. Matches metadata values via case-insensitive substring. `true`/`yes`/`1` filters to samples that have any value for the attribute; `false`/`no`/`0` excludes them. |
 
@@ -220,9 +220,9 @@ than `/samples/search`'s list item — most importantly, it carries the
 - **Filter scope:** substring matched against any of `identifier`,
   `pipeline_version.pipeline.name`, `pipeline_version.name`, `fileset.name`,
   `fileset.organism.name`, `sample.name`, `owner.name`, `group_owner.name`.
-  **Status shortcut footgun:** the view checks
-  `query.lower() in "completed"/"error"/"canceled"`, so very short filters
-  (`c`, `co`, `e`, `er`, `ca`) over-match status. Prefer filters of 3+ chars.
+  **Status shortcut footgun:** a filter that is part of the word `completed`,
+  `error` or `canceled` also matches every run with that status, so very short
+  filters (`c`, `co`, `e`, `er`, `ca`) over-match. Prefer filters of 3+ chars.
 - **Sort:** fixed at `-created`.
 - **Response envelope:** `{"count": int, "page": int, "executions": [...]}`.
   `count` is the total matching executions across all pages.
@@ -298,8 +298,8 @@ NOT the same set:
   produced by running a pipeline on the sample.
 - **`/samples/<id>/data`** is the union of:
   1. files produced by a pipeline run on this sample
-  2. files produced by a step of any run that processed this sample, such
-     as a run over several samples
+  2. files produced by a pipeline step whose inputs all came from this
+     sample, even when that step ran inside a run over several samples
   3. the sample's own raw input files (the same as its inlined `filesets`)
 
   So `/samples/<id>/data` = raw inputs **plus** every pipeline-output
