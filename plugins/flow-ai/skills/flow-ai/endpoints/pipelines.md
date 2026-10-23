@@ -242,12 +242,11 @@ Exit 0 with the full execution object (the same shape as
 - `id`, `identifier`, and the initial `status` (a fresh run's `status` is an
   empty string `""` or `-` — i.e. not yet terminal; see
   `endpoints/executions.md` for the status values),
-- a **link to the run in the UI**, derived from the base URL by stripping a
-  trailing `/api`:
+- a **link to the run in the UI**: the API's base URL without its trailing
+  `/api`, then `/executions/<id>/`. This prints the base URL in use:
 
   ```bash
-  WEB="${FLOW_API_URL:-https://app.flow.bio/api}"; WEB="${WEB%/api}"
-  echo "$WEB/executions/<id>/"
+  echo "${FLOW_API_URL:-https://app.flow.bio/api}"
   ```
 
   e.g. `https://app.flow.bio/api` → `https://app.flow.bio/executions/<id>/`;
