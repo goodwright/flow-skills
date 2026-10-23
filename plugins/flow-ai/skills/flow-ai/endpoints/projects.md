@@ -12,8 +12,7 @@ with authentication, also returns the caller's owned and shared projects.
 
 - **Auth:** none required. Authenticated callers receive a broader
   result set automatically (no URL change).
-- **Visibility rule (anonymous):** `project.private == False`. Matches
-  the deprecated public endpoint exactly.
+- **Visibility rule (anonymous):** public projects only.
 - **Visibility rule (authenticated):** the union of public projects,
   projects owned by the caller, and projects shared with the caller
   (directly or via group membership).
@@ -23,18 +22,17 @@ with authentication, also returns the caller's owned and shared projects.
 |---------------|------|------------|-----------|
 | `page`        | int  | `1`        | Paginator page. Non-integer → HTTP 400 naming the field. |
 | `count`       | int  | `10`       | Page size. Max 100; >100 → HTTP 400 (not silently clamped). |
-| `sort`        | str  | `-created` | Supported values: `-created` (newest first), `name`, `-name`. Other values are passed through to Django's `order_by` and may error. |
-| `name`        | str  | (none)     | Substring match (`__icontains`) on project name only. |
-| `description` | str  | (none)     | Substring match (`__icontains`) on project description. |
-| `owner`       | str  | (none)     | Substring match (`__icontains`) across owner name, owner username, group-owner name, and group-owner slug. |
+| `sort`        | str  | `-created` | Supported values: `-created` (newest first), `name`, `-name`. Use only these; another value may fail with an error. |
+| `name`        | str  | (none)     | Case-insensitive substring match on project name only. |
+| `description` | str  | (none)     | Case-insensitive substring match on project description. |
+| `owner`       | str  | (none)     | Case-insensitive substring match across owner name, owner username, group-owner name, and group-owner slug. |
 | `created_gt`  | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); project created on or after this value (`__gte`, inclusive). Passing an ISO-8601 string causes HTTP 500. |
 | `created_lt`  | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); project created on or before this value (`__lte`, inclusive). Passing an ISO-8601 string causes HTTP 500. |
 | `sample_types`| str  | (none)     | Comma-separated sample-type **identifiers**. Matches projects that contain at least one sample whose type identifier is in the list. |
 | `pipeline`    | str  | (none)     | Pipeline **pk** (exact match). Matches projects that have a sample-level or project-level execution whose pipeline version belongs to this pipeline id. |
 
-- **No free-text `filter` parameter.** Unlike the deprecated public
-  endpoint, `/projects/search` does not accept a single cross-field
-  substring. The closest equivalents are `name` and
+- **No free-text `filter` parameter.** `/projects/search` does not accept
+  a single cross-field substring. The closest equivalents are `name` and
   `description` (themselves substring matches). Issue separate calls
   or pick one field to scope the search.
 
@@ -94,7 +92,7 @@ once the id is known (or after discovering it by name via `/projects/search`).
   `sample_count`, `execution_count`. The detail endpoint is not a
   strict superset — use `/projects/search?name=…` if you need those
   counts.
-- **No samples list inline.** This serializer does **not** include
+- **No samples list inline.** The response does **not** include
   the project's samples. To list them, use the sub-resource
   `GET /projects/<id>/samples` (below), or filter
   `/samples/search?project=<project_name>` (substring match on project

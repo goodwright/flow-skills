@@ -5,9 +5,8 @@ The skill can upload data to Flow. Upload support currently covers a
 (`POST /upload/sample`), and **multiplexed reads + an annotation sheet**
 (`POST /upload/multiplexed`), plus a read-only **annotation-sheet template**
 download (`GET /annotation/<sample_type>`) that bootstraps the multiplexed flow.
-More upload types will be added to this file over time — an upload type is
-available only once it is documented here. This section holds the cross-cutting
-upload machinery; the per-resource specifics (inputs, local validation,
+An upload type not documented here is not available. This section holds the
+cross-cutting upload machinery; the per-resource specifics (inputs, local validation,
 success/error shapes) live in the matching endpoint file — generic files →
 `endpoints/data.md`, samples / multiplexed / annotation templates →
 `endpoints/samples-upload.md`.

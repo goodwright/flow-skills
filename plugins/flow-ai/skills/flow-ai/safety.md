@@ -19,8 +19,7 @@ Upload support currently covers generic data files (`POST /upload`),
 demultiplexed samples (`POST /upload/sample`), and multiplexed reads with an
 annotation sheet (`POST /upload/multiplexed`), plus a read-only helper to
 download an annotation-sheet template (`GET /annotation/<sample_type>`) that
-bootstraps a multiplexed upload. More upload types will be added to `uploading.md`
-over time. Both running and uploading change remote state, so they are gated
+bootstraps a multiplexed upload. Both running and uploading change remote state, so they are gated
 behind explicit user confirmation (the run confirmation lives in
 `endpoints/pipelines.md`; the upload confirmation in the confirmation gate in `uploading.md`); reads such as
 the template download need none. Any operation not listed in `uploading.md`, the run
@@ -42,7 +41,7 @@ allowlist today** and must be refused if asked:
   exception is choosing, when creating a project, that it is public
 - moving a sample to another project (its visibility follows the project's)
 - cancelling an execution
-- any upload type not yet documented in `uploading.md`
+- any upload type not documented in `uploading.md`
 - protecting a data file from deletion, or lifting that protection
   (`PATCH /v2/data/<id>`)
 - creating, listing, or revoking API keys
@@ -125,8 +124,7 @@ confirmation):
   always requires the token and is gated behind the confirmation rule. See `endpoints/pipelines.md` for the full run flow,
   the schema→body mapping, and error handling.
 
-In-scope uploads (performed via the flowbio CLI, not curl; more will be added
-to `uploading.md` over time):
+In-scope uploads (performed via the flowbio CLI, not curl):
 
 - `POST /upload` — upload a **generic data file**, gated behind explicit
   confirmation. See `uploading.md` for the CLI, auth and contract machinery and
@@ -157,13 +155,3 @@ Out-of-scope — decline politely:
 Anything not on the in-scope list above is also out of scope per the
 Safety principle in this file — including, but not limited to, mutating
 requests, admin operations, and endpoints the skill does not document.
-
-
-## Future shape
-
-- **Bulk multi-file downloads:** the `POST /downloads/...` →
-  `GET /downloads/<job_id>` zip flow is auth-gated and tracked separately.
-- **When a machine-readable OpenAPI spec is available:** the per-endpoint
-  files collapse to a single line — "fetch `<base>/openapi.json` and use
-  it." Reliability tactics, output discipline, and error handling stay;
-  they're operational, not endpoint-specific.
