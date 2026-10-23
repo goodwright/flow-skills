@@ -70,7 +70,7 @@ assignments get mangled and fail silently.
 
 Call shape: `flow-cli api get <PATH> --param KEY=VALUE … --json`. One `--param` per
 filter; the CLI URL-encodes each value. Put the pair in double quotes when the
-value has a space or any other character the shell would act on:
+value has a space, or a character such as `&`, `;`, `*` or `(`:
 `--param "name=Liver Atlas"`. Unquoted, the shell splits it and the CLI fails
 with `unrecognized arguments`. **Never put a `?` in the path** — the CLI
 rejects it.
@@ -81,7 +81,7 @@ For inspecting records, and for "how many **records** match" — the answer is t
 envelope's `count` field.
 
 ```bash
-flow-cli api get /samples/search --param sample_types=TYPE_IDENTIFIER --param ATTRIBUTE_IDENTIFIER=VALUE --param count=1 --json | jq -r '.count'
+flow-cli api get /samples/search --param sample_types=TYPE_IDENTIFIER --param "ATTRIBUTE_IDENTIFIER=VALUE" --param count=1 --json | jq -r '.count'
 ```
 
 **A filtered count of `0` is never an answer — it is a bug report.** It means one
@@ -355,8 +355,8 @@ the user's wording against the `name` column, then use that row's `identifier`.
 | an organism ("human") | `/organisms` | `--param organism=<id>` |
 | a sample type ("CLIP", "RNA-Seq") | `/v2/sample-types` | `--param sample_types=<identifier>` |
 | a data type | `/data/types` | `--param data_types=<identifier>` |
-| any other domain attribute (tissue, treatment, target…) | `/v2/metadata-attributes` — find the row whose `name` matches the user's wording, take its `identifier` | `--param <identifier>=<value>` |
-| the legal values of an attribute with `has_options` | `/v2/metadata-attributes/<identifier>/options` (paged; `--param value=<substring>` narrows) | `--param <identifier>=<value>` |
+| any other domain attribute (tissue, treatment, target…) | `/v2/metadata-attributes` — find the row whose `name` matches the user's wording, take its `identifier` | `--param "<identifier>=<value>"` |
+| the legal values of an attribute with `has_options` | `/v2/metadata-attributes/<identifier>/options` (paged; `--param value=<substring>` narrows) | `--param "<identifier>=<value>"` |
 
 **The values an attribute actually holds come from the records, never from a
 schema endpoint.** `/v2/metadata-attributes` tells you an attribute *exists* and
@@ -371,7 +371,7 @@ Three habits make this work:
   is a **value** of that attribute. Never look for a specific name in the list of
   attributes, and never look for a property name among the values.
   - Asked for a *count of a named thing* -> find the attribute, then filter on the
-    value: `--param <identifier>=<name>` (Shape A).
+    value: `--param "<identifier>=<name>"` (Shape A).
   - Asked *which values exist* or *how many distinct* -> find the attribute, then
     aggregate its values (Shape B). Here the user's word names only the attribute:
     the values are the domain's own identifiers (gene symbols, cell lines,
