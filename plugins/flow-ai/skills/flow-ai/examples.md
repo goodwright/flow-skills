@@ -4,8 +4,9 @@ End-to-end recipes for read-only questions. For per-endpoint parameter and
 response details see `endpoints/<name>.md`; for upload and pipeline-run recipes
 see `examples-write.md`.
 
-Every command follows SKILL.md's rules: `flow-cli`, one line, no shell
-variables. Words in capitals (`SAMPLE_ID`, `ORGANISM_ID`) are placeholders:
+Every command follows SKILL.md's rules: one line, no `VAR=…` assignments, and
+`flow-cli` for every Flow call (the file download in Example 7 is the one
+`curl`). Words in capitals (`SAMPLE_ID`, `ORGANISM_ID`) are placeholders:
 replace each with the value a previous command printed, never with a guess.
 
 ## Authentication and these recipes
@@ -197,8 +198,14 @@ only for the metadata projection.
 
 ## Example 10: "Tell me about project Liver Atlas"
 
-Find its id with `/projects/search --param name=…` (as Example 5 does for a
-sample), then fetch the detail record:
+Find its id. `name` is a substring match, so pick the row whose name is exactly
+the user's ("Liver Atlas" also matches "Public Liver Atlas"):
+
+```bash
+flow-cli api get /projects/search --param name=NAME --param count=100 --json | jq -r '.projects[] | .id + " | " + .name'
+```
+
+Then fetch the detail record:
 
 ```bash
 flow-cli api get /projects/PROJECT_ID --json | jq '{id, name, description, private, owner: .owner.name, papers: [.papers[] | {year, title, journal}]}'
@@ -221,22 +228,32 @@ For text content use Example 8; for the file bytes use Example 7.
 
 ## Example 12: "Find the executions I ran yesterday"
 
-`owned=true` needs a working token, so check `/me` first (Example 14).
-`created_gt` takes a **Unix timestamp integer**, not a date, so work out the
-start of yesterday first — `date -v-1d -v0H -v0M -v0S +%s` on macOS,
-`date -d 'yesterday 00:00' +%s` on Linux:
+`owned=true` needs a working token, so check it first:
 
 ```bash
-date -v-1d -v0H -v0M -v0S +%s
+flow-cli api get /me --json | jq -r '.id // "NO ID"'
 ```
 
-Then put the number it printed in place of `TIMESTAMP`:
+If that fails with a 401 (exit 3) or prints `NO ID`, stop and give the
+authentication guidance (Example 14). `created_gt` and `created_lt` take **Unix
+timestamp integers**, not dates, so work out the start of yesterday and of
+today. Each line works on Linux and macOS:
 
 ```bash
-flow-cli api get /executions/search --param owned=true --param created_gt=TIMESTAMP --param count=100 --json | jq -r '"total: " + (.count|tostring), (.executions[] | .id + " | " + .identifier + " | " + .pipeline_name + " | " + .status)'
+date -d 'yesterday 00:00' +%s 2>/dev/null || date -v-1d -v0H -v0M -v0S +%s
 ```
 
-Passing an ISO-8601 date to `created_gt` is a 400 naming the field.
+```bash
+date -d 'today 00:00' +%s 2>/dev/null || date -v0H -v0M -v0S +%s
+```
+
+Then put the two numbers in place of `START` and `END`:
+
+```bash
+flow-cli api get /executions/search --param owned=true --param created_gt=START --param created_lt=END --param count=100 --json | jq -r '"total: " + (.count|tostring), (.executions[] | .id + " | " + .identifier + " | " + .pipeline_name + " | " + .status)'
+```
+
+Passing an ISO-8601 date to either is a 400 naming the field.
 
 ## Example 13 (negative): "Delete sample 42"
 
@@ -276,14 +293,15 @@ flow-cli api get /me --json | jq -r '.memberships[] | .slug + " | " + .name'
 
 ## Example 15: "What filters does this instance support?"
 
-Every metadata attribute is a filter on `/samples/search`. List them all with
-the discovery command in SKILL.md Step 4:
+Sample types and every metadata attribute are filters on `/samples/search`.
+List them all with the discovery command in SKILL.md Step 4:
 
 ```bash
-flow-cli api get /v2/metadata-attributes --json | jq -r '.[] | .identifier + " | " + .name + " | " + .description'
+(  flow-cli api get /v2/sample-types --json | jq -r '.[] | "TYPE | " + .identifier + " | " + .name';  flow-cli api get /v2/metadata-attributes --json | jq -r '.[] | "ATTR | " + .identifier + " | " + .name + " | " + .description'  )
 ```
 
-Report the identifiers and names. If the user then asks about a specific
+`TYPE` rows filter with `--param sample_types=<identifier>`, `ATTR` rows with
+`--param <identifier>=<value>`. Report the identifiers and names. If the user then asks about a specific
 concept ("filter by tissue"), match their word against the `name` column and
 use that row's `identifier`. If no row matches, tell the user honestly — don't
 guess. The API does not reject unknown filter params, so this check is the only
@@ -314,11 +332,18 @@ ignores the filter and returns every sample.
    no row matches, tell the user this instance has no such attribute, list the
    ones it has, and stop.
 2. **Learn its values.**
-   - If the row has `has_options` true, its options are the values it may take:
+   - If the row has `has_options` true, its options are the values it may take.
+     The list is paged, 25 to a page unless you ask for more, so ask for 100
+     and read the total:
 
      ```bash
-     flow-cli api get /v2/metadata-attributes/IDENTIFIER/options --json | jq -r '.items[].value'
+     flow-cli api get /v2/metadata-attributes/IDENTIFIER/options --param page_size=100 --json | jq -r '"total: " + (.count|tostring), .items[].value'
      ```
+
+     If the total is above 100, walk `--param page=2`, `3` and so on, or narrow
+     it with `--param value=<part of the user's word>` and read every row. An
+     empty narrowed list is not a "no match": the instance may word the value
+     differently ("cortex" for "brain"), so walk the pages before concluding.
 
    - Otherwise the values are free text. Collect the ones in use from every
      sample with the loop in SKILL.md Shape B, with the attribute's identifier
@@ -333,5 +358,5 @@ ignores the filter and returns every sample.
    Check that the count dropped from the unfiltered total: an identifier this
    instance does not have is ignored, and the unfiltered count comes back.
 
-If the user's term matches none of the values, say so and show them the values
-there are, rather than filtering on a near miss.
+If the user's term matches none of the values (every page of them), say so and
+show them the values there are, rather than filtering on a near miss.
