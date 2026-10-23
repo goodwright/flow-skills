@@ -29,9 +29,7 @@ for public data.
 |----------|------|---------|-----------|
 | `direct` | str  | (unset) | Truthy value (e.g. `?direct=yes`) serves inline. Unset serves as attachment with `Content-Disposition: attachment; filename=<name>`. |
 
-- **Response body.** The file bytes. In prod the response is empty with
-  `X-Accel-Redirect` and nginx serves the file — transparent to
-  `curl -o <file>` either way.
+- **Response body.** The file bytes.
 - **Always pass `--fail-with-body`.** Without it curl writes an error
   response into the `-o` file and exits `0`, so a refused download looks like a
   successful one. With it, a refusal exits `22` and the `-o` file holds the

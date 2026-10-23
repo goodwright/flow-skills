@@ -56,6 +56,7 @@ Whichever view you use, keep `.metadata` in your `jq` projection. The
 list-summary worked example intentionally drops it; reusing that projection on a
 metadata question makes you report "no metadata" even when the response contains
 some.
+
 ## `GET /samples/search`
 
 The audience-agnostic samples list. Returns public samples always; with
@@ -75,21 +76,20 @@ authentication, also returns the caller's owned and shared samples.
 |----------------|------|------------|-----------|
 | `page`         | int  | `1`        | Paginator page. Non-integer → HTTP 400 naming the field. |
 | `count`        | int  | `10`       | Page size. Max 100; >100 → HTTP 400 (not silently clamped). |
-| `sort`          | str  | `-created` | Supported values: `-created` (newest first), `name`, `-name`. Other values are passed through to Django's `order_by` and may error if the field doesn't exist. |
+| `sort`          | str  | `-created` | Supported values: `-created` (newest first), `name`, `-name`. Use only these; another value may fail with an error. |
 | `owned`         | str  | (none)     | When set to `1`, `true`, or `yes`, restrict to samples owned by the authenticated caller. **Auth required AND must be verified first.** On this search endpoint a missing or invalid token is silently treated as anonymous (no 401), and `?owned=true` then silently filters to `owner=NULL` samples — returning a plausible but wrong number. `/me`, by contrast, returns 401 for a bad token, so gate on it: call `GET /me` first and require a successful response with a non-null `id` before trusting any `?owned=true` result. If `/me` returns 401 (exit 3), the caller is effectively anonymous — tell the user their token is missing or expired and how to authenticate. |
-| `name`          | str  | (none)     | Substring match (`__icontains`) on sample name only. |
+| `name`          | str  | (none)     | Case-insensitive substring match on sample name only. |
 | `organism`      | str  | (none)     | Organism pk for exact match; or `true`/`yes`/`1` to filter to samples that have any organism; `false`/`no`/`0` to filter to samples with no organism. |
 | `sample_types`  | str  | (none)     | Comma-separated sample-type **identifiers**. Match if the sample's type identifier is in the list. |
-| `owner`         | str  | (none)     | Substring match (`__icontains`) on owner name, username, group-owner name, or group-owner slug. |
-| `project`       | str  | (none)     | Substring match (`__icontains`) on project name. |
+| `owner`         | str  | (none)     | Case-insensitive substring match on owner name, username, group-owner name, or group-owner slug. |
+| `project`       | str  | (none)     | Case-insensitive substring match on project name. |
 | `created_gt`    | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); sample created on or after this value (`__gte`). Passing an ISO-8601 string → HTTP 400 naming the field. |
 | `created_lt`    | int  | (none)     | Unix timestamp integer (e.g. `1746403200`); sample created on or before this value (`__lte`). Passing an ISO-8601 string → HTTP 400 naming the field. |
 | `full_metadata` | str  | (none)     | When set to `1`, `true`, or `yes`, each item's `metadata` includes every attribute the sample has (richer shape, same as the detail endpoint), not just `in_table=True`. Off by default to keep list responses small. |
-| `<metadata_id>` | str  | (none)     | Any metadata attribute identifier returned by `GET /v2/metadata-attributes` on this instance. Legal identifiers are **per-instance** — admins curate their own — so always discover at runtime; do not assume a specific identifier exists. Matches metadata values via substring (`__icontains`). `true`/`yes`/`1` filters to samples that have any value for the attribute; `false`/`no`/`0` excludes them. |
+| `<metadata_id>` | str  | (none)     | Any metadata attribute identifier returned by `GET /v2/metadata-attributes` on this instance. Legal identifiers are **per-instance** — admins curate their own — so always discover at runtime; do not assume a specific identifier exists. Matches metadata values via case-insensitive substring. `true`/`yes`/`1` filters to samples that have any value for the attribute; `false`/`no`/`0` excludes them. |
 
-- **No free-text `filter` parameter.** Unlike the now-deprecated list
-  endpoint, `/samples/search` does not accept a single
-  cross-field substring. To search "any field for the word X", the agent
+- **No free-text `filter` parameter.** `/samples/search` does not accept
+  a single cross-field substring. To search "any field for the word X", the agent
   must pick a specific field (usually `name`) or issue separate calls.
   When a user gives a vague natural-language query ("the human
   samples"), prefer `organism` over `name` — `organism` is exact, `name`
@@ -204,6 +204,7 @@ than `/samples/search`'s list item — most importantly, it carries the
 - **Cross-link to the list view.** `/samples/search` finds samples by
   filter; this endpoint reads the full record for one. The two together
   cover discovery + drill-down.
+
 ## `GET /samples/<id>/executions`
 
 - **Auth:** public, but **stricter than `/samples/search`** — see
@@ -285,6 +286,7 @@ inputs.
   - `GET /v2/data/<id>` for the full data record (see `GET /v2/reference/data`),
   - `GET /data/<id>/contents` for a text preview (see `endpoints/data.md`),
   - `GET /downloads/<id>/<filename>` for the file bytes (see `endpoints/downloads.md`).
+
 ## Raw input files vs sample-related data — the trap
 
 A sample has TWO different "data" projections in the API and they are
@@ -293,16 +295,12 @@ NOT the same set:
 - **Inlined `filesets` on `/samples/<id>`** is just the sample's own
   filesets — i.e. the raw input files that *make up* the sample (the
   uploaded FASTQs / BAMs / whatever). It does **not** include anything
-  produced by running a pipeline on the sample. Implementation: this is
-  `s.filesets` on the model.
-- **`/samples/<id>/data`** is `Sample.data`, defined as the union of
-  three querysets:
-  1. `Data` whose upstream `process_execution.execution.sample` is this
-     sample (pipeline outputs at execution scope)
-  2. `Data` whose upstream `process_execution.sample` is this sample
-     (pipeline outputs at process scope)
-  3. `Data` whose `fileset.sample` is this sample (raw inputs — same as
-     bucket 1 of the detail view)
+  produced by running a pipeline on the sample.
+- **`/samples/<id>/data`** is the union of:
+  1. files produced by a pipeline run on this sample
+  2. files produced by a step of any run that processed this sample, such
+     as a run over several samples
+  3. the sample's own raw input files (the same as its inlined `filesets`)
 
   So `/samples/<id>/data` = raw inputs **plus** every pipeline-output
   file traced back to the sample. For a sample that has been run

@@ -3,8 +3,8 @@
 ## `GET /pipelines`
 
 - **Auth:** public, no auth required.
-- **Query params:** **none**. The view ignores `request.GET` entirely — no
-  `page`, no `count`, no `filter`. Passing query params is silently a no-op.
+- **Query params:** **none** — no `page`, no `count`, no `filter`. Any query
+  param is silently ignored.
 - **Pagination:** **none**. The full catalog is returned in a single response
   as a **bare JSON array** (not the `{count, page, ...}` envelope used by the
   sample/project list endpoints).
@@ -165,8 +165,8 @@ paired-end handling). Each row is `{sample?, fileset?, values: {col: val}}`:
 - **You usually only need the sample/fileset id.** This is genuinely
   server-side, and is **not** the same as the section-level `from_fileset` /
   `from_execution` autofill below (which is UI-only). When the run actually
-  executes, the backend builds the CSV file from the schema's `columns`
-  (`Execution.prepare_csvs`, invoked from `Execution.run`): for each column it
+  executes, the server builds the CSV file from the schema's `columns`: for
+  each column it
   takes the row's `values[<column name>]` if you supplied one, otherwise it
   fills the column itself when it has a **column-level** `from_sample` (a sample
   attribute, a metadata identifier, or a file index into the sample's fileset)

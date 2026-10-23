@@ -82,7 +82,7 @@ executions broadly ("which executions failed last week?",
 - **No free-text `filter` parameter.** Filtering is field-scoped.
 - **Response envelope:** `{"count": int, "page": int, "executions": [...]}`.
   Envelope `count` is the total matching executions across all pages.
-- **Per-item fields** (from live API and serializer):
+- **Per-item fields:**
   - `id` (str — stringified integer pk)
   - `identifier` (str — human-readable slug, e.g. `"small_meucci"`)
   - `pipeline_name` (str)
