@@ -83,6 +83,9 @@ Inside Claude Code:
 
 To pick up new releases later, run `/plugin marketplace update`.
 
+The skill runs the Flow CLI through a POSIX shell script, so it needs macOS or
+Linux (or WSL on Windows).
+
 ## Install — other agents
 
 The skill itself is just a directory of Markdown files following
@@ -105,37 +108,33 @@ Copilot CLI, etc.), see your harness's documentation for the skill
 load path. The skill's contract is the YAML frontmatter in `SKILL.md`
 plus the supporting files it references — no harness-specific glue.
 
+Installed this way, without the plugin, `flow-cli` is not on your `PATH`; the
+skill runs its copy at `scripts/flow-cli` in the skill's directory instead.
+
 ## Reducing permission prompts
 
-Flow reads run through the `flowbio` CLI's read-only `api get` command, which
-resolves your token itself. These calls carry no embedded secret and share a
-stable prefix, so — unlike the old token-substituting curl — they can be
-allowlisted through Claude Code's normal `permissions.allow`.
+Every Flow call goes through `flow-cli`, a small launcher the plugin puts on
+your `PATH`. It runs the `flowbio` CLI at the version the skill is written
+against: through `uvx` if you have `uv`, else `pipx`, else a `flowbio` already
+installed. The CLI resolves your token itself, so read commands carry no secret
+and can be allowlisted.
 
-One wrinkle: the read recipes pipe the result through `jq`
-(`flowbio api get … --json | jq '…'`). Claude Code auto-approves a piped
-command only when **every** segment is allowlisted, and it does **not** offer a
-one-click "don't ask again" for multi-segment commands — so a read keeps
-prompting until you allowlist both the read command *and* `jq`. Add the entries
-that match how the CLI resolves on your machine (the skill prefers `uvx`, then
-`pipx`, then a `flowbio` already on your `PATH`) to `.claude/settings.json`:
+To stop reads prompting, add both entries to `.claude/settings.json`: the read
+recipes pipe through `jq`, and Claude Code only auto-approves a piped command
+when every part of it is allowed.
 
 ```json
 {
   "permissions": {
     "allow": [
-      "Bash(flowbio api get:*)",
-      "Bash(uvx --from flowbio==0.14.1 flowbio api get:*)",
-      "Bash(pipx run --spec flowbio==0.14.1 flowbio api get:*)",
-      "Bash(jq:*)"
+      "Bash(flow-cli api get *)",
+      "Bash(jq *)"
     ]
   }
 }
 ```
 
-The entries must match the command the skill emits byte-for-byte — Claude Code
-prefix-matches the raw string, so the quoting has to agree (the skill emits the
-pinned spec unquoted, e.g. `uvx --from flowbio==0.14.1 …`).
+The entries stay the same from one release to the next.
 
 Do **not** allowlist `api post` or `api patch`. Those create and edit
 records and run pipelines, and the prompt is the last check that the change is
@@ -157,6 +156,11 @@ On each release, bump:
 1. `plugins/flow-ai/.claude-plugin/plugin.json#version`
 2. The `User-Agent` string in `examples.md` (download recipe)
 3. `CHANGELOG.md`
+
+The `flowbio` version the skill runs is pinned in one place,
+`FLOWBIO_VERSION` in
+[`plugins/flow-ai/skills/flow-ai/scripts/flow-cli`](plugins/flow-ai/skills/flow-ai/scripts/flow-cli).
+To move to a new `flowbio`, change it there.
 
 A pre-release sanity check:
 

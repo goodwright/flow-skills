@@ -21,51 +21,39 @@ session.** If you did not see the number in command output, you do not know it �
 run the command that produces it. Never estimate, never infer a count from a
 list you did not fully retrieve, and never state a number you have not seen.
 
-## Step 0 — resolve the runner (once per session)
+## Step 0 — check the CLI (once per session)
 
-The CLI is not installed. It is fetched on demand, pinned to `flowbio==0.14.1`.
-**Reads need this too — there is no curl fallback for reads.** Run this once:
+Every call goes through `flow-cli`, which runs the `flowbio` CLI at the version
+this skill is written against, fetching it on demand. **Reads need it too —
+there is no curl fallback for reads.** Run this once:
 
 ```bash
-uvx --from flowbio==0.14.1 flowbio api get /v2/sample-types --json | head -c 300
+flow-cli api get /v2/sample-types --json | head -c 300
 ```
 
-- **It printed JSON** → your runner prefix is `uvx --from flowbio==0.14.1 flowbio`.
-  Use that exact prefix on every call for the rest of the session. First call is
-  slow (it downloads the package); later calls are fast.
-- **`uvx: command not found`** → try the same call with
-  `pipx run --spec flowbio==0.14.1 flowbio` and use that prefix instead.
-- **Neither exists** → try bare `flowbio api get /v2/sample-types --json`. Only use
-  the bare form if that call *actually prints JSON*.
-- **All three failed** → stop and tell the user:
-
-  > Using Flow needs the `flowbio` CLI, which this skill runs on demand via `uv`.
-  > I couldn't find `uv` (or `pipx`, or a working `flowbio`) on your PATH.
-  > Install one of:
-  >   • `uv`   — https://docs.astral.sh/uv/ (recommended); or
-  >   • `pipx` — `pip install --user pipx`; or
-  >   • `flowbio` directly — `pip install "flowbio>=0.14.1"`.
-  > Then ask me again.
+- **It printed JSON** → the CLI works; use `flow-cli` for every call. The first
+  call is slow (it downloads the package); later calls are fast.
+- **`flow-cli: command not found`** → the skill was installed without its
+  plugin. Run `scripts/flow-cli` from this skill's directory instead, by its full
+  path, and use that path wherever this skill writes `flow-cli`.
+- **It printed "Using Flow needs the `flowbio` CLI…"** → stop and give the user
+  that message.
+- **It failed in any other way**, such as `ModuleNotFoundError` → the `flowbio`
+  already installed on this machine is broken. Stop and tell the user to install
+  `uv` (https://docs.astral.sh/uv/), which `flow-cli` prefers, then ask again.
 
 **Give every call enough time.** If you set a timeout on the bash tool, the value
 is in **milliseconds**: use at least `120000` (two minutes) for a single call and
 `600000` (ten minutes) for the pagination loop in Shape B. A value like `60` means
 sixty milliseconds and will kill the command before it starts — which looks
-exactly like a broken runner.
+exactly like a broken CLI.
 
-**Once any call has succeeded, the runner is working.** A later failure is a
-mistake in that command — most often a mistyped version pin (it is exactly
-`flowbio==0.14.1`) or a timeout that was too short. Re-read your command and fix
-it. Do not conclude the CLI is missing, do not switch runners, and never fall
-back to `pip install`.
+**Once any call has succeeded, the CLI is working.** A later failure is a
+mistake in that command, most often a timeout that was too short. Re-read your
+command and fix it; do not conclude the CLI is missing.
 
-**Never run a bare `flowbio` without testing it first.** A `flowbio` on `PATH` is
-often a stale shim that reports a version yet crashes with
-`ModuleNotFoundError`. `flowbio --version` is not a valid check — only a real
-`api get` call is. **Never `pip install` anything**; use the runner instead.
-
-Below, `RUNNER` means the prefix you resolved here. Write it out in full every
-time — do not use a shell variable for it.
+**Never call `flowbio`, `uvx` or `pipx` yourself, and never `pip install`
+anything.** `flow-cli` picks how to run the CLI and which version.
 
 ## Step 1 — pick a command shape
 
@@ -77,7 +65,7 @@ shell variables or arrays — substitute the real path, params, field and page
 count into the command text yourself. Multi-line scripts and `VAR=...`
 assignments get mangled and fail silently.
 
-Call shape: `RUNNER api get <PATH> --param KEY=VALUE … --json`. One `--param` per
+Call shape: `flow-cli api get <PATH> --param KEY=VALUE … --json`. One `--param` per
 filter; the CLI URL-encodes each value. **Never put a `?` in the path** — the CLI
 rejects it.
 
@@ -87,7 +75,7 @@ For inspecting records, and for "how many **records** match" — the answer is t
 envelope's `count` field.
 
 ```bash
-uvx --from flowbio==0.14.1 flowbio api get /samples/search --param sample_types=TYPE_IDENTIFIER --param ATTRIBUTE_IDENTIFIER=VALUE --param count=1 --json | jq -r '.count'
+flow-cli api get /samples/search --param sample_types=TYPE_IDENTIFIER --param ATTRIBUTE_IDENTIFIER=VALUE --param count=1 --json | jq -r '.count'
 ```
 
 **A filtered count of `0` is never an answer — it is a bug report.** It means one
@@ -120,7 +108,7 @@ the answer either — it counts records, not distinct values.
 **B1. Find the real identifiers first** (Step 4; never guess them):
 
 ```bash
-(  uvx --from flowbio==0.14.1 flowbio api get /v2/sample-types --json | jq -r '.[] | "TYPE | " + .identifier + " | " + .name';  uvx --from flowbio==0.14.1 flowbio api get /v2/metadata-attributes --json | jq -r '.[] | "ATTR | " + .identifier + " | " + .name + " | " + .description'  )
+(  flow-cli api get /v2/sample-types --json | jq -r '.[] | "TYPE | " + .identifier + " | " + .name';  flow-cli api get /v2/metadata-attributes --json | jq -r '.[] | "ATTR | " + .identifier + " | " + .name + " | " + .description'  )
 ```
 
 **B2. Collect the field across every page and deduplicate.** This command
@@ -130,7 +118,7 @@ walks them all:
 ```bash
 # The `for` loop is mandatory. One request returns at most 100 records, so a
 # single call without `for` answers for page 1 only. Never remove it.
-for p in $(seq 1 $(uvx --from flowbio==0.14.1 flowbio api get /samples/search --param sample_types=TYPE_IDENTIFIER --param count=1 --json | jq -r '((.count+99)/100|floor)')); do uvx --from flowbio==0.14.1 flowbio api get /samples/search --param sample_types=TYPE_IDENTIFIER --param full_metadata=true --param count=100 --param page=$p --json | jq -r '.samples[] | .metadata.ATTRIBUTE_IDENTIFIER.value // empty'; done | sort -u | wc -l
+for p in $(seq 1 $(flow-cli api get /samples/search --param sample_types=TYPE_IDENTIFIER --param count=1 --json | jq -r '((.count+99)/100|floor)')); do flow-cli api get /samples/search --param sample_types=TYPE_IDENTIFIER --param full_metadata=true --param count=100 --param page=$p --json | jq -r '.samples[] | .metadata.ATTRIBUTE_IDENTIFIER.value // empty'; done | sort -u | wc -l
 ```
 
 Drop the `| wc -l` to list the values instead of counting them.
@@ -213,7 +201,7 @@ before counting anything.
   Before counting any array, inspect one element:
 
   ```bash
-  uvx --from flowbio==0.14.1 flowbio api get /PATH --json | jq '.[0]'
+  flow-cli api get /PATH --json | jq '.[0]'
   ```
 
   If it holds a nested array — `subcategories`, `pipelines`, `versions`,
@@ -222,7 +210,7 @@ before counting anything.
   flattening every level:
 
   ```bash
-  uvx --from flowbio==0.14.1 flowbio api get /PATH --json | jq '[.[].OUTER[].INNER[]] | length'
+  flow-cli api get /PATH --json | jq '[.[].OUTER[].INNER[]] | length'
   ```
 
   Sanity-check by also counting unique ids (`[.[].OUTER[].INNER[].id] | unique |
@@ -286,7 +274,7 @@ error, and who each operation admits:
 Before calling an endpoint of a topic, read its page:
 
 ```bash
-uvx --from flowbio==0.14.1 flowbio api get /v2/reference/samples --json
+flow-cli api get /v2/reference/samples --json
 ```
 
 It is markdown, not JSON: read it whole, and never pipe it through `jq`. Its
@@ -333,7 +321,7 @@ property start with `/v2/metadata-attributes` to find which attribute holds it.
 Run these verbatim; both lists are short, so read every row before choosing:
 
 ```bash
-(  uvx --from flowbio==0.14.1 flowbio api get /v2/sample-types --json | jq -r '.[] | "TYPE | " + .identifier + " | " + .name';  uvx --from flowbio==0.14.1 flowbio api get /v2/metadata-attributes --json | jq -r '.[] | "ATTR | " + .identifier + " | " + .name + " | " + .description'  )
+(  flow-cli api get /v2/sample-types --json | jq -r '.[] | "TYPE | " + .identifier + " | " + .name';  flow-cli api get /v2/metadata-attributes --json | jq -r '.[] | "ATTR | " + .identifier + " | " + .name + " | " + .description'  )
 ```
 
 `TYPE` rows are sample types (`.identifier` is the `sample_types` value); `ATTR`
@@ -419,11 +407,11 @@ apostrophe inside a value as `\u0027` (`"Martin\u0027s samples"`): JSON reads it
 as `'`, and a literal one would end the shell's quoting.
 
 ```bash
-printf '%s' '{"name": "Liver Atlas", "description": "Bulk RNA-Seq of liver"}' | uvx --from flowbio==0.14.1 flowbio api post /v2/projects --body - --json
+printf '%s' '{"name": "Liver Atlas", "description": "Bulk RNA-Seq of liver"}' | flow-cli api post /v2/projects --body - --json
 ```
 
 ```bash
-printf '%s' '{"metadata": {"cell_line": {"value": "HeLa"}}}' | uvx --from flowbio==0.14.1 flowbio api patch /v2/samples/SAMPLE_ID --body - --json
+printf '%s' '{"metadata": {"cell_line": {"value": "HeLa"}}}' | flow-cli api patch /v2/samples/SAMPLE_ID --body - --json
 ```
 
 - An edit changes only what the body sends, so send only the fields the user
@@ -490,7 +478,7 @@ Two cases exit `0` but still need interpreting:
 | Empty list | Nothing visible to this caller matches | Not a failure. Say "no matches". If unauthenticated, mention that much of Flow is private. |
 | `count` unchanged after adding a filter | The filter was silently ignored (unknown identifier) | Confirm it via the relevant discovery endpoint (Step 4). |
 
-A missing runner is not an API error — handle it with Step 0.
+A missing CLI is not an API error — handle it with Step 0.
 
 Never swallow an error. If the CLI exits non-zero, report the server `message`
 (or the transport error) and stop — do not fabricate a result.

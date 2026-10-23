@@ -16,15 +16,14 @@ Uploads are **not** done with `curl`. The chunked/resumable upload protocol
 (retry, backoff, token refresh) is owned by the **flowbio** Python library; the
 skill shells out to that library's command-line interface and never
 reimplements the protocol in bash, nor improvises Python at runtime. The
-pinned `flowbio==0.14.1` carries the upload commands `data upload`,
+`flowbio` version `flow-cli` runs carries the upload commands `data upload`,
 `samples upload`, `samples upload-multiplexed` and `samples annotation-template`.
 
-## Runner
+## Running the CLI
 
-Uploads use the same `flowbio` runner as every other call. Resolve it once per
-session with `SKILL.md` Step 0, before the first call of any kind, and use
-that prefix for every upload command below. If Step 0 finds no runner, stop
-with its install message; never attempt the upload another way.
+Uploads go through `flow-cli`, like every other call, once `SKILL.md` Step 0
+has checked it works. If Step 0 finds no working CLI, stop and give the user
+its message; never attempt the upload another way.
 
 ##  Auth & base URL (token discipline preserved)
 

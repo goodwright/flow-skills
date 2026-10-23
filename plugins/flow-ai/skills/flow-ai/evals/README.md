@@ -71,7 +71,7 @@ skill is designed to support:
 - `003-last-successful-execution.json` — auth precheck + `/executions/search` filters + detail drill-down.
 - `004-data-i-own.json` — owned file count and byte total, as a human-readable size, with deleted files excluded and auth confirmed first. Outcome-graded, so it holds whichever data endpoint the skill uses.
 - `005-executions-for-sample.json` — name-to-id discovery + sub-resource navigation.
-- `006-upload-data-file.json` — generic data-file upload: confirmation gate, runner preflight, pinned `uvx` CLI invocation, token discipline, `{"id":...}` / exit-code handling.
+- `006-upload-data-file.json` — generic data-file upload: confirmation gate, `flow-cli` invocation, token discipline, `{"id":...}` / exit-code handling.
 - `007-upload-no-runner.json` — no `uv`/`pipx`/`flowbio` runner found: stop before uploading and return the install message.
 - `008-upload-paired-end-sample.json` — demultiplexed paired-end sample upload: sample-type / required-metadata / organism / project discovery and validation, confirmation gate, `flowbio samples upload` with `--reads1`/`--reads2`, `{"id":...}` / exit-code handling.
 - `009-upload-sample-missing-required-metadata.json` — pre-flight catch: required metadata for the sample type is missing, so the skill names the gap and refuses to upload.

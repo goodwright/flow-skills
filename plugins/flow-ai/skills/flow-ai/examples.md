@@ -41,13 +41,13 @@ Find the pipeline's id there, then read its versions from `GET /pipelines/<id>`
 List every pipeline and pick the user's by reading the names:
 
 ```bash
-uvx --from flowbio==0.14.1 flowbio api get /pipelines --json | jq -r '.[].subcategories[].pipelines[] | .id + " | " + .name'
+flow-cli api get /pipelines --json | jq -r '.[].subcategories[].pipelines[] | .id + " | " + .name'
 ```
 
 Then list its versions, most recent first:
 
 ```bash
-uvx --from flowbio==0.14.1 flowbio api get /pipelines/PIPELINE_ID --json | jq -r '.versions[] | .id + " | " + .name'
+flow-cli api get /pipelines/PIPELINE_ID --json | jq -r '.versions[] | .id + " | " + .name'
 ```
 
 The first row is the latest version. Report its name, and its id if the user
