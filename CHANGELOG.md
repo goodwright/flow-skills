@@ -6,6 +6,16 @@ follow [Semantic Versioning](https://semver.org/).
 The canonical version is `plugins/flow-ai/.claude-plugin/plugin.json#version`.
 Bump it on every release.
 
+## [0.16.0] — 2026-10-23
+
+- **The skill installs `flowbio` itself in Claude Science.** Claude Science's
+  sandbox has no `uv` or `pipx`, so `flow-cli` printed its install message and
+  the skill stopped. When the agent has a tool of its own for installing
+  packages into an environment, such as Claude Science's `manage_packages`, the
+  skill now installs the exact `flowbio` version the message names with it and
+  runs every call in that environment. Elsewhere it still stops and shows the
+  message.
+
 ## [0.15.0] — 2026-10-23
 
 - **SKILL.md is under 500 lines**, the length Anthropic recommends for a

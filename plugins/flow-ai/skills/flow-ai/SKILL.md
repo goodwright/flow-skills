@@ -36,8 +36,12 @@ flow-cli api get /v2/sample-types --json | head -c 300
 - **`flow-cli: command not found`** → the skill was installed without its
   plugin. Run `scripts/flow-cli` from this skill's directory instead, by its full
   path, and use that path wherever this skill writes `flow-cli`.
-- **It printed "Using Flow needs the `flowbio` CLI…"** → stop and give the user
-  that message.
+- **It printed "Using Flow needs the `flowbio` CLI…"** → if you have a tool of
+  your own for installing packages into an environment (Claude Science's
+  `manage_packages`), install the exact `flowbio==<version>` the message names
+  with it. Run this check again, and every later call, in that environment. If
+  the message comes back, or you have no such tool, stop and give the user the
+  message.
 - **It crashed with `ModuleNotFoundError` or `ImportError`** → the `flowbio`
   already installed on this machine is broken. Stop and tell the user
   to install `uv` (https://docs.astral.sh/uv/), which `flow-cli` prefers, then
@@ -56,7 +60,8 @@ mistake in that command, most often a timeout that was too short. Re-read your
 command and fix it; do not conclude the CLI is missing.
 
 **Never call `flowbio`, `uvx` or `pipx` yourself, and never `pip install`
-anything.** `flow-cli` picks how to run the CLI and which version.
+anything; the only install is the one above.** `flow-cli` picks how to run the
+CLI and which version.
 
 ## Step 1 — pick a command shape
 
