@@ -23,6 +23,11 @@ tracks it. Bump both together on every release.
   row), or a single string for a problem with the whole sheet. The skill
   described `{"row": …, "message": …}` objects, which the CLI never sends.
 
+- **Two examples no longer break on a real value**: the project lookup in
+  `examples.md` quotes the name it searches for, and the run link in
+  `endpoints/pipelines.md` no longer sets shell variables, which SKILL.md tells
+  the agent not to use.
+
 ## [0.14.1] — 2026-10-21
 
 - **Shared flowbio pin bumped `0.14.0` → `0.14.1`**. `0.14.0` has no

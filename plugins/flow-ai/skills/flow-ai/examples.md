@@ -202,7 +202,7 @@ Find its id. `name` is a substring match, so pick the row whose name is exactly
 the user's ("Liver Atlas" also matches "Public Liver Atlas"):
 
 ```bash
-flow-cli api get /projects/search --param name=NAME --param count=100 --json | jq -r '.projects[] | .id + " | " + .name'
+flow-cli api get /projects/search --param "name=Liver Atlas" --param count=100 --json | jq -r '.projects[] | .id + " | " + .name'
 ```
 
 Then fetch the detail record:
