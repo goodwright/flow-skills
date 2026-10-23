@@ -26,7 +26,7 @@ The catalog is unpaginated, so a single GET is enough. Project to category
 names and pipeline counts.
 
 ```bash
-flowbio api get /pipelines --json | \
+flow-cli api get /pipelines --json | \
   jq '[.[] | {category: .name, pipelines: [.subcategories[].pipelines[].name]}]'
 ```
 
@@ -62,7 +62,7 @@ discovery step is needed to find the organism pk; `name=rna-seq` is the
 practical fallback and usually sufficient.
 
 ```bash
-flowbio api get /samples/search \
+flow-cli api get /samples/search \
   --param name=rna-seq \
   --param count=20 --json | \
   jq '{total: .count, page: .page, samples: [.samples[] | {id, name, organism: .organism.name, sample_type: .sample_type.name, project: .project_name}]}'
@@ -81,7 +81,7 @@ the detail endpoint instead — see Example 9 below.
 ## Example 4: "List public projects"
 
 ```bash
-flowbio api get /projects/search \
+flow-cli api get /projects/search \
   --param count=100 --json | \
   jq '{total: .count, page: .page, projects: [.projects[] | {id, name, samples: .sample_count, executions: .execution_count}]}'
 ```
@@ -98,13 +98,13 @@ Two steps. First confirm the sample is reachable via the search endpoint
 executions.
 
 ```bash
-flowbio api get /samples/search \
+flow-cli api get /samples/search \
   --param name=12345 --json | \
   jq '.samples[] | {id, name, project_name}'
 ```
 
 ```bash
-flowbio api get /samples/12345/executions \
+flow-cli api get /samples/12345/executions \
   --param count=50 --json | \
   jq '{total: .count, page: .page, executions: [.executions[] | {id, identifier, pipeline_name, pipeline_version, status, created}]}'
 ```
@@ -123,7 +123,7 @@ inputs and silently undercounts processed samples (see "raw input
 files vs sample-related data" in `endpoints/samples.md`).
 
 ```bash
-flowbio api get /samples/12345/data \
+flow-cli api get /samples/12345/data \
   --param count=100 --json | \
   jq '{total: .count, files: [.data[] | {id, filename, size, pipeline_name}]}'
 ```
@@ -170,7 +170,7 @@ Notes:
 ## Example 8: "Show me the first chunk of a public text file"
 
 ```bash
-flowbio api get /data/67890/contents --json | \
+flow-cli api get /data/67890/contents --json | \
   jq '{has_more, contents: (.contents[:2000])}'
 ```
 
@@ -190,7 +190,7 @@ the user gave a name rather than an id, discover the id first via
 `/samples/search?name=<name>` (Example 3).
 
 ```bash
-flowbio api get /samples/12345 --json | \
+flow-cli api get /samples/12345 --json | \
   jq '{id, name, sample_type, organism: .organism.name, project: .project.name, pubmed,
        metadata: [.metadata | to_entries[] | {attribute: .value.attribute_name, value: .value.value}],
        raw_input_count: ([.filesets[].data[]] | length)}'
@@ -216,7 +216,7 @@ Discover by name first if needed via `/projects/search?name=…`
 (Example 4), then fetch the detail record:
 
 ```bash
-flowbio api get /projects/4567 --json | \
+flow-cli api get /projects/4567 --json | \
   jq '{id, name, description, owner: .owner.name, papers: [.papers[] | {year, title, journal}]}'
 ```
 
@@ -229,7 +229,7 @@ those numbers.
 Read `GET /v2/reference/data` first: it lists every field of the record. Then:
 
 ```bash
-flowbio api get /v2/data/67890 --json | \
+flow-cli api get /v2/data/67890 --json | \
   jq '{id, filename, filetype, size, is_directory, data_type, deletion_scheduled_for, file_deleted_at}'
 ```
 
@@ -245,7 +245,7 @@ first:
 ```bash
 YESTERDAY=$(date -d "yesterday 00:00:00" +%s 2>/dev/null || date -v-1d -v0H -v0M -v0S +%s)
 
-flowbio api get /executions/search \
+flow-cli api get /executions/search \
   --param owned=true \
   --param created_gt=$YESTERDAY \
   --param count=50 --json | \
@@ -279,14 +279,14 @@ query on a successful `/me`.
 
 ```bash
 # Step 1: verify the token works — /me 401s (exit 3) when it is missing/invalid.
-if ! ME=$(flowbio api get /me --json 2>/dev/null) \
+if ! ME=$(flow-cli api get /me --json 2>/dev/null) \
    || [ -z "$(printf '%s' "$ME" | jq -r '.id // empty')" ]; then
   echo "Not authenticated: /me failed. Token missing, expired, or invalid."
   exit 1
 fi
 
 # Step 2: only now is it safe to use owned=true
-flowbio api get /samples/search \
+flow-cli api get /samples/search \
   --param owned=true --param count=20 --json | \
   jq '{total: .count, samples: [.samples[] | {id, name, project: .project_name}]}'
 ```
@@ -314,7 +314,7 @@ silently treat a bad token as anonymous (no 401) and return a misleading
 useful fields:
 
 ```bash
-flowbio api get /v2/metadata-attributes --json | \
+flow-cli api get /v2/metadata-attributes --json | \
   jq '[.[] | {identifier, name, description, has_options, allow_user_terms, all_sample_types}]'
 ```
 
@@ -331,11 +331,11 @@ Two-call recipe: resolve organism name → pk, then filter samples.
 
 ```bash
 # Resolve "human" to an organism pk
-HUMAN_ID=$(flowbio api get /organisms --json | \
+HUMAN_ID=$(flow-cli api get /organisms --json | \
   jq -r '.[] | select(.name | ascii_downcase == "human") | .id')
 
 # Filter samples by that pk
-flowbio api get /samples/search \
+flow-cli api get /samples/search \
   --param organism=$HUMAN_ID --param count=20 --json | \
   jq '{total: .count, samples: [.samples[] | {id, name, sample_type}]}'
 ```
@@ -353,16 +353,16 @@ where source is brain":
 
 ```bash
 # Step 1: discover whether 'source' exists on this instance
-flowbio api get /v2/metadata-attributes --json | \
+flow-cli api get /v2/metadata-attributes --json | \
   jq '.[] | select(.identifier == "source")'
 # If no row: tell the user this instance has no 'source' attribute,
 # list the available identifiers, and stop.
 
 # Step 2: learn the value vocabulary. If the attribute has_options, its
 # options are the legal values:
-#   flowbio api get /v2/metadata-attributes/source/options --param value=brain --json
+#   flow-cli api get /v2/metadata-attributes/source/options --param value=brain --json
 # For free text there is no list, so inspect a small sample of records:
-flowbio api get /samples/search \
+flow-cli api get /samples/search \
   --param count=10 --json | \
   jq '[.samples[] | .metadata.source.value] | unique'
 # Tells you the actual values present — e.g. ["Temporal Cortex",
@@ -371,7 +371,7 @@ flowbio api get /samples/search \
 # search may still under-match.
 
 # Step 3: filter with a well-chosen substring
-flowbio api get /samples/search \
+flow-cli api get /samples/search \
   --param source=Cortex --param count=20 --json | \
   jq '{total: .count, samples: [.samples[] | {id, name, source: .metadata.source.value}]}'
 ```

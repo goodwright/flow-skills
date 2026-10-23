@@ -12,7 +12,7 @@ Read `uploading.md` first for auth, the CLI contract, and the confirmation gate.
 Uploads a single demultiplexed sample (single-end or paired-end reads plus
 metadata). **This is not a `curl` call** — it runs through the flowbio CLI on
 demand. It runs via `flow-cli` (`SKILL.md` Step 0). Read `uploading.md`
-first: it owns the pinned version, token discipline, base-URL handling, and the
+first: it owns token discipline, base-URL handling, and the
 JSON / exit-code contract. This section covers only what is specific to the sample call.
 
 - **Inputs / flags:**
@@ -137,7 +137,7 @@ first for token discipline and the JSON / exit-code contract.
 Uploads one or two multiplexed reads files plus a completed annotation sheet for
 server-side demultiplexing. **This is not a `curl` call** — it runs through the
 flowbio CLI on demand. It runs via `flow-cli` (`SKILL.md` Step 0). Read
-`uploading.md` first: it owns the pinned version, token discipline, base-URL
+`uploading.md` first: it owns token discipline, base-URL
 handling, and the JSON / exit-code contract. This section covers only what is specific to the
 multiplexed call.
 

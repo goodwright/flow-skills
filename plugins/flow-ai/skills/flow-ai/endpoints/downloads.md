@@ -11,7 +11,7 @@ Direct single-file download for a public Data row.
 
 **With authentication:** any Data the caller has access to is
 downloadable through this endpoint. Unlike reads (which go through
-`flowbio api get`), a download is a raw-byte transfer done with `curl`, so
+`flow-cli api get`), a download is a raw-byte transfer done with `curl`, so
 attach the token to the curl yourself for private data —
 `-H "Authorization: Bearer $(< ~/.config/flow/api-token)"` — preserving the
 token discipline in "Authentication" in `SKILL.md` (never print it). Omit the header

@@ -16,7 +16,7 @@ shape.
 ```bash
 # Step 1 (optional): resolve a named data type to its identifier.
 # Skip if the user gave no data type.
-flowbio api get /data/types --json | \
+flow-cli api get /data/types --json | \
   jq '[.[] | {identifier, name}]'
 
 # Step 2: local pre-flight. Confirm the file exists and the stored
@@ -51,7 +51,7 @@ is liver".
 
 ```bash
 # Step 1: resolve the sample type → identifier.
-flowbio api get /v2/sample-types --json | \
+flow-cli api get /v2/sample-types --json | \
   jq '[.[] | {identifier, name}]'
 # Match the user's "RNA-Seq" to a row's name and use that row's identifier as
 # TYPE_IDENTIFIER below. Identifiers differ between Flow instances, so look it up
@@ -61,16 +61,16 @@ flowbio api get /v2/sample-types --json | \
 # Required = required_for_every_sample true OR a sample_types entry for the
 # chosen identifier with required:true. Confirm the user supplied them all
 # BEFORE uploading; if any is missing, name it and stop.
-flowbio api get /v2/metadata-attributes --param sample_type=TYPE_IDENTIFIER --json | \
+flow-cli api get /v2/metadata-attributes --param sample_type=TYPE_IDENTIFIER --json | \
   jq --arg t "TYPE_IDENTIFIER" '[.[] | select(.required_for_every_sample or any(.sample_types[];
        .identifier == $t and .required)) | {identifier, name}]'
 
 # Step 3: resolve organism name → id.
-HUMAN_ID=$(flowbio api get /organisms --json | \
+HUMAN_ID=$(flow-cli api get /organisms --json | \
   jq -r '.[] | select(.name | ascii_downcase == "human") | .id')
 
 # Step 4: resolve project name → id.
-PROJECT_ID=$(flowbio api get /projects/search \
+PROJECT_ID=$(flow-cli api get /projects/search \
   --param "name=Liver Atlas" --json | \
   jq -r '.projects[0].id')
 
@@ -162,7 +162,7 @@ handling stay uniform. Read the `GET /annotation/<sample_type>` section of
 
 ```bash
 # Step 1: resolve the sample type → identifier (skip for the generic template).
-flowbio api get /v2/sample-types --json | \
+flow-cli api get /v2/sample-types --json | \
   jq '[.[] | {identifier, name}]'
 # Match the user's "RNA-Seq" to a row's name and use that row's identifier as
 # TYPE_IDENTIFIER below. Identifiers differ between Flow instances, so look it up
@@ -188,30 +188,30 @@ stop and give the user its message.
 ## Example 22: "Run the rna-seq pipeline on sample Liver_RNA_1"
 
 Running a pipeline is a **mutation** and **always needs the token**. The
-discovery steps are reads via `flowbio api get`; the run itself is one
-`flowbio api post`. Read the "Running a pipeline" section of
+discovery steps are reads via `flow-cli api get`; the run itself is one
+`flow-cli api post`. Read the "Running a pipeline" section of
 `endpoints/pipelines.md` first — it owns the body shape, the schema→body
 mapping, the confirmation gate, and the error table. The chain:
 
 ```bash
 # Step 0: confirm auth — running always needs the token.
-flowbio api get /me --json | jq '.id'
+flow-cli api get /me --json | jq '.id'
 # null → token missing/expired; stop and tell the user how to authenticate.
 
 # Step 1: find the pipeline id by name.
-flowbio api get /pipelines --json | \
+flow-cli api get /pipelines --json | \
   jq '[.. | objects | select(.name? | test("rna.?seq"; "i")) | select(.id?)] | .[] | {id, name}'
 
 # Step 2: pick the version — default to the most recent (versions[0]).
-flowbio api get /pipelines/<pipeline_id> --json | \
+flow-cli api get /pipelines/<pipeline_id> --json | \
   jq '{name, default_version: .versions[0], nextflow: .versions[0].nextflow_versions[0]}'
 
 # Step 3: read the version schema to learn the params.
-flowbio api get /pipelines/versions/<version_id> --json | \
+flow-cli api get /pipelines/versions/<version_id> --json | \
   jq '{nextflow_versions, inputs: [.schema.inputs[] | {name, params: (.params|keys)}]}'
 
 # Step 4: resolve the sample name → id (for the samplesheet csv param).
-flowbio api get /samples/search \
+flow-cli api get /samples/search \
   --param name=Liver_RNA_1 --json | \
   jq '.samples[] | {id, name}'
 ```
@@ -252,7 +252,7 @@ hours.
 
 ```bash
 # After the run returns <id>, poll status on a >=60s interval until terminal.
-flowbio api get /executions/<id> \
+flow-cli api get /executions/<id> \
   --param include=status --param include=finished --json | \
   jq '{status, finished}'
 # Repeat (sleep >= 60s between calls) until status is OK, ERROR, or CANCELED.
@@ -270,16 +270,16 @@ apply to the sample's type and how the edit reports a refused value.
 
 ```bash
 # Step 1: resolve the sample by name to its id.
-flowbio api get /samples/search --param name=liver_rep1 --param count=10 --json | \
+flow-cli api get /samples/search --param name=liver_rep1 --param count=10 --json | \
   jq -r '.samples[] | .id + " | " + .name + " | " + .sample_type.identifier'
 # More than one match? Ask the user which.
 
 # Step 2: find the attribute the user means, by its name.
-flowbio api get /v2/metadata-attributes --json | \
+flow-cli api get /v2/metadata-attributes --json | \
   jq -r '.[] | .identifier + " | " + .name + " | " + (.has_options | tostring)'
 
 # Step 3: it has options, so check the value is one of them.
-flowbio api get /v2/metadata-attributes/cell_line/options --param value=HepG2 --json | \
+flow-cli api get /v2/metadata-attributes/cell_line/options --param value=HepG2 --json | \
   jq -r '.items[].value'
 # The filter matches substrings, so check one value is exactly HepG2 (not
 # HepG2-C3A). None is, and the attribute has no allow_user_terms? Tell the user.

@@ -4,9 +4,19 @@ All notable changes to the `flow-ai` skill are documented here. Versions
 follow [Semantic Versioning](https://semver.org/).
 
 The canonical version is `plugins/flow-ai/.claude-plugin/plugin.json#version`.
-The `flow-ai/<version>` User-Agent that survives on the two `curl` remnants
-(the pipeline run and file download) tracks it. Bump both together on every
-release.
+The `flow-ai/<version>` User-Agent that survives on the file-download `curl`
+tracks it. Bump both together on every release.
+
+## [Unreleased]
+
+- **Every Flow call goes through `flow-cli`**, a launcher the plugin puts on
+  `PATH`. It runs `flowbio` at the version pinned in
+  `skills/flow-ai/scripts/flow-cli`, the only place the skill names it, through
+  `uvx`, else `pipx`, else an installed `flowbio`. A skill installed without the
+  plugin runs `scripts/flow-cli` from its own directory. **Allowlist entries
+  change:** replace the `uvx --from flowbio==…` and `pipx run --spec …` entries
+  with `Bash(flow-cli api get *)`; `Bash(jq *)` stays. The skill needs macOS,
+  Linux or WSL.
 
 ## [0.14.1] — 2026-10-21
 

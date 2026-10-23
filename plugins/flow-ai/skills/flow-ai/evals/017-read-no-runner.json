@@ -2,7 +2,7 @@
   "skills": ["flow-ai"],
   "query": "What pipelines are available on Flow?",
   "expected_behavior": [
-    "Recognises this as a read that now requires the flowbio CLI — reads go through `flowbio api get`, not curl.",
+    "Recognises this as a read that now requires the flowbio CLI — reads go through `flow-cli api get`, not curl.",
     "Runs `flow-cli` (SKILL.md Step 0), which finds no way to run the CLI: it prints \"Using Flow needs the `flowbio` CLI…\" and exits 127.",
     "Stops before attempting the read — does NOT fall back to curl, does NOT improvise an HTTP client, and does NOT fabricate a pipeline list.",
     "Returns the actionable install message that names what is missing and gives the install one-liners: `uv` (https://docs.astral.sh/uv/, recommended), `pipx` (`pip install --user pipx`), or `flowbio` directly at the version `flow-cli` pins, and tells the user to re-run afterwards.",

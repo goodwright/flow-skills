@@ -5,7 +5,7 @@
     "Reads `/v2/reference/samples` before editing, and resolves the sample by name to its id with a read rather than guessing an id.",
     "Finds the attribute for 'cell line' in `GET /v2/metadata-attributes` by its `name`, uses its `identifier`, and, because it has options, confirms 'HepG2' is one of them via `GET /v2/metadata-attributes/<identifier>/options` (or that the attribute allows user terms) before writing.",
     "Asks the user to confirm the edit, naming the sample, the attribute and the new value, and writes only after an explicit yes.",
-    "Sends the edit with `flowbio api patch /v2/samples/<id> --body -`, whose body carries only `metadata` with that one attribute, so no other field or attribute changes.",
+    "Sends the edit with `flow-cli api patch /v2/samples/<id> --body -`, whose body carries only `metadata` with that one attribute, so no other field or attribute changes.",
     "Reports the new value from the response body, and on a 422 reports each `errors` entry's `detail` with its `pointer` instead of claiming success."
   ]
 }

@@ -24,7 +24,7 @@
 
 **With authentication:** the catalogue broadens to include pipelines
 the caller can see via project access, ownership, or sharing. The path
-is unchanged. This read goes through `flowbio api get` (see `SKILL.md`
+is unchanged. This read goes through `flow-cli api get` (see `SKILL.md`
 Step 0), which attaches the caller's token automatically when the token
 file is present — broadening is automatic from there.
 
@@ -35,7 +35,7 @@ Single-pipeline detail. Use this after `/pipelines` to discover a pipeline's
 below).
 
 - **Auth:** public GET. Broadens with auth to include versions the caller can
-  see via ownership/sharing. Issued via `flowbio api get`, which attaches the
+  see via ownership/sharing. Issued via `flow-cli api get`, which attaches the
   token automatically when the token file is present.
 - **404 cases:** the pipeline id does not exist, **or** the pipeline has no
   version readable to the caller (e.g. all versions private and the caller is
@@ -79,7 +79,7 @@ run body.
 
 Kicks off an execution of a pipeline version. **This is a mutation** (it changes
 remote state and consumes compute — runs often take hours), and it **always
-requires the token**. Performed with one `flowbio api post` of a JSON body,
+requires the token**. Performed with one `flow-cli api post` of a JSON body,
 via `flow-cli`, like every other call.
 
 ### Capability & auth

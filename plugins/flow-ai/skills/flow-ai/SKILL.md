@@ -38,9 +38,12 @@ flow-cli api get /v2/sample-types --json | head -c 300
   path, and use that path wherever this skill writes `flow-cli`.
 - **It printed "Using Flow needs the `flowbio` CLI…"** → stop and give the user
   that message.
-- **It failed in any other way**, such as `ModuleNotFoundError` → the `flowbio`
-  already installed on this machine is broken. Stop and tell the user to install
-  `uv` (https://docs.astral.sh/uv/), which `flow-cli` prefers, then ask again.
+- **It crashed with `ModuleNotFoundError` or `ImportError`** → the `flowbio`
+  already installed on this machine is broken. Stop and tell the user
+  to install `uv` (https://docs.astral.sh/uv/), which `flow-cli` prefers, then
+  ask again.
+- **It failed in any other way**, such as a network error (which also prints a
+  traceback), a Flow error or a timeout → report the error output as it is.
 
 **Give every call enough time.** If you set a timeout on the bash tool, the value
 is in **milliseconds**: use at least `120000` (two minutes) for a single call and

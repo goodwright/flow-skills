@@ -14,7 +14,7 @@ skill itself, not improvised at runtime.
 
 The skill is **mostly read-only**, but it has three families of mutation. It can
 **create and edit records** through `/v2/…` (below), it can **run pipelines** (`POST /pipelines/versions/<id>/run`, via
-`flowbio api post` — see `endpoints/pipelines.md`), and it can **upload data to Flow** (`uploading.md`).
+`flow-cli api post` — see `endpoints/pipelines.md`), and it can **upload data to Flow** (`uploading.md`).
 Upload support currently covers generic data files (`POST /upload`),
 demultiplexed samples (`POST /upload/sample`), and multiplexed reads with an
 annotation sheet (`POST /upload/multiplexed`), plus a read-only helper to
@@ -108,7 +108,7 @@ In-scope endpoints (all `GET`):
 - `GET /executions/<id>` — single-execution detail (poll a run, drill into a run)
 - `GET /downloads/<data_id>/<filename>` — direct single-file download
 
-In-scope record writes (performed via `flowbio api post|patch`, gated behind
+In-scope record writes (performed via `flow-cli api post|patch`, gated behind
 explicit confirmation; see "Changing records" in `SKILL.md`):
 
 - `POST /v2/projects` — **create a project**, owned by the user and private
@@ -117,7 +117,7 @@ explicit confirmation; see "Changing records" in `SKILL.md`):
 - `PATCH /v2/samples/<id>` — change a sample's **name, type, organism, PubMed id
   or metadata** (set, replace or clear an attribute's value and annotation).
 
-In-scope mutation (performed via `flowbio api post`, gated behind explicit
+In-scope mutation (performed via `flow-cli api post`, gated behind explicit
 confirmation):
 
 - `POST /pipelines/versions/<id>/run` — **run a pipeline version**. Unlike the
@@ -143,7 +143,7 @@ to `uploading.md` over time):
   confirmation needed). Performed via the flowbio CLI, not curl. See
   `endpoints/samples-upload.md`.
 
-All of the GET endpoints above are issued via `flowbio api get` (see
+All of the GET endpoints above are issued via `flow-cli api get` (see
 `SKILL.md` step 0), which attaches the caller's token automatically when the token
 file is present; the upload always requires the token. With auth, list /
 detail / sub-resource calls broaden to include resources the caller owns or

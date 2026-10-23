@@ -116,8 +116,8 @@ skill runs its copy at `scripts/flow-cli` in the skill's directory instead.
 Every Flow call goes through `flow-cli`, a small launcher the plugin puts on
 your `PATH`. It runs the `flowbio` CLI at the version the skill is written
 against: through `uvx` if you have `uv`, else `pipx`, else a `flowbio` already
-installed. The CLI resolves your token itself, so read commands carry no secret
-and can be allowlisted.
+installed (which runs at whatever version you installed). The CLI resolves
+your token itself, so read commands carry no secret and can be allowlisted.
 
 To stop reads prompting, add both entries to `.claude/settings.json`: the read
 recipes pipe through `jq`, and Claude Code only auto-approves a piped command
@@ -177,7 +177,12 @@ release numbers, neither of which tracks the current version.)
 Issues and PRs welcome at
 <https://github.com/goodwright/flow-skills>. For changes to the skill
 itself, also update an eval (or add a new one) that demonstrates the
-new behaviour.
+new behaviour, and add a `CHANGELOG.md` entry under the next version (or
+`[Unreleased]`) for anything a user would notice.
+
+Don't add `allowed-tools` to the skill's frontmatter: with it, Claude Code
+invoked the skill without passing its text to the model, which then guessed
+at commands.
 
 ## License
 
