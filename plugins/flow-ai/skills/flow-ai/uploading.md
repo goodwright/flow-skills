@@ -57,11 +57,11 @@ its message; never attempt the upload another way.
   with no problems — e.g. `[{}, {"Sample Name": ["'Sample 1' has spaces in
   it."], "Source": ["This field is required."]}]` means the second sample is
   wrong. A problem with the sheet as a whole (unknown columns, no rows) comes
-  as a single string instead. Surface each problem with its sample. The
-  `message` here ("Annotation has N validation error(s)") counts rows, not
-  problems, so count the non-empty entries yourself. Otherwise report the
-  server `message` verbatim. Map the exit code to the cause — never fabricate
-  success:
+  as a single string instead. Surface each problem with its sample. The N in
+  this `message` ("Annotation has N validation error(s)") counts rows,
+  clean ones included, or the characters of that string, so never repeat it;
+  count the non-empty entries yourself. Otherwise report the server `message`
+  verbatim. Map the exit code to the cause — never fabricate success:
 
   | Exit | Meaning |
   |------|---------|

@@ -159,8 +159,8 @@ The user asked to accept warnings, so do **not** pass `--reject-warnings`
 user wants warnings treated as fatal.
 
 On a non-zero exit, read the stderr JSON and the exit code. A bad request /
-annotation validation error (exit `5`) carries an `errors` array of per-row
-issues — show them and tell the user to fix the sheet. Because the annotation
+annotation validation error (exit `5`) carries `errors` (shape in
+`uploading.md`) — show each row's problems and tell the user to fix the sheet. Because the annotation
 is validated first, **no reads were uploaded** on a validation failure; never
 claim success.
 
