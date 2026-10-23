@@ -18,6 +18,10 @@ tracks it. Bump both together on every release.
   with `Bash(flow-cli api get *)`; `Bash(jq *)` stays. The skill needs macOS,
   Linux or WSL.
 
+- **`--param` values with a space are quoted**: SKILL.md now says to write
+  `--param "name=Liver Atlas"`. Unquoted, the shell splits the value and the
+  CLI exits `2` with `unrecognized arguments`.
+
 - **Multiplexed upload validation errors are described as they arrive**: one
   entry per sheet row mapping column headers to messages (`{}` for a clean
   row), or a single string for a problem with the whole sheet. The skill
