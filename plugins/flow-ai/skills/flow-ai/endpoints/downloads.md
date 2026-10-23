@@ -45,7 +45,7 @@ for public data.
   - **404, empty body** — id not found / removed / not ready, filename
     mismatch, or data not readable by this caller.
 - **HTML asset edge case.** If `data.filetype == "html"` and the URL
-  filename doesn't match `data.filename`, the view tries the filename as
+  filename doesn't match `data.filename`, the server tries the filename as
   a relative href inside the HTML so reports can load their own
   CSS/images. For agent downloads, treat the rule as "filename must
   match exactly". A link to a file whose content was deleted answers 410 as

@@ -109,7 +109,7 @@ via `flow-cli`, like every other call.
 
 ### Request body
 
-The view injects `pipeline_version`, `owner`, and `creator` itself. Send a JSON
+The server sets `pipeline_version`, `owner`, and `creator` itself. Send a JSON
 object with these fields:
 
 | Field | Type | Notes |
@@ -166,8 +166,7 @@ paired-end handling). Each row is `{sample?, fileset?, values: {col: val}}`:
   server-side, and is **not** the same as the section-level `from_fileset` /
   `from_execution` autofill below (which is UI-only). When the run actually
   executes, the server builds the CSV file from the schema's `columns`: for
-  each column it
-  takes the row's `values[<column name>]` if you supplied one, otherwise it
+  each column it takes the row's `values[<column name>]` if you supplied one, otherwise it
   fills the column itself when it has a **column-level** `from_sample` (a sample
   attribute, a metadata identifier, or a file index into the sample's fileset)
   or a column-level `from_fileset` (a fileset attribute or file index). So put a
