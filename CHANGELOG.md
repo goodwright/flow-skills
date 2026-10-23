@@ -6,7 +6,7 @@ follow [Semantic Versioning](https://semver.org/).
 The canonical version is `plugins/flow-ai/.claude-plugin/plugin.json#version`.
 Bump it on every release.
 
-## [Unreleased]
+## [0.15.0] — 2026-10-23
 
 - **SKILL.md is under 500 lines**, the length Anthropic recommends for a
   skill's main file. What each failed status means and what to do now lives
