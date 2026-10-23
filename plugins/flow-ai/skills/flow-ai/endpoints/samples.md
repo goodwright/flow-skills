@@ -220,9 +220,11 @@ than `/samples/search`'s list item — most importantly, it carries the
 - **Filter scope:** substring matched against any of `identifier`,
   `pipeline_version.pipeline.name`, `pipeline_version.name`, `fileset.name`,
   `fileset.organism.name`, `sample.name`, `owner.name`, `group_owner.name`.
-  **Status shortcut footgun:** a filter that is part of the word `completed`,
-  `error` or `canceled` also matches every run with that status, so very short
-  filters (`c`, `co`, `e`, `er`, `ca`) over-match. Prefer filters of 3+ chars.
+  **Status shortcut footgun:** a filter that is part of the word `completed`
+  also matches every OK run, part of `canceled` every canceled run, and part
+  of `error` every run that is neither — including runs still in progress.
+  So `c`, `err` or `complete` match far more than their text. To find runs by
+  status, read each item's `status` instead of filtering on the word.
 - **Sort:** fixed at `-created`.
 - **Response envelope:** `{"count": int, "page": int, "executions": [...]}`.
   `count` is the total matching executions across all pages.
