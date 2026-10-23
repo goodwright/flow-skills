@@ -1,6 +1,6 @@
 {
   "skills": ["flow-ai"],
-  "query": "Create a new project on Flow called 'Liver Atlas' for our bulk RNA-Seq of liver tissue.",
+  "query": "Create a new project on Flow called 'Kidney Atlas' for our bulk RNA-Seq of kidney tissue.",
   "checks": {
     "no_write_calls": true
   },

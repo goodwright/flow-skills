@@ -44,6 +44,10 @@ in flow-api). Each name refers to a key in that file:
 When a scenario has `checks`, its `expected_behavior` holds only what a check
 cannot decide; those items go to a grader model.
 
+Scenarios run against that seed, so a query must not name something the seed
+already holds unless the clash is what it tests: asking to create a project
+the seed already has would grade a request the server is certain to refuse.
+
 ## How to read these
 
 Each `expected_behavior` entry is a separately gradable claim about
