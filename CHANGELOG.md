@@ -4,8 +4,7 @@ All notable changes to the `flow-ai` skill are documented here. Versions
 follow [Semantic Versioning](https://semver.org/).
 
 The canonical version is `plugins/flow-ai/.claude-plugin/plugin.json#version`.
-The `flow-ai/<version>` User-Agent that survives on the file-download `curl`
-tracks it. Bump both together on every release.
+Bump it on every release.
 
 ## [Unreleased]
 
@@ -31,6 +30,11 @@ tracks it. Bump both together on every release.
   searches in `examples.md` quote the value, so one with a space no longer
   breaks the command, and the run link in `endpoints/pipelines.md` no longer
   sets shell variables, which SKILL.md tells the agent not to use.
+
+- **File downloads no longer send a `flow-ai/<version>` User-Agent.** It was
+  the last place the skill named its own version, so every release had to bump
+  it by hand. Downloads now carry curl's default User-Agent; every other call
+  identifies itself as `flowbio-python/<version>`.
 
 ## [0.14.1] — 2026-10-21
 
