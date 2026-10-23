@@ -7,10 +7,8 @@ from pathlib import Path
 
 # The read allowlist the README recommends, so a write stalls on permission instead of running.
 READ_ALLOWLIST = [
-    "Bash(flowbio api get:*)",
-    "Bash(uvx --from flowbio==0.14.1 flowbio api get:*)",
-    "Bash(pipx run --spec flowbio==0.14.1 flowbio api get:*)",
-    "Bash(jq:*)",
+    "Bash(flow-cli api get *)",
+    "Bash(jq *)",
 ]
 _TIMEOUT_SECONDS = 15 * 60
 
