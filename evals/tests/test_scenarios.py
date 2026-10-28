@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-SCENARIO_DIR = Path(__file__).resolve().parents[2] / "plugins/flow-ai/skills/flow-ai/evals"
+SCENARIO_DIR = Path(__file__).resolve().parents[2] / "plugins/flowbio/skills/flow-assistant/evals"
 KNOWN_CHECKS = {"answer_contains", "answer_contains_size", "answer_excludes", "no_write_calls"}
 DATA_SCENARIOS = ["004-data-i-own", "019-deleted-and-scheduled", "020-files-i-can-download", "021-public-not-mine"]
 

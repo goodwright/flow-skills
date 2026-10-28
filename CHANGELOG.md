@@ -1,10 +1,19 @@
 # Changelog
 
-All notable changes to the `flow-ai` skill are documented here. Versions
+All notable changes to the `flowbio` plugin are documented here. Versions
 follow [Semantic Versioning](https://semver.org/).
 
-The canonical version is `plugins/flow-ai/.claude-plugin/plugin.json#version`.
+The canonical version is `plugins/flowbio/.claude-plugin/plugin.json#version`.
 Bump it on every release.
+
+## [0.18.0] — 2026-10-28
+
+- **The plugin is now `flowbio` and its skill `flow-assistant`**, so the
+  command is `/flowbio:flow-assistant`, and marketplaces show the plugin as
+  "Flow". **Reinstall:** run `/plugin uninstall flow-ai@flow-skills`, then
+  `/plugin install flowbio@flow-skills`. A skill installed without the plugin
+  now lives at `plugins/flowbio/skills/flow-assistant`. The `flow-cli` command
+  and the `Bash(flow-cli api get *)` allowlist entry stay the same.
 
 ## [0.17.0] — 2026-10-28
 

@@ -1,0 +1,15 @@
+{
+  "skills": ["flow-assistant"],
+  "query": "In what executions has sample 'liver_rep1' been used?",
+  "checks": {
+    "answer_contains": ["pipeline_name"],
+    "answer_excludes": ["running_identifier"],
+    "no_write_calls": true
+  },
+  "expected_behavior": [
+    "Recognises 'liver_rep1' as a sample name, not an id, and resolves it to an id with `flow-cli api get /samples/search --param name=liver_rep1`, setting `count` explicitly (SKILL.md Step 2, rule 3).",
+    "Passes the sample name as a `--param` rather than interpolating it into the path (SKILL.md Step 2, rule 2).",
+    "Takes the id of the one sample named exactly liver_rep1 and calls GET /samples/<id>/executions. Does NOT use /executions/search instead: the sample's own executions are the right tool for this question.",
+    "Reports the execution with at least its identifier, status and created time, and says it is the only one. Does NOT need to drill into /executions/<id> unless asked."
+  ]
+}

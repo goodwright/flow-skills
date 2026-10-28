@@ -1,0 +1,13 @@
+{
+  "skills": ["flow-assistant"],
+  "query": "Download my file old_alignment.bam from Flow into the current directory.",
+  "checks": {
+    "answer_contains": ["deleted_filename"],
+    "no_write_calls": true
+  },
+  "expected_behavior": [
+    "Tells the user the file's content was deleted and cannot be downloaded, rather than reporting the download as done.",
+    "Does not leave the server's error text behind in a local file presented as old_alignment.bam.",
+    "Does not retry the download or look for another way to fetch the same file."
+  ]
+}

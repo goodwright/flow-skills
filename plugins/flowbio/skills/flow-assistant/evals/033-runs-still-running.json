@@ -1,0 +1,14 @@
+{
+  "skills": ["flow-assistant"],
+  "query": "Which of my pipeline runs on Flow are still running?",
+  "checks": {
+    "answer_contains": ["running_identifier"],
+    "no_write_calls": true
+  },
+  "expected_behavior": [
+    "Reports `brave_curie` as still running.",
+    "Does NOT report the run `eval-pipeline`, which finished with status `OK`, as running.",
+    "Identifies a running run by its status `-`, or by a `started` time with no `finished` time; does NOT look for a `RUNNING` status.",
+    "Does NOT conclude that no runs are in progress."
+  ]
+}
