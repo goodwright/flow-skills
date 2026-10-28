@@ -45,12 +45,11 @@ package tool of its own, such as Claude Science's, may then install that
 exact `flowbio` version with it.
 
 The CLI talks only to Flow's API at `https://app.flow.bio/api`, or to the
-instance `FLOW_API_URL` names if you set it. When the token file below exists,
-the CLI sends it to that API to authenticate. If `FLOW_API_TOKEN` (a token) or
-`FLOW_TOKEN_FILE` (a path to one) is set, `flowbio` uses it instead of the file.
-File downloads use `curl` against the same API, with the token from
-`~/.config/flow/api-token` in a request header. Apart from downloading
-`flowbio` from PyPI, nothing is sent anywhere else.
+instance `FLOW_API_URL` names if you set it. When you have a Flow API key (see
+below), the CLI sends it to that API to authenticate. File downloads use `curl`
+against the same API, with the token from `~/.config/flow/api-token` in a
+request header. Apart from downloading `flowbio` from PyPI, nothing is sent
+anywhere else.
 
 Every change on Flow (creating a project, editing a sample, running a pipeline,
 uploading) is shown to you and runs only after you confirm it.
