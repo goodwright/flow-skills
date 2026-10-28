@@ -45,8 +45,8 @@ package tool of its own, such as Claude Science's, may then install that
 exact `flowbio` version with it.
 
 The CLI talks only to Flow's API at `https://app.flow.bio/api`, or to the
-instance `FLOW_API_URL` names if you set it. When you have saved a token (see
-below), the CLI sends it to that API to authenticate. File downloads use `curl`
+instance `FLOW_API_URL` names if you set it. When the token file below exists,
+the CLI sends it to that API to authenticate. File downloads use `curl`
 against the same API, with the token from `~/.config/flow/api-token` in a
 request header. Apart from downloading `flowbio` from PyPI, nothing is sent
 anywhere else.
@@ -77,8 +77,6 @@ so an authenticated key dramatically broadens what you can ask about.
    pbpaste > ~/.config/flow/api-token   # or paste manually
    chmod 600 ~/.config/flow/api-token
    ```
-
-   Or set `FLOW_API_TOKEN` to the key instead; it takes precedence over the file.
 
 The skill checks for this file on every invocation. When present, the
 `flowbio` CLI reads it and authenticates every read, write, pipeline run and

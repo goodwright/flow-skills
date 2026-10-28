@@ -6,6 +6,12 @@ follow [Semantic Versioning](https://semver.org/).
 The canonical version is `plugins/flowbio/.claude-plugin/plugin.json#version`.
 Bump it on every release.
 
+## [0.18.1] — 2026-10-28
+
+- **The skill no longer suggests the `FLOW_API_TOKEN` environment variable.**
+  It tells you to save your API key to `~/.config/flow/api-token`, the one
+  place it documents.
+
 ## [0.18.0] — 2026-10-28
 
 - **The plugin is now `flowbio` and its skill `flow-assistant`**, so the

@@ -458,7 +458,7 @@ If a read fails authentication, or the user's request implies they expect to be
 authenticated ("my samples", `owned=true`) but no token file exists, tell them how
 to authenticate rather than silently proceeding anonymously: create an API key in
 the Flow web app (Settings → Account Management → API Keys, purpose "AI Agent")
-and save it to `~/.config/flow/api-token` (or set `FLOW_API_TOKEN`). Link them
+and save it to `~/.config/flow/api-token`. Link them
 to the full steps, which also cover Windows and file permissions:
 https://github.com/goodwright/flow-skills/blob/main/plugins/flowbio/README.md#getting-a-flow-api-key-optional
 
