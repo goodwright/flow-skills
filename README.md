@@ -162,6 +162,9 @@ itself, also update an eval (or add a new one) that demonstrates the
 new behaviour, and add a `CHANGELOG.md` entry under the next version (or
 `[Unreleased]`) for anything a user would notice.
 
+Skills in `unpublished/` are kept for later work and are not part of any
+plugin, so no install picks them up.
+
 Don't add `allowed-tools` to the skill's frontmatter: with it, Claude Code
 invoked the skill without passing its text to the model, which then guessed
 at commands.
