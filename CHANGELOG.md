@@ -10,10 +10,13 @@ Bump it on every release.
 
 - **The plugin is now `flowbio` and its skill `flow-assistant`**, so the
   command is `/flowbio:flow-assistant`, and marketplaces show the plugin as
-  "Flow". **Reinstall:** run `/plugin uninstall flow-ai@flow-skills`, then
-  `/plugin install flowbio@flow-skills`. A skill installed without the plugin
-  now lives at `plugins/flowbio/skills/flow-assistant`. The `flow-cli` command
-  and the `Bash(flow-cli api get *)` allowlist entry stay the same.
+  "Flow". **Reinstall:** run `/plugin marketplace update flow-skills`, then
+  `/plugin uninstall flow-ai@flow-skills` and
+  `/plugin install flowbio@flow-skills`. For a skill installed without the
+  plugin, replace the `~/.claude/skills/flow-ai` link with
+  `~/.claude/skills/flow-assistant`, pointing at
+  `plugins/flowbio/skills/flow-assistant`. The `flow-cli` command and the
+  `Bash(flow-cli api get *)` allowlist entry stay the same.
 
 ## [0.17.0] — 2026-10-28
 
