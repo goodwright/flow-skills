@@ -34,18 +34,20 @@ In Claude Code:
 
 ## What it runs and sends
 
-Every call to Flow goes through `flow-cli`, a small launcher in
+Every call to Flow, except a file download, goes through `flow-cli`, a small
+launcher in
 [`skills/flow-assistant/scripts/flow-cli`](skills/flow-assistant/scripts/flow-cli).
 It runs Goodwright's [`flowbio`](https://pypi.org/project/flowbio/) CLI from
 PyPI, pinned to one exact version: through `uvx` if you have `uv`, else
 `pipx`, else a `flowbio` you have installed at that version. If none of those
-is available, it prints how to install `uv` and stops; the skill never installs
-anything itself.
+is available, it prints how to install `uv` and stops.
 
 The CLI talks only to Flow's API at `https://app.flow.bio/api`, or to the
-instance `FLOW_API_URL` names if you set it. When the token file below exists,
-the CLI sends it to that API to authenticate. File downloads use `curl` against
-the same API, with the token in a request header. Nothing is sent anywhere else.
+instance `FLOW_API_URL` names if you set it. When you have saved a token (see
+below), the CLI sends it to that API to authenticate. File downloads use `curl`
+against the same API, with the token from `~/.config/flow/api-token` in a
+request header. Apart from `uvx` or `pipx` downloading `flowbio` from PyPI,
+nothing is sent anywhere else.
 
 Every change on Flow (creating a project, editing a sample, running a pipeline,
 uploading) is shown to you and runs only after you confirm it.
@@ -73,6 +75,8 @@ so an authenticated key dramatically broadens what you can ask about.
    pbpaste > ~/.config/flow/api-token   # or paste manually
    chmod 600 ~/.config/flow/api-token
    ```
+
+   Or set `FLOW_API_TOKEN` to the key instead; it takes precedence over the file.
 
 The skill checks for this file on every invocation. When present, the
 `flowbio` CLI reads it and authenticates every read, write, pipeline run and
