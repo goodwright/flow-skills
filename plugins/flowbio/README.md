@@ -46,7 +46,8 @@ exact `flowbio` version with it.
 
 The CLI talks only to Flow's API at `https://app.flow.bio/api`, or to the
 instance `FLOW_API_URL` names if you set it. When the token file below exists,
-the CLI sends it to that API to authenticate. File downloads use `curl`
+the CLI sends it to that API to authenticate. `flowbio` gives a token already set
+in `FLOW_API_TOKEN` or `FLOW_TOKEN_FILE` precedence over the file. File downloads use `curl`
 against the same API, with the token from `~/.config/flow/api-token` in a
 request header. Apart from downloading `flowbio` from PyPI, nothing is sent
 anywhere else.
