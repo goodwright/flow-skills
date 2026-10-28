@@ -29,8 +29,8 @@ to `http://localhost:8019`. Transcripts and `summary.json` land in
 `runs/<timestamp>/`.
 
 Each agent runs in an empty temporary directory with only `plugins/flowbio`
-loaded, your own settings, plugins and MCP servers left out, and the README's
-read allowlist, so a write stalls instead of running. The token reaches the
+loaded, your own settings, plugins and MCP servers left out, and the plugin
+README's read allowlist, so a write stalls instead of running. The token reaches the
 agent through its environment only. A scenario with `"invalid_token": true`
 gets a token Flow rejects instead, to test how the agent handles an expired or
 revoked key.

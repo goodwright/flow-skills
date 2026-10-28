@@ -460,7 +460,7 @@ to authenticate rather than silently proceeding anonymously: create an API key i
 the Flow web app (Settings → Account Management → API Keys, purpose "AI Agent")
 and save it to `~/.config/flow/api-token` (or set `FLOW_API_TOKEN`). Link them
 to the full steps, which also cover Windows and file permissions:
-https://github.com/goodwright/flow-skills/blob/main/README.md#getting-a-flow-api-key-optional
+https://github.com/goodwright/flow-skills/blob/main/plugins/flowbio/README.md#getting-a-flow-api-key-optional
 
 `owned=true` is the one filter unsafe to trust blindly: an expired token is
 treated as anonymous with no error, and the filter then silently matches

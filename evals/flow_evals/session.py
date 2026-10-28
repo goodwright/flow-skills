@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-# The read allowlist the README recommends, so a write stalls on permission instead of running.
+# The read allowlist the plugin README recommends, so a write stalls on permission instead of running.
 READ_ALLOWLIST = [
     "Bash(flow-cli api get *)",
     "Bash(jq *)",
