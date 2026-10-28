@@ -40,14 +40,16 @@ launcher in
 It runs Goodwright's [`flowbio`](https://pypi.org/project/flowbio/) CLI from
 PyPI, pinned to one exact version: through `uvx` if you have `uv`, else
 `pipx`, else a `flowbio` you have installed at that version. If none of those
-is available, it prints how to install `uv` and stops.
+is available, it prints how to install `uv` and stops. An agent with a
+package tool of its own, such as Claude Science's, may then install that
+exact `flowbio` version with it.
 
 The CLI talks only to Flow's API at `https://app.flow.bio/api`, or to the
 instance `FLOW_API_URL` names if you set it. When you have saved a token (see
 below), the CLI sends it to that API to authenticate. File downloads use `curl`
 against the same API, with the token from `~/.config/flow/api-token` in a
-request header. Apart from `uvx` or `pipx` downloading `flowbio` from PyPI,
-nothing is sent anywhere else.
+request header. Apart from downloading `flowbio` from PyPI, nothing is sent
+anywhere else.
 
 Every change on Flow (creating a project, editing a sample, running a pipeline,
 uploading) is shown to you and runs only after you confirm it.
