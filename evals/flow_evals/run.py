@@ -1,4 +1,4 @@
-"""Runs flow-ai scenarios against a local Flow stack and reports how the agent did."""
+"""Runs flow-assistant scenarios against a local Flow stack and reports how the agent did."""
 
 import argparse
 import dataclasses
@@ -15,8 +15,8 @@ from flow_evals.transcript import Transcript, read_transcript
 
 DEFAULT_MODELS = ["claude-opus-5-5", "claude-haiku-4-5-20251001"]
 _REPO = Path(__file__).resolve().parents[2]
-_PLUGIN_DIR = _REPO / "plugins" / "flow-ai"
-_SCENARIO_DIR = _PLUGIN_DIR / "skills" / "flow-ai" / "evals"
+_PLUGIN_DIR = _REPO / "plugins" / "flowbio"
+_SCENARIO_DIR = _PLUGIN_DIR / "skills" / "flow-assistant" / "evals"
 _RUNS_DIR = _REPO / "evals" / "runs"
 # Unset would make the flowbio CLI fall back to the runner's own ~/.config/flow/api-token.
 _REJECTED_TOKEN = "invalid-eval-token"

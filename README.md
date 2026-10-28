@@ -2,13 +2,13 @@
 
 Agent skills for [Flow](https://flow.bio), a bioinformatics platform
 built by [Goodwright](https://goodwright.com). This repository is a
-plugin marketplace; today it ships one plugin, **`flow-ai`**, which
+plugin marketplace; today it ships one plugin, **`flowbio`**, which
 lets an AI agent query Flow's REST API — and upload data — on
 your behalf.
 
-## What `flow-ai` does
+## What `flowbio` does
 
-`flow-ai` is primarily a read-only skill that can also make a few
+Its `flow-assistant` skill mostly reads, but it can also make a few
 confirmed changes on Flow: create projects, edit samples and their
 metadata, run pipelines, and upload generic data files, demultiplexed
 samples, and multiplexed reads with an annotation sheet. With it, an agent can answer questions and run
@@ -23,7 +23,7 @@ uploads like:
 - "Upload a paired-end RNA-Seq sample with this metadata."
 - "Upload these multiplexed reads with my annotation sheet."
 
-See [`plugins/flow-ai/skills/flow-ai/SKILL.md`](plugins/flow-ai/skills/flow-ai/SKILL.md)
+See [`plugins/flowbio/skills/flow-assistant/SKILL.md`](plugins/flowbio/skills/flow-assistant/SKILL.md)
 for the current capabilities.
 
 ## Getting a Flow API key (optional)
@@ -78,7 +78,7 @@ Inside Claude Code:
 
 ```text
 /plugin marketplace add goodwright/flow-skills
-/plugin install flow-ai@flow-skills
+/plugin install flowbio@flow-skills
 ```
 
 To pick up new releases later, run `/plugin marketplace update`.
@@ -92,15 +92,15 @@ The skill itself is just a directory of Markdown files following
 [Anthropic's Agent Skill format](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview).
 Any agent harness that loads skills from a directory can use it
 directly. Clone the repo and point your harness at
-`plugins/flow-ai/skills/flow-ai/`:
+`plugins/flowbio/skills/flow-assistant/`:
 
 ```sh
 git clone https://github.com/goodwright/flow-skills.git
-# Then either symlink or copy plugins/flow-ai/skills/flow-ai/ into wherever
+# Then either symlink or copy plugins/flowbio/skills/flow-assistant/ into wherever
 # your agent loads skills from. For example, for Claude Code's standalone
 # mode:
 mkdir -p ~/.claude/skills
-ln -s "$(pwd)/flow-skills/plugins/flow-ai/skills/flow-ai" ~/.claude/skills/flow-ai
+ln -s "$(pwd)/flow-skills/plugins/flowbio/skills/flow-assistant" ~/.claude/skills/flow-assistant
 ```
 
 For agents that consume `SKILL.md` directly (Codex, Gemini CLI,
@@ -146,12 +146,12 @@ download can be large.
 ## Versioning
 
 The canonical version lives in
-[`plugins/flow-ai/.claude-plugin/plugin.json`](plugins/flow-ai/.claude-plugin/plugin.json).
+[`plugins/flowbio/.claude-plugin/plugin.json`](plugins/flowbio/.claude-plugin/plugin.json).
 On each release, bump it and add the release to `CHANGELOG.md`.
 
 The `flowbio` version the skill runs is pinned in one place,
 `FLOWBIO_VERSION` in
-[`plugins/flow-ai/skills/flow-ai/scripts/flow-cli`](plugins/flow-ai/skills/flow-ai/scripts/flow-cli).
+[`plugins/flowbio/skills/flow-assistant/scripts/flow-cli`](plugins/flowbio/skills/flow-assistant/scripts/flow-cli).
 To move to a new `flowbio`, change it there.
 
 ## Contributing

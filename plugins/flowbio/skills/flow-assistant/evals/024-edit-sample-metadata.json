@@ -1,0 +1,13 @@
+{
+  "skills": ["flow-assistant"],
+  "query": "On Flow, set the cell line of my sample liver_rep1 to HepG2, and leave everything else about it as it is.",
+  "checks": {
+    "no_write_calls": true
+  },
+  "expected_behavior": [
+    "Reads `/v2/reference/samples` before editing, and resolves the sample by name to its id with a read rather than guessing an id.",
+    "Finds the attribute for 'cell line' in `GET /v2/metadata-attributes` by its `name`, uses its `identifier`, and, because it has options, confirms 'HepG2' is one of them via `GET /v2/metadata-attributes/<identifier>/options` (or that the attribute allows user terms) before writing.",
+    "Shows the user the edit before sending it, naming the sample, the attribute and the new value, and stops to wait for an explicit yes; does NOT send the edit without it.",
+    "What it says it will send, as a `flow-cli api patch /v2/samples/<id>` body or in words, is only `metadata` with that one attribute, so no other field or attribute would change."
+  ]
+}

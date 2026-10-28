@@ -1,0 +1,13 @@
+{
+  "skills": ["flow-assistant"],
+  "query": "How many files can I see on Flow that I don't own?",
+  "checks": {
+    "answer_contains": ["visible_not_owned_count"],
+    "answer_excludes": ["private_other_filename"],
+    "no_write_calls": true
+  },
+  "expected_behavior": [
+    "Reports a count of files visible to the caller but owned by someone else, and says how it was computed.",
+    "Bases the count on what the API returned to this caller, not on an estimate."
+  ]
+}

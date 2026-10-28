@@ -25,7 +25,7 @@ def fake_claude(tmp_path, monkeypatch):
 
 def _run(tmp_path: Path, token: str = "secret-token") -> dict:
     transcript = tmp_path / "runs" / "004-haiku.jsonl"
-    run_agent("How much data?", "haiku", Path("plugins/flow-ai").resolve(), "http://localhost:8019", token, transcript)
+    run_agent("How much data?", "haiku", Path("plugins/flowbio").resolve(), "http://localhost:8019", token, transcript)
     return json.loads(transcript.read_text())
 
 
@@ -37,7 +37,7 @@ def test_runs_in_an_empty_temp_dir(tmp_path, fake_claude):
 
 def test_passes_isolation_and_allowlist_flags(tmp_path, fake_claude):
     argv = _run(tmp_path)["argv"]
-    plugin_dir = str(Path("plugins/flow-ai").resolve())
+    plugin_dir = str(Path("plugins/flowbio").resolve())
     assert argv[:2] == ["-p", "How much data?"]
     for flag, value in [("--plugin-dir", plugin_dir), ("--add-dir", plugin_dir), ("--model", "haiku"),
                         ("--output-format", "stream-json"), ("--setting-sources", "project")]:

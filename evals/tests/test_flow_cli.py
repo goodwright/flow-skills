@@ -4,8 +4,8 @@ import subprocess
 from pathlib import Path
 
 
-PLUGIN = Path(__file__).resolve().parents[2] / "plugins" / "flow-ai"
-LAUNCHER = PLUGIN / "skills" / "flow-ai" / "scripts" / "flow-cli"
+PLUGIN = Path(__file__).resolve().parents[2] / "plugins" / "flowbio"
+LAUNCHER = PLUGIN / "skills" / "flow-assistant" / "scripts" / "flow-cli"
 SHIM = PLUGIN / "bin" / "flow-cli"
 # The scripts' only external tools. PATH holds just these and the fakes, so a uvx,
 # pipx or flowbio installed on the machine, as pipx is in /usr/bin on Ubuntu, never answers.
