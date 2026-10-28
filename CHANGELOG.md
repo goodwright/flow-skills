@@ -6,6 +6,12 @@ follow [Semantic Versioning](https://semver.org/).
 The canonical version is `plugins/flow-ai/.claude-plugin/plugin.json#version`.
 Bump it on every release.
 
+## [0.17.0] — 2026-10-28
+
+- **The `clip-analysis` skill is no longer part of the plugin.** It is not yet
+  ready to publish, so it moved to `unpublished/clip-analysis` in this
+  repository. Installs and updates no longer include it.
+
 ## [0.16.0] — 2026-10-23
 
 - **The skill installs `flowbio` itself in Claude Science.** Claude Science's
