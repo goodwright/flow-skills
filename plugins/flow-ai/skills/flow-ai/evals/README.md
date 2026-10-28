@@ -106,24 +106,25 @@ has no token.
 - `030-protect-file-refused.json` — asked to protect a file from deletion: refuses although the reference documents the write, since writes need an explicit allowlist entry.
 
 Evals 001-004 exercise the `/me`-precheck pattern introduced as a
-defensive mitigation for the API's silent auth-degrade behaviour.
-Eval 005 does not require auth and tests the sample-name-resolution
-discovery chain. Evals 006-007 exercise the data-upload flow added in
-`flow-ai/0.3.0`, covering both the happy path (upload via the
-on-demand flowbio CLI) and the no-runner fallback. Evals 008-009
-exercise the demultiplexed-sample upload flow added in `flow-ai/0.4.0`,
-covering the happy path (discovery + paired-end upload) and the
-missing-required-metadata pre-flight catch. Evals 010-011 exercise the
-multiplexed upload flow added in `flow-ai/0.5.0`: the multiplexed reads +
-annotation-sheet upload (with warnings auto-accepted) and the annotation-template
-download helper that bootstraps it. Evals 012-015 exercise the
-pipeline-running flow added in `flow-ai/0.6.0`: the happy path (discovery →
-schema → resolve params → confirm → run → return id + UI link), opt-in polling,
-and two defensive paths (missing required parameter, and a 403 when the caller
-can't run pipelines). Eval 016 exercises the metadata value-discovery flow added
-in `flow-ai/0.7.1`: listing a controlled-vocabulary attribute's legal values via
-`GET /v2/metadata-attributes/<identifier>/options` and using an exact option value to
-filter `/samples/search`.
+defensive mitigation for the API's silent auth-degrade behaviour. Eval
+005 tests the sample-name-resolution discovery chain on a seeded private
+sample, so it reads with the token. Evals 006-007 exercise the
+data-upload flow added in `flow-ai/0.3.0`, covering both the happy path
+(upload via the on-demand flowbio CLI) and the no-runner fallback. Evals
+008-009 exercise the demultiplexed-sample upload flow added in
+`flow-ai/0.4.0`, covering the happy path (discovery + paired-end upload)
+and the missing-required-metadata pre-flight catch. Evals 010-011
+exercise the multiplexed upload flow added in `flow-ai/0.5.0`: the
+multiplexed reads + annotation-sheet upload (with warnings
+auto-accepted) and the annotation-template download helper that
+bootstraps it. Evals 012-015 exercise the pipeline-running flow added in
+`flow-ai/0.6.0`: the happy path (discovery → schema → resolve params →
+confirm → run → return id + UI link), opt-in polling, and two defensive
+paths (missing required parameter, and a 403 when the caller can't run
+pipelines). Eval 016 exercises the metadata value-discovery flow added
+in `flow-ai/0.7.1`: listing a controlled-vocabulary attribute's legal
+values via `GET /v2/metadata-attributes/<identifier>/options` and using
+an exact option value to filter `/samples/search`.
 
 Evals 004 and 019-021 cover data files. Their rubrics grade what the agent
 answered and that it only read, not which endpoint it called, so the same
