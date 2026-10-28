@@ -10,5 +10,6 @@
   "homepage": "https://github.com/goodwright/flow-skills",
   "repository": "https://github.com/goodwright/flow-skills",
   "license": "MIT",
+  "icon": "./icon.png",
   "keywords": ["flow", "flow.bio", "bioinformatics", "genomics", "rna-seq", "nextflow", "api"]
 }
