@@ -6,8 +6,13 @@ follow [Semantic Versioning](https://semver.org/).
 The canonical version is `plugins/flowbio/.claude-plugin/plugin.json#version`.
 Bump it on every release.
 
-## [0.19.3] — 2026-10-29
+## [0.20.0] — 2026-10-29
 
+- **Breaking: the skill only talks to Flow at app.flow.bio.** `flow-cli` now
+  refuses a `FLOW_API_URL` that names any other host, so Claude can no longer
+  be pointed at another Flow instance. A Flow running on your own machine
+  (`http://localhost`) is still accepted, for local development. If you had
+  `FLOW_API_URL` set, unset it.
 - **Flow's API reference no longer steers how the skill works.** The skill
   still trusts it for paths, parameters and fields, but which operations it
   may perform, what it confirms first and how it handles your token come only

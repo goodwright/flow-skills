@@ -99,7 +99,7 @@ def test_refuses_options_that_redirect_the_request_or_its_credential(tmp_path, o
     result = _run(LAUNCHER, _fake_bin(tmp_path, "uvx"), "api", "get", "/me", *option, "--json")
     assert result.returncode == 2
     assert result.stdout == ""
-    assert "FLOW_API_URL" in result.stderr
+    assert "app.flow.bio" in result.stderr and "FLOW_API_URL" not in result.stderr
 
 
 @pytest.mark.parametrize("option", [["--body", "-"], ["--param", "base_url=x"], ["--no-progress"]])
@@ -113,6 +113,29 @@ def test_the_skill_pre_approves_only_reads_through_the_launcher():
     skill = (LAUNCHER.parents[1] / "SKILL.md").read_text()
     allowed = re.search(r"^allowed-tools: (.+)$", skill, re.MULTILINE).group(1)
     assert allowed == "Bash(${CLAUDE_SKILL_DIR}/scripts/flow-cli api get *) Bash(jq *)"
+
+
+def _run_with_api_url(tmp_path: Path, api_url: str) -> subprocess.CompletedProcess:
+    return subprocess.run([str(LAUNCHER), "api", "get", "/me", "--json"], capture_output=True, text=True,
+                          env={"PATH": str(_fake_bin(tmp_path, "uvx")), "FLOW_API_URL": api_url})
+
+
+@pytest.mark.parametrize("api_url", [
+    "https://staging.flow.bio/api", "https://elsewhere.example/api", "http://localhost.elsewhere.example/api",
+    "http://127.0.0.1.elsewhere.example/api",
+])
+def test_refuses_a_flow_api_url_off_this_machine(tmp_path, api_url):
+    result = _run_with_api_url(tmp_path, api_url)
+    assert result.returncode == 2
+    assert result.stdout == ""
+    assert "FLOW_API_URL" in result.stderr
+
+
+@pytest.mark.parametrize("api_url", ["http://localhost:8019", "http://127.0.0.1:8019/api"])
+def test_uses_a_flow_api_url_on_this_machine(tmp_path, api_url):
+    result = _run_with_api_url(tmp_path, api_url)
+    assert result.returncode == 0
+    assert result.stdout.startswith("uvx ")
 
 
 def test_ignores_variables_inherited_from_the_environment(tmp_path):

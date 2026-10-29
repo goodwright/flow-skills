@@ -251,14 +251,7 @@ printf '%s' '{"params":{},"data_params":{},"csv_params":{"input":{"rows":[{"samp
 ```
 
 On success, report the execution `id`, `identifier`, initial `status`, and a
-link to the run in the UI: the API's base URL without its trailing `/api`, then
-`/executions/<id>/`. This prints the base URL in use:
-
-```bash
-echo "${FLOW_API_URL:-https://app.flow.bio/api}"
-```
-
-So by default the link is `https://app.flow.bio/executions/<id>/`.
+link to the run in the UI, `https://app.flow.bio/executions/<id>/`.
 
 **Do not poll by default** — return the id and the link and stop. On `403`
 (`User cannot run pipelines` or `Token not authorised for this endpoint`) report
