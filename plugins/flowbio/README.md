@@ -1,4 +1,4 @@
-# Flow
+# Flow.bio
 
 Lets an AI agent query [Flow](https://flow.bio), a bioinformatics platform
 built by [Goodwright](https://goodwright.com), and upload data to it on your

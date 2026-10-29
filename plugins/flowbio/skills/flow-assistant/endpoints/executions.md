@@ -14,16 +14,16 @@ that has only just started both have an empty status.
 | The run is… | `status` | `started` | `finished` |
 |---|---|---|---|
 | queued, not yet started | `""` | null | null |
-| running | `-` once Nextflow has reported on it, `""` before that | set | null |
-| finished | `OK`, `ERROR` or `CANCELED` | set | set |
+| running | `-` once Nextflow has reported on it, `""` before that | a timestamp | null |
+| finished | `OK`, `ERROR` or `CANCELED` | a timestamp | a timestamp |
 
 There is no `RUNNING` status. Flow's web app tells a running run from a
-finished one by its timestamps: `started` set and `finished` null means
+finished one by its timestamps: `started` non-null and `finished` null means
 running, and a `CANCELED` run is over whatever its timestamps say.
 
 To find runs in progress, filter on `status=-`. That misses a run started so
 recently that Nextflow has not reported on it yet; to include those, list the
-runs and keep those with `started` set and `finished` null. A queued run cannot
+runs and keep those with `started` non-null and `finished` null. A queued run cannot
 be filtered for: an empty `status=` is ignored and returns every run.
 
 A run's steps (`process_executions[].status`) are `-` until they end, then
@@ -76,8 +76,8 @@ executions broadly ("which executions failed last week?",
 | `process_execution` | str  | (none)     | Substring on process execution name (i.e. a step within the pipeline). |
 | `nextflow_version`  | str  | (none)     | Exact Nextflow version string. |
 | `terminal`          | str  | (none)     | Substring search across `stdout` and `stderr` of executions. Useful for finding executions whose output contains a specific message or error text. |
-| `return_data`       | str  | (none)     | Truthy string (`"true"`, `"1"`, `"yes"`). When set, adds a `downstream_data` key to each execution item (array of `{id, filename, filetype, process_execution_name}`). |
-| `return_inputs`     | str  | (none)     | Truthy string (`"true"`, `"1"`, `"yes"`). When set, adds an `inputs` key to each execution item (array of `{id, filename, filetype}`). |
+| `return_data`       | str  | (none)     | Truthy string (`"true"`, `"1"`, `"yes"`). When given, adds a `downstream_data` key to each execution item (array of `{id, filename, filetype, process_execution_name}`). |
+| `return_inputs`     | str  | (none)     | Truthy string (`"true"`, `"1"`, `"yes"`). When given, adds an `inputs` key to each execution item (array of `{id, filename, filetype}`). |
 
 - **No free-text `filter` parameter.** Filtering is field-scoped.
 - **Response envelope:** `{"count": int, "page": int, "executions": [...]}`.
@@ -139,7 +139,7 @@ via `/executions/search`, and **polling a run** started via
     `CANCELED`; until then it is `""` or `-` (see "Where a run is in its
     life").
   - `created` / `started` / `finished` (int | null — Unix timestamps;
-    `finished` is set once terminal)
+    `finished` is filled in once terminal)
   - `nextflow_version` (str)
   - `stdout` / `stderr` (str) and `log` (str — text from the `log` offset)
   - `command` (str — the Nextflow command; shell text. Surface only if asked.)
