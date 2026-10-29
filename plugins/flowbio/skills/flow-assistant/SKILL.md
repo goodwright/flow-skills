@@ -74,7 +74,7 @@ shell variables or arrays — substitute the real path, params, field and page
 count into the command text yourself. Multi-line scripts and `VAR=...`
 assignments get mangled and fail silently.
 
-Call shape: `flow-cli api get <PATH> --param KEY=VALUE … --json`. One `--param` per
+Call shape: `${CLAUDE_SKILL_DIR}/scripts/flow-cli api get <PATH> --param KEY=VALUE … --json`. One `--param` per
 filter; the CLI URL-encodes each value. Put the pair in double quotes when the
 value has a space, or a character such as `&`, `;`, `*` or `(`:
 `--param "name=Liver Atlas"`. Unquoted, the shell splits it and the CLI fails
@@ -245,8 +245,8 @@ suspiciously small, check for containers first.
 7. **Never `jq 'select(...)'` on a name you guessed.** Dump the whole list
    (projecting `identifier` and `name`) and read it. A `select` that matches nothing is
    indistinguishable from "this instance has none of those" — see Step 4.
-8. `FLOW_API_URL` overrides the base URL; forward it only if the user set it.
-   Never pass `--base-url` otherwise.
+8. `FLOW_API_URL`, if the user set it, chooses the Flow instance. Never pass
+   `--base-url`, `--token` or `--token-file`; `flow-cli` refuses them.
 9. **Auth is optional and needs no decision up front**, and the CLI handles the
    token itself. See "Authentication" below.
 
