@@ -6,6 +6,12 @@ follow [Semantic Versioning](https://semver.org/).
 The canonical version is `plugins/flowbio/.claude-plugin/plugin.json#version`.
 Bump it on every release.
 
+## [0.19.2] — 2026-10-29
+
+- **Marketplaces show the plugin as "Flow.bio"**, not "Flow", which is also the
+  name of other directory listings. Its id stays `flowbio`, so nothing to
+  reinstall.
+
 ## [0.19.1] — 2026-10-29
 
 - **Installs of the old `flow-ai` plugin move to `flowbio`.** Run
