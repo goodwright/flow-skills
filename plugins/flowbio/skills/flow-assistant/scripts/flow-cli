@@ -6,12 +6,13 @@ FLOWBIO_VERSION=0.14.1
 # The skill pre-approves `api get`, so no argument may send the request, and the
 # saved token with it, to another host or swap in another credential. flowbio
 # accepts any unambiguous abbreviation, hence the prefix match.
+refused=
 for arg in "$@"; do
   option=${arg%%=*}
   case $option in --?*) ;; *) continue ;; esac
   case --base-url in "$option"*) refused=$option ;; esac
   case --token-file in "$option"*) refused=$option ;; esac
-  if [ -n "${refused:-}" ]; then
+  if [ -n "$refused" ]; then
     echo "flow-cli: $refused is not accepted. Set FLOW_API_URL to use another Flow instance; the token comes from ~/.config/flow/api-token." >&2
     exit 2
   fi
