@@ -51,6 +51,9 @@ against the same API, with the token from `~/.config/flow/api-token` in a
 request header. Apart from downloading `flowbio` from PyPI, nothing is sent
 anywhere else.
 
+How Flow collects, uses and retains your data is set out in its
+[privacy policy](https://app.flow.bio/privacy/).
+
 Every change on Flow (creating a project, editing a sample, running a pipeline,
 uploading) is shown to you and runs only after you confirm it.
 
@@ -114,6 +117,12 @@ the one you confirmed.
 
 File downloads still use `curl` and keep prompting; that is deliberate — a
 download can be large.
+
+## Support
+
+For help with the plugin or Flow, or to report a security concern, email
+<support@flow.bio>. Bugs and feature requests are also welcome as
+[GitHub issues](https://github.com/goodwright/flow-skills/issues).
 
 ## License
 
