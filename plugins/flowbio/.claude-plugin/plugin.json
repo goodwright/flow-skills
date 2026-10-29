@@ -2,7 +2,7 @@
   "name": "flowbio",
   "displayName": "Flow",
   "description": "Query Flow (flow.bio) — pipelines, samples, projects, executions, and data files via the Flow REST API; create projects and edit samples and their metadata; run pipelines (kick off an execution and optionally poll it); plus generic data-file, demultiplexed-sample, and multiplexed (reads + annotation sheet) upload. Authenticates automatically when ~/.config/flow/api-token is present.",
-  "version": "0.19.0",
+  "version": "0.19.1",
   "author": {
     "name": "Goodwright Ltd",
     "email": "engineering@flow.bio"
