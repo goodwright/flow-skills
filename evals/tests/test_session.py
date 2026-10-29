@@ -46,6 +46,14 @@ def test_passes_isolation_and_allowlist_flags(tmp_path, fake_claude):
     assert argv[argv.index("--allowedTools") + 1:][:len(READ_ALLOWLIST)] == READ_ALLOWLIST
 
 
+
+def test_lets_the_skill_load_and_grants_no_commands_itself(tmp_path, fake_claude):
+    argv = _run(tmp_path)["argv"]
+    allowed = argv[argv.index("--allowedTools") + 1:][:len(READ_ALLOWLIST)]
+    assert "Skill(flowbio:flow-assistant)" in allowed
+    assert not [rule for rule in allowed if rule.startswith("Bash(")]
+
+
 def test_token_reaches_the_child_env_but_not_its_argv(tmp_path, fake_claude):
     token = "secret-token"
     seen = _run(tmp_path, token)

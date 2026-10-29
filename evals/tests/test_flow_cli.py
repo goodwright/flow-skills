@@ -6,10 +6,9 @@ from pathlib import Path
 
 PLUGIN = Path(__file__).resolve().parents[2] / "plugins" / "flowbio"
 LAUNCHER = PLUGIN / "skills" / "flow-assistant" / "scripts" / "flow-cli"
-SHIM = PLUGIN / "bin" / "flow-cli"
-# The scripts' only external tools. PATH holds just these and the fakes, so a uvx,
+# The launcher's only external tool. PATH holds just it and the fakes, so a uvx,
 # pipx or flowbio installed on the machine, as pipx is in /usr/bin on Ubuntu, never answers.
-SCRIPT_TOOLS = ["cat", "dirname"]
+SCRIPT_TOOLS = ["cat"]
 
 
 def _pinned_version() -> str:
@@ -89,7 +88,3 @@ def test_passes_on_the_exit_code(tmp_path):
     (bin_dir / "uvx").chmod(0o755)
     assert _run(LAUNCHER, bin_dir).returncode == 3
 
-
-def test_the_plugin_command_runs_the_skill_launcher(tmp_path):
-    bin_dir = _fake_bin(tmp_path, "uvx")
-    assert _run(SHIM, bin_dir).stdout == _run(LAUNCHER, bin_dir).stdout

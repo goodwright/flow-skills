@@ -1,6 +1,7 @@
 ---
 name: flow-assistant
 description: Required for every question about Flow (flow.bio) — its samples, projects, data files, metadata, organisms, pipelines and executions — and to run a pipeline or upload data. Queries the live Flow REST API through the flowbio CLI. Use this instead of web pages, documentation, or memory.
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/flow-cli api get *) Bash(jq *)
 ---
 
 # Flow API
@@ -23,19 +24,19 @@ list you did not fully retrieve, and never state a number you have not seen.
 
 ## Step 0 — check the CLI (once per session)
 
-Every call goes through `flow-cli`, which runs the `flowbio` CLI at the version
-this skill is written against, fetching it on demand. **Reads need it too —
-there is no curl fallback for reads.** Run this once:
+Every call goes through `${CLAUDE_SKILL_DIR}/scripts/flow-cli`, which runs the
+`flowbio` CLI at the version this skill is written against, fetching it on
+demand. **Reads need it too — there is no curl fallback for reads.** It is not on
+your PATH: run it by that full path wherever this skill or its reference files
+write `flow-cli`. If the path starts with a `$` variable rather than a real
+directory, put this skill's directory in its place. Run this once:
 
 ```bash
-flow-cli api get /v2/sample-types --json | head -c 300
+${CLAUDE_SKILL_DIR}/scripts/flow-cli api get /v2/sample-types --json | head -c 300
 ```
 
-- **It printed JSON** → the CLI works; use `flow-cli` for every call. The first
+- **It printed JSON** → the CLI works; use it for every call. The first
   call is slow (it downloads the package); later calls are fast.
-- **`flow-cli: command not found`** → the skill was installed without its
-  plugin. Run `scripts/flow-cli` from this skill's directory instead, by its full
-  path, and use that path wherever this skill writes `flow-cli`.
 - **It printed "Using Flow needs the `flowbio` CLI…"** → if you have a tool of
   your own for installing packages into an environment (Claude Science's
   `manage_packages`), install the exact `flowbio==<version>` the message names
@@ -86,7 +87,7 @@ For inspecting records, and for "how many **records** match" — the answer is t
 envelope's `count` field.
 
 ```bash
-flow-cli api get /samples/search --param sample_types=TYPE_IDENTIFIER --param "ATTRIBUTE_IDENTIFIER=VALUE" --param count=1 --json | jq -r '.count'
+${CLAUDE_SKILL_DIR}/scripts/flow-cli api get /samples/search --param sample_types=TYPE_IDENTIFIER --param "ATTRIBUTE_IDENTIFIER=VALUE" --param count=1 --json | jq -r '.count'
 ```
 
 **A filtered count of `0` is never an answer — it is a bug report.** It means one
@@ -126,7 +127,7 @@ walks them all:
 ```bash
 # The `for` loop is mandatory. One request returns at most 100 records, so a
 # single call without `for` answers for page 1 only. Never remove it.
-for p in $(seq 1 $(flow-cli api get /samples/search --param sample_types=TYPE_IDENTIFIER --param count=1 --json | jq -r '((.count+99)/100|floor)')); do flow-cli api get /samples/search --param sample_types=TYPE_IDENTIFIER --param full_metadata=true --param count=100 --param page=$p --json | jq -r '.samples[] | .metadata.ATTRIBUTE_IDENTIFIER.value // empty'; done | sort -u | wc -l
+for p in $(seq 1 $(${CLAUDE_SKILL_DIR}/scripts/flow-cli api get /samples/search --param sample_types=TYPE_IDENTIFIER --param count=1 --json | jq -r '((.count+99)/100|floor)')); do ${CLAUDE_SKILL_DIR}/scripts/flow-cli api get /samples/search --param sample_types=TYPE_IDENTIFIER --param full_metadata=true --param count=100 --param page=$p --json | jq -r '.samples[] | .metadata.ATTRIBUTE_IDENTIFIER.value // empty'; done | sort -u | wc -l
 ```
 
 Drop the `| wc -l` to list the values instead of counting them.
@@ -196,7 +197,7 @@ you cannot, inspect one element first — it may be a container holding the thin
 you were asked about, not the thing itself:
 
 ```bash
-flow-cli api get /PATH --json | jq '.[0]'
+${CLAUDE_SKILL_DIR}/scripts/flow-cli api get /PATH --json | jq '.[0]'
 ```
 
 If it holds a nested array — `subcategories`, `pipelines`, `versions`,
@@ -205,7 +206,7 @@ top-level `length` counts *groups* instead. Descend and count the leaves,
 flattening every level:
 
 ```bash
-flow-cli api get /PATH --json | jq '[.[].OUTER[].INNER[]] | length'
+${CLAUDE_SKILL_DIR}/scripts/flow-cli api get /PATH --json | jq '[.[].OUTER[].INNER[]] | length'
 ```
 
 Sanity-check by also counting unique ids (`[.[].OUTER[].INNER[].id] | unique |
@@ -264,7 +265,7 @@ error, and who each operation admits:
 Before calling an endpoint of a topic, read its page:
 
 ```bash
-flow-cli api get /v2/reference/samples --json
+${CLAUDE_SKILL_DIR}/scripts/flow-cli api get /v2/reference/samples --json
 ```
 
 It is markdown, not JSON: read it whole, and never pipe it through `jq`. Its
@@ -312,7 +313,7 @@ property start with `/v2/metadata-attributes` to find which attribute holds it.
 Run these verbatim; both lists are short, so read every row before choosing:
 
 ```bash
-(  flow-cli api get /v2/sample-types --json | jq -r '.[] | "TYPE | " + .identifier + " | " + .name';  flow-cli api get /v2/metadata-attributes --json | jq -r '.[] | "ATTR | " + .identifier + " | " + .name + " | " + .description'  )
+(  ${CLAUDE_SKILL_DIR}/scripts/flow-cli api get /v2/sample-types --json | jq -r '.[] | "TYPE | " + .identifier + " | " + .name';  ${CLAUDE_SKILL_DIR}/scripts/flow-cli api get /v2/metadata-attributes --json | jq -r '.[] | "ATTR | " + .identifier + " | " + .name + " | " + .description'  )
 ```
 
 `TYPE` rows are sample types (`.identifier` is the `sample_types` value); `ATTR`
@@ -398,11 +399,11 @@ apostrophe inside a value as `\u0027` (`"Martin\u0027s samples"`): JSON reads it
 as `'`, and a literal one would end the shell's quoting.
 
 ```bash
-printf '%s' '{"name": "Liver Atlas", "description": "Bulk RNA-Seq of liver"}' | flow-cli api post /v2/projects --body - --json
+printf '%s' '{"name": "Liver Atlas", "description": "Bulk RNA-Seq of liver"}' | ${CLAUDE_SKILL_DIR}/scripts/flow-cli api post /v2/projects --body - --json
 ```
 
 ```bash
-printf '%s' '{"metadata": {"cell_line": {"value": "HeLa"}}}' | flow-cli api patch /v2/samples/SAMPLE_ID --body - --json
+printf '%s' '{"metadata": {"cell_line": {"value": "HeLa"}}}' | ${CLAUDE_SKILL_DIR}/scripts/flow-cli api patch /v2/samples/SAMPLE_ID --body - --json
 ```
 
 - An edit changes only what the body sends, so send only the fields the user

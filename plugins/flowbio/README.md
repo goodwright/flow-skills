@@ -100,27 +100,15 @@ Add the token to your windows home folder like so:
 ```
 </details>
 
-## Reducing permission prompts
+## Permission prompts
 
-The CLI resolves your token itself, so read commands carry no secret and can be
-allowlisted. To stop reads prompting, add both entries to
-`.claude/settings.json`: the read recipes pipe through `jq`, and Claude Code
-only auto-approves a piped command when every part of it is allowed.
+In Claude Code, the skill pre-approves its read commands (`flow-cli api get`,
+and `jq` to shape the output) for the turn in which it loads, so the first Flow
+question in a conversation runs without prompting. Claude Code clears that
+approval when you send your next message, so the reads for a follow-up question
+prompt.
 
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(flow-cli api get *)",
-      "Bash(jq *)"
-    ]
-  }
-}
-```
-
-The entries stay the same from one release to the next.
-
-Do **not** allowlist `api post` or `api patch`. Those create and edit
+Do **not** permanently approve `api post` or `api patch`. Those create and edit
 records and run pipelines, and the prompt is the last check that the change is
 the one you confirmed.
 

@@ -5,10 +5,10 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-# The read allowlist the plugin README recommends, so a write stalls on permission instead of running.
+# The skill's own allowed-tools pre-approves its reads, so a write stalls on permission instead of
+# running. Claude Code only loads a skill that grants itself tools in -p when a rule allows it.
 READ_ALLOWLIST = [
-    "Bash(flow-cli api get *)",
-    "Bash(jq *)",
+    "Skill(flowbio:flow-assistant)",
 ]
 _TIMEOUT_SECONDS = 15 * 60
 
