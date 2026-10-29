@@ -6,6 +6,16 @@ follow [Semantic Versioning](https://semver.org/).
 The canonical version is `plugins/flowbio/.claude-plugin/plugin.json#version`.
 Bump it on every release.
 
+## [0.19.0] — 2026-10-29
+
+- **The plugin installs in Claude Cowork and claude.ai.** They refuse a plugin
+  with a top-level `bin/` directory, so the plugin no longer puts `flow-cli` on
+  your `PATH`; the skill runs its launcher by its full path instead.
+- **The skill pre-approves its own reads.** In Claude Code, `flow-cli api get`
+  and `jq` run without prompting on the turn the skill loads; later messages
+  prompt. A `Bash(flow-cli api get *)` allowlist entry no longer matches
+  anything, so you can remove it.
+
 ## [0.18.1] — 2026-10-28
 
 - **The skill no longer suggests the `FLOW_API_TOKEN` environment variable.**

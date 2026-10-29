@@ -5,7 +5,7 @@ import pytest
 
 from flow_evals.transcript import read_transcript
 
-RUNNER = "flow-cli"
+RUNNER = "/plugins/flowbio/skills/flow-assistant/scripts/flow-cli"
 
 
 def _bash(command: str) -> dict:
@@ -50,8 +50,8 @@ def test_flags_flowbio_commands_other_than_api_get_as_writes(tmp_path):
 
 
 def test_flags_flow_cli_commands_other_than_api_get_as_writes(tmp_path):
-    run = "printf '%s' '{}' | flow-cli api post /pipelines/versions/1/run --body - --json"
-    events = [_bash("flow-cli api get /me --json | jq -r '.id'"), _bash(run), _result("x")]
+    run = f"printf '%s' '{{}}' | {RUNNER} api post /pipelines/versions/1/run --body - --json"
+    events = [_bash(f"{RUNNER} api get /me --json | jq -r '.id'"), _bash(run), _result("x")]
     transcript = read_transcript(_write(tmp_path, events))
     assert transcript.write_calls == [run]
     assert transcript.flow_paths == ["/me"]

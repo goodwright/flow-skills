@@ -9,7 +9,7 @@ your behalf.
 ## What `flowbio` does
 
 The plugin's [README](plugins/flowbio/README.md) says what it does, what it
-runs and sends, and how to reduce permission prompts.
+runs and sends, and when it prompts for permission.
 
 ## Getting a Flow API key (optional)
 
@@ -50,9 +50,6 @@ Copilot CLI, etc.), see your harness's documentation for the skill
 load path. The skill's contract is the YAML frontmatter in `SKILL.md`
 plus the supporting files it references — no harness-specific glue.
 
-Installed this way, without the plugin, `flow-cli` is not on your `PATH`; the
-skill runs its copy at `scripts/flow-cli` in the skill's directory instead.
-
 ## Versioning
 
 The canonical version lives in
@@ -75,9 +72,10 @@ new behaviour, and add a `CHANGELOG.md` entry under the next version (or
 Skills in `unpublished/` are kept for later work and are not part of any
 plugin, so no install picks them up.
 
-Don't add `allowed-tools` to the skill's frontmatter: with it, Claude Code
-invoked the skill without passing its text to the model, which then guessed
-at commands.
+The skill's `allowed-tools` pre-approves its read commands, and only matches
+them run by the launcher's full path. In a non-interactive run (`claude -p`),
+Claude Code won't load a skill that grants itself tools unless
+`Skill(flowbio:flow-assistant)` is allowed, so the eval runner allows it.
 
 ## License
 

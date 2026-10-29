@@ -1,4 +1,0 @@
-#!/bin/sh
-# Claude Code puts a plugin's bin/ on PATH; the launcher and its pinned
-# version live with the skill, so a skill installed without the plugin has it too.
-exec "$(dirname "$0")/../skills/flow-assistant/scripts/flow-cli" "$@"
