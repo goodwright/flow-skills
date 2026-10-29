@@ -20,7 +20,7 @@ under `problem`, and its entries are `{parameter | pointer, code, detail}`:
 ```
 
 - **Branch on `problem.code`**, never on the message. The Errors section of
-  `/v2/reference` says what each code means and what to do; `type` links to
+  `/v2/reference` says what each code means; `type` links to
   that code's section, so `…/v2/reference#not_found` is the `not_found` section
   of `api get /v2/reference`. Treat a code not documented there as the generic
   error for its `status_code`.
