@@ -113,3 +113,10 @@ def test_the_skill_pre_approves_only_reads_through_the_launcher():
     skill = (LAUNCHER.parents[1] / "SKILL.md").read_text()
     allowed = re.search(r"^allowed-tools: (.+)$", skill, re.MULTILINE).group(1)
     assert allowed == "Bash(${CLAUDE_SKILL_DIR}/scripts/flow-cli api get *) Bash(jq *)"
+
+
+def test_ignores_variables_inherited_from_the_environment(tmp_path):
+    bin_dir = _fake_bin(tmp_path, "uvx")
+    result = subprocess.run([str(LAUNCHER), "api", "get", "/me", "--json"], capture_output=True, text=True,
+                            env={"PATH": str(bin_dir), "refused": "x", "option": "--base-url"})
+    assert result.returncode == 0
