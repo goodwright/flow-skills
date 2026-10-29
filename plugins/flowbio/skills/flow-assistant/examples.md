@@ -133,7 +133,7 @@ which returns text). Before downloading anything large, confirm with the user
 — the file size is in the previous response under `.data[].size` (bytes).
 
 ```bash
-curl -s --fail-with-body -o FILENAME "${FLOW_API_URL:-https://app.flow.bio/api}/downloads/DATA_ID/FILENAME"
+curl -s --fail-with-body -o FILENAME https://app.flow.bio/api/downloads/DATA_ID/FILENAME
 ```
 
 Notes:

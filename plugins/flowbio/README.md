@@ -44,8 +44,7 @@ is available, it prints how to install `uv` and stops. An agent with a
 package tool of its own, such as Claude Science's, may then install that
 exact `flowbio` version with it.
 
-The CLI talks only to Flow's API at `https://app.flow.bio/api`, or to the
-instance `FLOW_API_URL` names if you set it. When you have a Flow API key (see
+The CLI talks only to Flow's API at `https://app.flow.bio/api`. When you have a Flow API key (see
 below), the CLI sends it to that API to authenticate. File downloads use `curl`
 against the same API, with the token from `~/.config/flow/api-token` in a
 request header. Apart from downloading `flowbio` from PyPI, nothing is sent

@@ -245,8 +245,8 @@ suspiciously small, check for containers first.
 7. **Never `jq 'select(...)'` on a name you guessed.** Dump the whole list
    (projecting `identifier` and `name`) and read it. A `select` that matches nothing is
    indistinguishable from "this instance has none of those" — see Step 4.
-8. `FLOW_API_URL`, if the user set it, chooses the Flow instance. Never pass
-   `--base-url`, `--token` or `--token-file`; `flow-cli` refuses them.
+8. Never pass `--base-url`, `--token` or `--token-file`; `flow-cli` refuses
+   them.
 9. **Auth is optional and needs no decision up front**, and the CLI handles the
    token itself. See "Authentication" below.
 

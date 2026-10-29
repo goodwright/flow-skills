@@ -10,7 +10,7 @@
     "Validates locally before uploading: confirms both reads files exist and that the reads filenames and the sample name contain no spaces. Tells the user to rename rather than attempting the upload if a name contains spaces.",
     "Checks the CLI with `flow-cli` (SKILL.md Step 0) before the first upload. Does NOT improvise Python or reimplement the chunked upload in bash.",
     "Invokes the CLI through `flow-cli`, e.g. `flow-cli samples upload --name liver_rep1 --sample-type <identifier> --reads1 /tmp/liver_rep1_R1.fastq.gz --reads2 /tmp/liver_rep1_R2.fastq.gz --project <id> --organism <id> --metadata source=liver --json --no-progress`. Uses `samples upload` (not `data upload`), passes `--reads2` for the paired-end second file, and uses both `--json` and `--no-progress`.",
-    "Preserves token discipline: does NOT pass `--token`, does NOT cat/echo/print the token. Relies on the CLI reading `~/.config/flow/api-token` itself. Only forwards `FLOW_API_URL` when the base URL is overridden.",
+    "Preserves token discipline: does NOT pass `--token`, does NOT cat/echo/print the token. Relies on the CLI reading `~/.config/flow/api-token` itself.",
     "On success parses the CLI's stdout JSON `{\"id\": \"<sample_id>\"}` and reports the sample_id and that the sample is uploaded. Does NOT expect a `sample_id` key in the JSON.",
     "On a non-zero exit reports the failure using the CLI's stderr JSON (`message`, `status_code`) and the exit code's meaning (3 auth, 4 not found, 5 bad request/validation, 2 usage, 1 runtime). Never fabricates success.",
     "Does NOT attempt the out-of-scope forbidden operations (delete, share, permissions, etc.) while performing the upload."

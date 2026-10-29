@@ -31,8 +31,6 @@ its message; never attempt the upload another way.
   `cat`/`echo`/print the token.** Let the CLI read the file. If the file is
   absent the CLI exits with an auth error (exit `3`); report that the token is
   missing rather than improvising one.
-- **Base URL.** The CLI honours `FLOW_API_URL` (default
-  `https://app.flow.bio/api`). Forward it only when the user has overridden it.
 - Always pass `--json` (one machine-readable document on stdout) **and**
   `--no-progress` (keep progress bars out of the transcript).
 
