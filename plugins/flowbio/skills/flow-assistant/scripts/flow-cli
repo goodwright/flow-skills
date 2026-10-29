@@ -19,14 +19,17 @@ for arg in "$@"; do
 done
 
 # Flow is reached only at app.flow.bio, flowbio's default. FLOW_API_URL may
-# name a Flow running on this machine, and nothing else.
+# name a Flow running on this machine, and nothing else. An @ would turn
+# "localhost:8019" into userinfo and make the part after it the host.
 case ${FLOW_API_URL-} in
+  *@*) refused=FLOW_API_URL ;;
   '' | http://localhost | http://localhost[:/]* | http://127.0.0.1 | http://127.0.0.1[:/]*) ;;
-  *)
-    echo "flow-cli: FLOW_API_URL may only name a Flow on this machine (http://localhost). Unset it to use app.flow.bio." >&2
-    exit 2
-    ;;
+  *) refused=FLOW_API_URL ;;
 esac
+if [ "$refused" = FLOW_API_URL ]; then
+  echo "flow-cli: FLOW_API_URL may only name a Flow on this machine (http://localhost). Unset it to use app.flow.bio." >&2
+  exit 2
+fi
 
 if command -v uvx >/dev/null 2>&1; then
   exec uvx --from "flowbio==$FLOWBIO_VERSION" flowbio "$@"
