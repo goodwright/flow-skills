@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from flow_evals.session import READ_ALLOWLIST, read_token, run_agent
+from flow_evals.session import ALLOWED_TOOLS, read_token, run_agent
 
 FAKE_CLAUDE = """#!/usr/bin/env python3
 import json, os, sys
@@ -43,13 +43,12 @@ def test_passes_isolation_and_allowlist_flags(tmp_path, fake_claude):
                         ("--output-format", "stream-json"), ("--setting-sources", "project")]:
         assert argv[argv.index(flag) + 1] == value
     assert {"--verbose", "--strict-mcp-config"} <= set(argv)
-    assert argv[argv.index("--allowedTools") + 1:][:len(READ_ALLOWLIST)] == READ_ALLOWLIST
-
+    assert argv[argv.index("--allowedTools") + 1:][:len(ALLOWED_TOOLS)] == ALLOWED_TOOLS
 
 
 def test_lets_the_skill_load_and_grants_no_commands_itself(tmp_path, fake_claude):
     argv = _run(tmp_path)["argv"]
-    allowed = argv[argv.index("--allowedTools") + 1:][:len(READ_ALLOWLIST)]
+    allowed = argv[argv.index("--allowedTools") + 1:][:len(ALLOWED_TOOLS)]
     assert "Skill(flowbio:flow-assistant)" in allowed
     assert not [rule for rule in allowed if rule.startswith("Bash(")]
 

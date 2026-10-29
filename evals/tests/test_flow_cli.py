@@ -3,6 +3,8 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import pytest
+
 
 PLUGIN = Path(__file__).resolve().parents[2] / "plugins" / "flowbio"
 LAUNCHER = PLUGIN / "skills" / "flow-assistant" / "scripts" / "flow-cli"
@@ -27,9 +29,9 @@ def _fake_bin(tmp_path: Path, *names: str) -> Path:
     return bin_dir
 
 
-def _run(command: Path, bin_dir: Path) -> subprocess.CompletedProcess:
-    return subprocess.run([str(command), "api", "get", "/me", "--json"], capture_output=True, text=True,
-                          env={"PATH": str(bin_dir)})
+def _run(command: Path, bin_dir: Path, *args: str) -> subprocess.CompletedProcess:
+    return subprocess.run([str(command), *(args or ("api", "get", "/me", "--json"))], capture_output=True,
+                          text=True, env={"PATH": str(bin_dir)})
 
 
 def test_uses_uvx_with_the_pinned_version_first(tmp_path):
@@ -88,3 +90,26 @@ def test_passes_on_the_exit_code(tmp_path):
     (bin_dir / "uvx").chmod(0o755)
     assert _run(LAUNCHER, bin_dir).returncode == 3
 
+
+@pytest.mark.parametrize("option", [
+    ["--base-url", "https://elsewhere.example"], ["--base-url=https://elsewhere.example"], ["--base", "x"],
+    ["--token", "x"], ["--tok=x"], ["--token-file", "/etc/hosts"], ["--token-f=/etc/hosts"],
+])
+def test_refuses_options_that_redirect_the_request_or_its_credential(tmp_path, option):
+    result = _run(LAUNCHER, _fake_bin(tmp_path, "uvx"), "api", "get", "/me", *option, "--json")
+    assert result.returncode == 2
+    assert result.stdout == ""
+    assert "FLOW_API_URL" in result.stderr
+
+
+@pytest.mark.parametrize("option", [["--body", "-"], ["--param", "base_url=x"], ["--no-progress"]])
+def test_passes_other_options_through(tmp_path, option):
+    result = _run(LAUNCHER, _fake_bin(tmp_path, "uvx"), "api", "get", "/me", *option)
+    assert result.stdout.strip().endswith(" ".join(["/me", *option]))
+
+
+def test_the_skill_pre_approves_only_reads_through_the_launcher():
+    # Widening this rule, say to `flow-cli *`, would let writes and uploads run without the user's confirmation.
+    skill = (LAUNCHER.parents[1] / "SKILL.md").read_text()
+    allowed = re.search(r"^allowed-tools: (.+)$", skill, re.MULTILINE).group(1)
+    assert allowed == "Bash(${CLAUDE_SKILL_DIR}/scripts/flow-cli api get *) Bash(jq *)"

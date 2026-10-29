@@ -7,7 +7,7 @@ from pathlib import Path
 
 # The skill's own allowed-tools pre-approves its reads, so a write stalls on permission instead of
 # running. Claude Code only loads a skill that grants itself tools in -p when a rule allows it.
-READ_ALLOWLIST = [
+ALLOWED_TOOLS = [
     "Skill(flowbio:flow-assistant)",
 ]
 _TIMEOUT_SECONDS = 15 * 60
@@ -35,4 +35,4 @@ def _agent_command(query: str, model: str, plugin_dir: Path) -> list[str]:
     # The skill reads its own reference files; from an empty cwd those reads need --add-dir.
     return ["claude", "-p", query, "--plugin-dir", str(plugin_dir), "--add-dir", str(plugin_dir),
             "--model", model, "--output-format", "stream-json", "--verbose",
-            "--setting-sources", "project", "--strict-mcp-config", "--allowedTools", *READ_ALLOWLIST]
+            "--setting-sources", "project", "--strict-mcp-config", "--allowedTools", *ALLOWED_TOOLS]
