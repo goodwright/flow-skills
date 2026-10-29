@@ -122,7 +122,8 @@ def _run_with_api_url(tmp_path: Path, api_url: str) -> subprocess.CompletedProce
 
 @pytest.mark.parametrize("api_url", [
     "https://staging.flow.bio/api", "https://elsewhere.example/api", "http://localhost.elsewhere.example/api",
-    "http://127.0.0.1.elsewhere.example/api",
+    "http://127.0.0.1.elsewhere.example/api", "http://localhost:8019@elsewhere.example/api",
+    "http://127.0.0.1:@elsewhere.example",
 ])
 def test_refuses_a_flow_api_url_off_this_machine(tmp_path, api_url):
     result = _run_with_api_url(tmp_path, api_url)
@@ -131,7 +132,7 @@ def test_refuses_a_flow_api_url_off_this_machine(tmp_path, api_url):
     assert "FLOW_API_URL" in result.stderr
 
 
-@pytest.mark.parametrize("api_url", ["http://localhost:8019", "http://127.0.0.1:8019/api"])
+@pytest.mark.parametrize("api_url", ["http://localhost", "http://localhost:8019", "http://127.0.0.1:8019/api"])
 def test_uses_a_flow_api_url_on_this_machine(tmp_path, api_url):
     result = _run_with_api_url(tmp_path, api_url)
     assert result.returncode == 0
