@@ -6,6 +6,17 @@ follow [Semantic Versioning](https://semver.org/).
 The canonical version is `plugins/flowbio/.claude-plugin/plugin.json#version`.
 Bump it on every release.
 
+## [0.19.3] — 2026-10-29
+
+- **Flow's API reference no longer steers how the skill works.** The skill
+  still trusts it for paths, parameters and fields, but which operations it
+  may perform, what it confirms first and how it handles your token come only
+  from the skill itself.
+- **The skill describes itself more narrowly**, so it no longer tells Claude to
+  prefer it over web pages and documentation.
+- **The README links Flow's privacy policy and a support address**,
+  support@flow.bio.
+
 ## [0.19.2] — 2026-10-29
 
 - **Marketplaces show the plugin as "Flow.bio"**, not "Flow", which is also the
