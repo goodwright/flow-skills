@@ -24,12 +24,12 @@ Bump it on every release.
 
 ## [0.18.0] — 2026-10-28
 
-- **The plugin is now `flowbio` and its skill `flow-assistant`**, so the
-  command is `/flowbio:flow-assistant`, and marketplaces show the plugin as
-  "Flow". **Reinstall:** run `/plugin marketplace update flow-skills`, then
-  `/plugin uninstall flow-ai@flow-skills` and
-  `/plugin install flowbio@flow-skills`. For a skill installed without the
-  plugin, replace the `~/.claude/skills/flow-ai` link with
+- **The plugin is now `flowbio` and its skill `flow-assistant`**, so the command
+  is `/flowbio:flow-assistant`, and marketplaces show the plugin as "Flow".
+  **Reinstall:** run `/plugin marketplace update flow-skills`, then
+  `/plugin install flowbio@flow-skills`; Claude Code moves your `flow-ai`
+  settings to `flowbio` and drops the old install. For a skill installed
+  without the plugin, replace the `~/.claude/skills/flow-ai` link with
   `~/.claude/skills/flow-assistant`, pointing at
   `plugins/flowbio/skills/flow-assistant`. The `flow-cli` command and the
   `Bash(flow-cli api get *)` allowlist entry stay the same.
