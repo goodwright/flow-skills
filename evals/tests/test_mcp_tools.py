@@ -86,11 +86,11 @@ def test_a_server_that_lists_no_tools_has_none(toolless_server):
 
 def test_stops_when_the_server_refuses_the_token(flow_server):
     mcp_url = f"{flow_server}/mcp"
-    with pytest.raises(SystemExit, match=mcp_url):
+    with pytest.raises(SystemExit, match=f"{mcp_url}: Server returned an error response"):
         fetch_read_only(mcp_url, "rejected-token")
 
 
 def test_stops_when_nothing_listens_at_the_url():
     mcp_url = f"http://127.0.0.1:{_free_port()}/mcp"
-    with pytest.raises(SystemExit, match=mcp_url):
+    with pytest.raises(SystemExit, match=f"{mcp_url}: All connection attempts failed"):
         fetch_read_only(mcp_url, TOKEN)
