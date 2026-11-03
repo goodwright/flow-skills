@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from flow_evals.session import ALLOWED_TOOLS, read_token, run_agent
+from flow_evals.session import ALLOWED_TOOLS, mcp_command, read_token, run_agent, skill_command
 
 FAKE_CLAUDE = """#!/usr/bin/env python3
 import json, os, sys
@@ -25,7 +25,8 @@ def fake_claude(tmp_path, monkeypatch):
 
 def _run(tmp_path: Path, token: str = "secret-token") -> dict:
     transcript = tmp_path / "runs" / "004-haiku.jsonl"
-    run_agent("How much data?", "haiku", Path("plugins/flowbio").resolve(), "http://localhost:8019", token, transcript)
+    command = skill_command("How much data?", "haiku", Path("plugins/flowbio").resolve())
+    run_agent(command, "http://localhost:8019", token, transcript)
     return json.loads(transcript.read_text())
 
 
@@ -77,28 +78,24 @@ def test_read_token_stops_on_missing_or_empty_file(tmp_path, content):
         read_token(path)
 
 
-def _run_mcp(tmp_path: Path, read_only: dict[str, bool], token: str = "secret-token") -> dict:
-    transcript = tmp_path / "runs" / "004-haiku.jsonl"
-    run_agent("How much data?", "haiku", Path("plugins/flowbio").resolve(), "http://localhost:8019", token,
-              transcript, mode="mcp", read_only=read_only)
-    return json.loads(transcript.read_text())
+def _mcp_argv(read_only: dict[str, bool]) -> list[str]:
+    return mcp_command("How much data?", "haiku", "http://localhost:8019", read_only)[1:]
 
 
-def test_mcp_mode_loads_only_flows_mcp_server_with_the_token_from_the_env(tmp_path, fake_claude):
-    token = "secret-token"
-    argv = _run_mcp(tmp_path, {"list_samples": True}, token)["argv"]
+def test_mcp_mode_loads_only_flows_mcp_server_with_the_token_from_the_env():
+    argv = _mcp_argv({"list_samples": True})
     config = json.loads(argv[argv.index("--mcp-config") + 1])
     assert config == {"mcpServers": {"flow": {"type": "http", "url": "http://localhost:8019/mcp",
                                               "headers": {"Authorization": "Bearer ${FLOW_API_TOKEN}"}}}}
-    assert "--strict-mcp-config" in argv
+    assert {"--strict-mcp-config", "--verbose"} <= set(argv)
+    assert argv[argv.index("--setting-sources") + 1] == "project"
     assert not {"--plugin-dir", "--add-dir"} & set(argv)
-    assert token not in " ".join(argv)
 
 
-def test_mcp_mode_pre_approves_flows_read_tools_but_not_its_writes(tmp_path, fake_claude):
-    argv = _run_mcp(tmp_path, {"list_samples": True, "update_sample": False})["argv"]
+def test_mcp_mode_pre_approves_flows_read_tools_but_not_its_writes():
+    argv = _mcp_argv({"list_samples": True, "update_sample": False})
     assert argv[argv.index("--allowedTools") + 1:] == ["mcp__flow__list_samples"]
 
 
-def test_mcp_mode_without_read_tools_pre_approves_nothing(tmp_path, fake_claude):
-    assert "--allowedTools" not in _run_mcp(tmp_path, {"update_sample": False})["argv"]
+def test_mcp_mode_without_read_tools_pre_approves_nothing():
+    assert "--allowedTools" not in _mcp_argv({"update_sample": False})

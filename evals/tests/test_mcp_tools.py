@@ -8,7 +8,7 @@ import uvicorn
 from mcp import types
 from mcp.server.lowlevel.server import Server
 
-from flow_evals.mcp_tools import fetch_read_only
+from flow_evals.mcp_tools import fetch_read_only, load_read_only, save_read_only
 
 TOKEN = "eval-token"
 TOOLS = [
@@ -94,3 +94,10 @@ def test_stops_when_nothing_listens_at_the_url():
     mcp_url = f"http://127.0.0.1:{_free_port()}/mcp"
     with pytest.raises(SystemExit, match=f"{mcp_url}: All connection attempts failed"):
         fetch_read_only(mcp_url, TOKEN)
+
+
+def test_a_saved_tool_list_loads_back_from_the_run_directory(tmp_path):
+    read_only = {"list_samples": True, "update_sample": False}
+    save_read_only(tmp_path, read_only)
+    assert load_read_only(tmp_path) == read_only
+    assert [p.name for p in tmp_path.iterdir()] == ["tools.json"]
