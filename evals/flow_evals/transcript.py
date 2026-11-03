@@ -5,9 +5,8 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-FLOW_MCP_SERVER = "flow"
-# Claude Code names an MCP tool mcp__<server>__<tool>.
-FLOW_TOOL_PREFIX = f"mcp__{FLOW_MCP_SERVER}__"
+from flow_evals.mcp_tools import FLOW_TOOL_PREFIX
+
 _API_GET_PATH = re.compile(r"\bapi\s+get\s+(/[^\s;|&)]*)")
 # A flowbio or flow-cli subcommand other than `api get` changes remote state; flags such as --version do not.
 _FLOWBIO_WRITE = re.compile(r"\b(?:flowbio|flow-cli)\s+(?!api\s+get\b)[a-z]")
@@ -42,14 +41,15 @@ def read_transcript(path: Path, read_only: dict[str, bool] | None = None) -> Tra
     commands = [block["input"]["command"] for block in tool_uses if block["name"] == "Bash"]
     flow_tool_uses = [block for block in tool_uses if block["name"].startswith(FLOW_TOOL_PREFIX)]
     flow_tools = [block["name"] for block in flow_tool_uses]
+    read_only = read_only or {}
+    flow_writes = [t for t in flow_tools if not read_only.get(t.removeprefix(FLOW_TOOL_PREFIX), False)]
     result = next((e for e in reversed(events) if e.get("type") == "result"), {})
     usage = result.get("usage", {})
     return Transcript(
         answer=result.get("result") or "",
         commands=commands,
         flow_paths=[p for c in commands for p in _API_GET_PATH.findall(c)] + flow_tools,
-        write_calls=[c for c in commands if _is_write(c)]
-        + [t for t in flow_tools if not (read_only or {}).get(t.removeprefix(FLOW_TOOL_PREFIX), False)],
+        write_calls=[c for c in commands if _is_write(c)] + flow_writes,
         input_tokens=sum(usage.get(k, 0) for k in
                          ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")),
         output_tokens=usage.get("output_tokens", 0),

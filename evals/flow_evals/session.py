@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from flow_evals.transcript import FLOW_MCP_SERVER, FLOW_TOOL_PREFIX
+from flow_evals.mcp_tools import FLOW_MCP_SERVER, FLOW_TOOL_PREFIX
 
 # The skill's own allowed-tools pre-approves its reads, so a write stalls on permission instead of
 # running. Claude Code only loads a skill that grants itself tools in -p when a rule allows it.

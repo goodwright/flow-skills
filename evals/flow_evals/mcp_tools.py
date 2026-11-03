@@ -8,6 +8,10 @@ from mcp.client.session import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 from mcp.shared.exceptions import MCPError
 
+FLOW_MCP_SERVER = "flow"
+# Claude Code names an MCP tool mcp__<server>__<tool>.
+FLOW_TOOL_PREFIX = f"mcp__{FLOW_MCP_SERVER}__"
+
 
 def fetch_read_only(mcp_url: str, token: str) -> dict[str, bool]:
     """Maps each tool Flow's MCP server lists to whether it marks the tool read-only.
