@@ -17,8 +17,15 @@ def fetch_read_only(mcp_url: str, token: str) -> dict[str, bool]:
     try:
         return asyncio.run(_fetch_read_only(mcp_url, token))
     except* (MCPError, httpx2.HTTPError) as group:
-        failure = group.exceptions[0]
+        failure = _first_leaf(group)
     raise SystemExit(f"Could not list Flow's MCP tools at {mcp_url}: {failure}")
+
+
+def _first_leaf(error: BaseException) -> BaseException:
+    # The SDK's task groups nest the real cause a level or more deep.
+    while isinstance(error, BaseExceptionGroup):
+        error = error.exceptions[0]
+    return error
 
 
 async def _fetch_read_only(mcp_url: str, token: str) -> dict[str, bool]:
