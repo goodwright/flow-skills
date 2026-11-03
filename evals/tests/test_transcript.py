@@ -128,3 +128,12 @@ def test_flags_a_flow_tool_missing_from_the_tool_list_as_a_write(tmp_path):
 def test_lists_flow_tool_calls_with_their_arguments_for_the_grader(tmp_path):
     events = [_tool("mcp__flow__list_samples", {"owner": "me"}), _tool("mcp__other__x"), _result("x")]
     assert read_transcript(_write(tmp_path, events)).flow_tool_calls == ['mcp__flow__list_samples {"owner": "me"}']
+
+
+def test_counts_bash_writes_and_flow_tool_writes_together_in_mcp_mode(tmp_path):
+    upload = f"{RUNNER} data upload /tmp/x.tsv --json"
+    update = "mcp__flow__update_sample"
+    events = [_bash(upload), _bash(f"{RUNNER} api get /me --json"), _tool("mcp__flow__list_samples"), _tool(update),
+              _result("x")]
+    read_only = {"list_samples": True, "update_sample": False}
+    assert read_transcript(_write(tmp_path, events), read_only).write_calls == [upload, update]

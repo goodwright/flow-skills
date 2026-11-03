@@ -113,20 +113,22 @@ def flow_mcp(monkeypatch):
     return fetched
 
 
-def test_mcp_mode_saves_the_servers_tools_and_records_the_mode(stack, flow_mcp):
+def test_mcp_mode_saves_the_servers_tools_and_records_the_mode(stack, flow_mcp, capsys):
     run.main(["--scenario", "004*", "--model", "haiku", "--mode", "mcp"])
     run_dir, = (stack / "runs").iterdir()
     assert flow_mcp == [("http://localhost:8019/mcp", TOKEN)]
     assert json.loads((run_dir / "tools.json").read_text()) == READ_ONLY
     assert json.loads((run_dir / "summary.json").read_text())["mode"] == "mcp"
+    assert f"mcp mode, {run_dir}" in capsys.readouterr().out
 
 
-def test_skill_mode_is_the_default_and_fetches_no_tools(stack, flow_mcp):
+def test_skill_mode_is_the_default_and_fetches_no_tools(stack, flow_mcp, capsys):
     run.main(["--scenario", "004*", "--model", "haiku"])
     run_dir, = (stack / "runs").iterdir()
     assert flow_mcp == []
     assert not (run_dir / "tools.json").exists()
     assert json.loads((run_dir / "summary.json").read_text())["mode"] == "skill"
+    assert f"skill mode, {run_dir}" in capsys.readouterr().out
 
 
 def _flow_tool_transcript(path, tool):

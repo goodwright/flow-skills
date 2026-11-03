@@ -41,7 +41,15 @@ def load_scenario(path: Path, expected: dict) -> dict:
     unknown = missing_keys(scenario.get("checks", {}), expected)
     if unknown:
         raise SystemExit(f"{path.stem}: checks reference keys absent from the expected answers: {', '.join(unknown)}")
+    unknown = unknown_modes(scenario)
+    if unknown:
+        raise SystemExit(f"{path.stem}: rubric items name unknown modes: {', '.join(unknown)}")
     return scenario
+
+
+def unknown_modes(scenario: dict) -> list[str]:
+    """The `only` values of the scenario's rubric items that name no mode."""
+    return [i["only"] for i in scenario.get("expected_behavior", []) if isinstance(i, dict) and i["only"] not in MODES]
 
 
 _NO_RESULT = "agent produced no result"
