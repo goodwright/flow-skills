@@ -49,7 +49,8 @@ def load_scenario(path: Path, expected: dict) -> dict:
 
 def unknown_modes(scenario: dict) -> list[str]:
     """The `only` values of the scenario's rubric items that name no mode."""
-    return [i["only"] for i in scenario.get("expected_behavior", []) if isinstance(i, dict) and i["only"] not in MODES]
+    items = [i for i in scenario.get("expected_behavior", []) if isinstance(i, dict)]
+    return [str(i.get("only")) for i in items if i.get("only") not in MODES]
 
 
 _NO_RESULT = "agent produced no result"

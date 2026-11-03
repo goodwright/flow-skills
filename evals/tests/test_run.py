@@ -114,3 +114,10 @@ def test_load_stops_on_an_item_for_an_unknown_mode(tmp_path):
 def test_unknown_modes_names_only_the_items_for_modes_that_do_not_exist():
     scenario = {"expected_behavior": ["plain", {"item": "a", "only": "mcp"}, {"item": "b", "only": "cli"}]}
     assert unknown_modes(scenario) == ["cli"]
+
+
+def test_load_stops_on_an_item_object_that_names_no_mode(tmp_path):
+    path = tmp_path / "004-x.json"
+    path.write_text(json.dumps({"query": "q", "expected_behavior": [{"item": "x"}]}))
+    with pytest.raises(SystemExit, match="004-x.*unknown modes"):
+        load_scenario(path, EXPECTED)
