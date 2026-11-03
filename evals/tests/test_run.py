@@ -5,7 +5,7 @@ import re
 import pytest
 
 from flow_evals.checks import ItemResult
-from flow_evals.run import format_table, grade, load_scenario, select_scenarios, summarise
+from flow_evals.run import format_table, grade, load_scenario, select_scenarios, summarise, unknown_modes
 from flow_evals.transcript import Transcript
 
 EXPECTED = {"owned_count": 7}
@@ -74,8 +74,10 @@ def test_summarise_records_whether_the_run_finished():
 
 
 SKILL_ONLY = "reads via flow-cli api get"
+MCP_ONLY = "reads with a Flow MCP tool"
 SHARED = "reads only"
-MIXED_SCENARIO = {"expected_behavior": [{"item": SKILL_ONLY, "only": "skill"}, SHARED]}
+MIXED_SCENARIO = {"expected_behavior": [{"item": SKILL_ONLY, "only": "skill"}, {"item": MCP_ONLY, "only": "mcp"},
+                                        SHARED]}
 
 
 def _passes_all(argv):
@@ -84,7 +86,7 @@ def _passes_all(argv):
 
 
 def test_grade_drops_items_for_another_mode():
-    assert [r.item for r in grade(MIXED_SCENARIO, EXPECTED, TRANSCRIPT, "mcp", _passes_all)] == [SHARED]
+    assert [r.item for r in grade(MIXED_SCENARIO, EXPECTED, TRANSCRIPT, "mcp", _passes_all)] == [MCP_ONLY, SHARED]
 
 
 def test_grade_keeps_items_for_its_own_mode():
@@ -93,4 +95,22 @@ def test_grade_keeps_items_for_its_own_mode():
 
 def test_an_unfinished_run_does_not_count_items_for_another_mode():
     unfinished = dataclasses.replace(TRANSCRIPT, completed=False)
-    assert [r.item for r in grade(MIXED_SCENARIO, EXPECTED, unfinished, "mcp")] == [SHARED]
+    assert [r.item for r in grade(MIXED_SCENARIO, EXPECTED, unfinished, "mcp")] == [MCP_ONLY, SHARED]
+
+
+def test_load_accepts_an_item_for_a_known_mode(tmp_path):
+    path = tmp_path / "004-x.json"
+    path.write_text(json.dumps({"query": "q", "expected_behavior": [{"item": "x", "only": "mcp"}]}))
+    assert load_scenario(path, EXPECTED)["expected_behavior"] == [{"item": "x", "only": "mcp"}]
+
+
+def test_load_stops_on_an_item_for_an_unknown_mode(tmp_path):
+    path = tmp_path / "004-x.json"
+    path.write_text(json.dumps({"query": "q", "expected_behavior": [{"item": "x", "only": "cli"}]}))
+    with pytest.raises(SystemExit, match="004-x.*cli"):
+        load_scenario(path, EXPECTED)
+
+
+def test_unknown_modes_names_only_the_items_for_modes_that_do_not_exist():
+    scenario = {"expected_behavior": ["plain", {"item": "a", "only": "mcp"}, {"item": "b", "only": "cli"}]}
+    assert unknown_modes(scenario) == ["cli"]

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from flow_evals.run import MODES
+from flow_evals.run import unknown_modes
 
 SKILL_DIR = Path(__file__).resolve().parents[2] / "plugins/flowbio/skills/flow-assistant"
 SCENARIO_DIR = SKILL_DIR / "evals"
@@ -17,8 +17,7 @@ def test_scenario_is_valid(path):
     scenario = json.loads(path.read_text())
     assert scenario["query"]
     assert set(scenario.get("checks", {})) <= KNOWN_CHECKS
-    for item in scenario.get("expected_behavior", []):
-        assert isinstance(item, str) or (item["item"] and item["only"] in MODES), item
+    assert unknown_modes(scenario) == []
 
 
 @pytest.mark.parametrize("name", DATA_SCENARIOS)
