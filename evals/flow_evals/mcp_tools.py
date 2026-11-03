@@ -25,7 +25,11 @@ def fetch_read_only(mcp_url: str, token: str) -> dict[str, bool]:
         return asyncio.run(_fetch_read_only(mcp_url, token))
     except* (MCPError, httpx2.HTTPError) as group:
         failure = _first_leaf(group)
-    raise SystemExit(f"Could not list Flow's MCP tools at {mcp_url}: {failure}")
+    raise SystemExit(f"Could not list Flow's MCP tools at {mcp_url}: {str(failure) or type(failure).__name__}")
+
+
+async def _raise_for_status(response: httpx2.Response) -> None:
+    response.raise_for_status()
 
 
 def _first_leaf(error: BaseException) -> BaseException:
@@ -37,7 +41,9 @@ def _first_leaf(error: BaseException) -> BaseException:
 
 async def _fetch_read_only(mcp_url: str, token: str) -> dict[str, bool]:
     async with (
-        httpx2.AsyncClient(headers={"Authorization": f"Bearer {token}"}) as http_client,
+        # The SDK reports any HTTP error as a generic one; raising first keeps the status, such as a 401.
+        httpx2.AsyncClient(headers={"Authorization": f"Bearer {token}"},
+                           event_hooks={"response": [_raise_for_status]}) as http_client,
         # The server keeps no sessions, so there is none to end.
         streamable_http_client(mcp_url, http_client=http_client, terminate_on_close=False) as (read, write),
         ClientSession(read, write) as session,
