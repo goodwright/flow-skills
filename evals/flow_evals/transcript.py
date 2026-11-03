@@ -2,7 +2,7 @@
 
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 # Claude Code names an MCP tool mcp__<server>__<tool>; the runner names Flow's server "flow".
@@ -26,6 +26,7 @@ class Transcript:
     output_tokens: int
     turns: int
     completed: bool
+    flow_tool_calls: list[str] = field(default_factory=list)
 
 
 def read_transcript(path: Path, read_only: dict[str, bool] | None = None) -> Transcript:
@@ -38,7 +39,8 @@ def read_transcript(path: Path, read_only: dict[str, bool] | None = None) -> Tra
         if block.get("type") == "tool_use"
     ]
     commands = [block["input"]["command"] for block in tool_uses if block["name"] == "Bash"]
-    flow_tools = [block["name"] for block in tool_uses if block["name"].startswith(FLOW_TOOL_PREFIX)]
+    flow_tool_uses = [block for block in tool_uses if block["name"].startswith(FLOW_TOOL_PREFIX)]
+    flow_tools = [block["name"] for block in flow_tool_uses]
     result = next((e for e in reversed(events) if e.get("type") == "result"), {})
     usage = result.get("usage", {})
     return Transcript(
@@ -52,6 +54,7 @@ def read_transcript(path: Path, read_only: dict[str, bool] | None = None) -> Tra
         output_tokens=usage.get("output_tokens", 0),
         turns=result.get("num_turns", 0),
         completed=bool(result),
+        flow_tool_calls=[f"{block['name']} {json.dumps(block['input'])}" for block in flow_tool_uses],
     )
 
 

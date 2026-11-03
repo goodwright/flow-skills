@@ -19,7 +19,7 @@ _SCHEMA = {
     "required": ["items"],
 }
 _INSTRUCTIONS = """You grade an AI agent's work against a rubric. Judge each item only on the \
-agent's final answer and the shell commands it ran, shown below. Return one grade per rubric \
+agent's final answer and the tool calls and shell commands it ran, shown below. Return one grade per rubric \
 item, in the same order, each with a one-sentence reason."""
 
 
@@ -40,7 +40,10 @@ def grade_rubric(items: list[str], transcript: Transcript,
 def _prompt(items: list[str], transcript: Transcript) -> str:
     rubric = "\n".join(f"{n}. {item}" for n, item in enumerate(items, 1))
     commands = "\n".join(transcript.commands) or "(none)"
-    return f"{_INSTRUCTIONS}\n\n## Rubric\n{rubric}\n\n## Commands run\n{commands}\n\n## Final answer\n{transcript.answer}"
+    tool_calls = ("\n\n## Flow tool calls\n" + "\n".join(transcript.flow_tool_calls)
+                  if transcript.flow_tool_calls else "")
+    return (f"{_INSTRUCTIONS}\n\n## Rubric\n{rubric}{tool_calls}\n\n## Commands run\n{commands}"
+            f"\n\n## Final answer\n{transcript.answer}")
 
 
 def _grader_command(prompt: str) -> list[str]:
