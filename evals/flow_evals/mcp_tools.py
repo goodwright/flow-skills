@@ -1,6 +1,8 @@
 """Which of Flow's MCP tools the server marks read-only, fetched before an MCP-mode run."""
 
 import asyncio
+import json
+from pathlib import Path
 
 import httpx2
 from mcp import types
@@ -11,6 +13,7 @@ from mcp.shared.exceptions import MCPError
 FLOW_MCP_SERVER = "flow"
 # Claude Code names an MCP tool mcp__<server>__<tool>.
 FLOW_TOOL_PREFIX = f"mcp__{FLOW_MCP_SERVER}__"
+_TOOLS_FILE = "tools.json"
 
 
 def fetch_read_only(mcp_url: str, token: str) -> dict[str, bool]:
@@ -49,3 +52,12 @@ async def _fetch_read_only(mcp_url: str, token: str) -> dict[str, bool]:
             if not (cursor := page.next_cursor):
                 break
     return {tool.name: bool(tool.annotations and tool.annotations.read_only_hint) for tool in tools}
+
+
+def save_read_only(run_dir: Path, read_only: dict[str, bool]) -> None:
+    """Keeps a run's tool list beside its transcripts, so a regrade judges writes by the tools the run had."""
+    (run_dir / _TOOLS_FILE).write_text(json.dumps(read_only, indent=2) + "\n")
+
+
+def load_read_only(run_dir: Path) -> dict[str, bool]:
+    return json.loads((run_dir / _TOOLS_FILE).read_text())

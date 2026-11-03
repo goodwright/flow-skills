@@ -4,17 +4,22 @@ import argparse
 import dataclasses
 import json
 import os
+from collections.abc import Callable
 from datetime import datetime
 from fnmatch import fnmatch
+from functools import partial
 from pathlib import Path
+from typing import Literal, get_args
 
 from flow_evals.checks import ItemResult, missing_keys, run_checks
 from flow_evals.grading import grade_rubric
-from flow_evals.mcp_tools import fetch_read_only
-from flow_evals.session import read_token, run_agent
+from flow_evals.mcp_tools import fetch_read_only, load_read_only, save_read_only
+from flow_evals.session import mcp_command, read_token, run_agent, skill_command
 from flow_evals.transcript import Transcript, read_transcript
 
-MODES = ("skill", "mcp")
+Mode = Literal["skill", "mcp"]
+MODES: tuple[Mode, ...] = get_args(Mode)
+DEFAULT_MODE: Mode = "skill"
 DEFAULT_MODELS = ["claude-opus-5-5", "claude-haiku-4-5-20251001"]
 _REPO = Path(__file__).resolve().parents[2]
 _PLUGIN_DIR = _REPO / "plugins" / "flowbio"
@@ -22,7 +27,6 @@ _SCENARIO_DIR = _PLUGIN_DIR / "skills" / "flow-assistant" / "evals"
 _RUNS_DIR = _REPO / "evals" / "runs"
 # Unset would make the flowbio CLI fall back to the runner's own ~/.config/flow/api-token.
 _REJECTED_TOKEN = "invalid-eval-token"
-_TOOLS_FILE = "tools.json"
 
 
 def select_scenarios(scenario_dir: Path, patterns: list[str]) -> list[Path]:
@@ -43,7 +47,7 @@ def load_scenario(path: Path, expected: dict) -> dict:
 _NO_RESULT = "agent produced no result"
 
 
-def grade(scenario: dict, expected: dict, transcript: Transcript, ask=None, mode: str = "skill") -> list[ItemResult]:
+def grade(scenario: dict, expected: dict, transcript: Transcript, mode: Mode, ask=None) -> list[ItemResult]:
     checks = run_checks(scenario.get("checks", {}), expected, transcript)
     rubric = _rubric_items(scenario, mode)
     # An unfinished run would pass every "does not…" item on its empty answer.
@@ -53,7 +57,7 @@ def grade(scenario: dict, expected: dict, transcript: Transcript, ask=None, mode
     return checks + grade_rubric(rubric, transcript, ask)
 
 
-def _rubric_items(scenario: dict, mode: str) -> list[str]:
+def _rubric_items(scenario: dict, mode: Mode) -> list[str]:
     """The scenario's rubric items graded in `mode`: plain strings, and items marked `only` for that mode."""
     entries = [(i, None) if isinstance(i, str) else (i["item"], i["only"])
                for i in scenario.get("expected_behavior", [])]
@@ -89,8 +93,9 @@ def main(argv: list[str] | None = None) -> int:
     target.add_argument("--regrade", type=Path, metavar="RUN_DIR",
                         help="grade a past run's transcripts again, without running any agent")
     parser.add_argument("--model", action="append", help=f"default: {' '.join(DEFAULT_MODELS)}")
-    parser.add_argument("--mode", choices=MODES, default="skill",
-                        help="reach Flow through the plugin (skill) or only Flow's MCP server (mcp)")
+    parser.add_argument("--mode", choices=MODES, default=DEFAULT_MODE,
+                        help="reach Flow through the plugin (skill) or only Flow's MCP server (mcp); "
+                             "--regrade uses the mode the run recorded")
     args = parser.parse_args(argv)
 
     expected = _expected_answers()
@@ -98,21 +103,30 @@ def main(argv: list[str] | None = None) -> int:
         run_dir = args.regrade
         summary = json.loads((run_dir / "summary.json").read_text())
         # Runs from before MCP mode existed record no mode.
-        mode = summary.get("mode", "skill")
+        mode = summary.get("mode", DEFAULT_MODE)
         pairs = [(r["scenario"], r["model"]) for r in summary["runs"]]
         scenarios = {name: load_scenario(_SCENARIO_DIR / f"{name}.json", expected) for name, _ in pairs}
-        read_only = json.loads((run_dir / _TOOLS_FILE).read_text()) if mode == "mcp" else None
+        read_only = load_read_only(run_dir) if mode == "mcp" else None
     else:
         mode = args.mode
         scenarios = {p.stem: load_scenario(p, expected) for p in select_scenarios(_SCENARIO_DIR, args.scenario)}
         pairs = [(name, model) for name in scenarios for model in args.model or DEFAULT_MODELS]
         run_dir = _RUNS_DIR / datetime.now().strftime("%Y%m%d-%H%M%S")
-        read_only = _run_agents(scenarios, pairs, run_dir, mode)
+        api_url, token = _stack()
+        if mode == "mcp":
+            read_only = fetch_read_only(f"{api_url}/mcp", token)
+            run_dir.mkdir(parents=True)
+            save_read_only(run_dir, read_only)
+            command_for = partial(mcp_command, api_url=api_url, read_only=read_only)
+        else:
+            read_only = None
+            command_for = partial(skill_command, plugin_dir=_PLUGIN_DIR)
+        _run_agents(scenarios, pairs, run_dir, api_url, token, command_for)
 
     rows = []
     for name, model in pairs:
         transcript = read_transcript(run_dir / f"{name}-{model}.jsonl", read_only)
-        rows.append(summarise(name, model, grade(scenarios[name], expected, transcript, mode=mode), transcript))
+        rows.append(summarise(name, model, grade(scenarios[name], expected, transcript, mode), transcript))
     (run_dir / "summary.json").write_text(json.dumps({"mode": mode, "runs": rows}, indent=2) + "\n")
     print(format_table(rows))
     print(f"\n{mode} mode, {run_dir}")
@@ -126,17 +140,15 @@ def _expected_answers() -> dict:
     return json.loads(Path(expected_file).read_text())
 
 
-def _run_agents(scenarios: dict, pairs: list[tuple[str, str]], run_dir: Path, mode: str) -> dict[str, bool] | None:
-    """Runs every pair and returns, in MCP mode, which of the server's tools are read-only."""
+def _stack() -> tuple[str, str]:
     token = read_token(Path(os.environ.get("EVAL_TOKEN_FILE", "~/.config/flow/eval-api-token")).expanduser())
-    api_url = os.environ.get("FLOW_API_URL", "http://localhost:8019")
-    read_only = fetch_read_only(f"{api_url}/mcp", token) if mode == "mcp" else None
-    if read_only is not None:
-        run_dir.mkdir(parents=True)
-        (run_dir / _TOOLS_FILE).write_text(json.dumps(read_only, indent=2) + "\n")
+    return os.environ.get("FLOW_API_URL", "http://localhost:8019"), token
+
+
+def _run_agents(scenarios: dict, pairs: list[tuple[str, str]], run_dir: Path, api_url: str, token: str,
+                command_for: Callable[[str, str], list[str]]) -> None:
     for name, model in pairs:
         print(f"running {name} on {model}", flush=True)
         scenario_token = _REJECTED_TOKEN if scenarios[name].get("invalid_token") else token
-        run_agent(scenarios[name]["query"], model, _PLUGIN_DIR, api_url, scenario_token,
-                  run_dir / f"{name}-{model}.jsonl", mode, read_only)
-    return read_only
+        run_agent(command_for(scenarios[name]["query"], model), api_url, scenario_token,
+                  run_dir / f"{name}-{model}.jsonl")

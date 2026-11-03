@@ -39,7 +39,7 @@ def test_load_stops_on_unknown_check_key(tmp_path):
 def test_grade_runs_checks_then_rubric():
     scenario = {"checks": {"answer_contains": ["owned_count"]}, "expected_behavior": ["reads only"]}
     ask = lambda argv: json.dumps({"structured_output": {"items": [{"pass": False, "reason": "r"}]}})
-    assert [(r.source, r.passed) for r in grade(scenario, EXPECTED, TRANSCRIPT, ask)] == [("check", True), ("rubric", False)]
+    assert [(r.source, r.passed) for r in grade(scenario, EXPECTED, TRANSCRIPT, "skill", ask)] == [("check", True), ("rubric", False)]
 
 
 def test_summarise_counts_passes_and_carries_metrics():
@@ -64,7 +64,7 @@ def test_grade_fails_every_item_of_a_run_that_never_finished_without_asking_the_
 
     def ask(argv):
         raise AssertionError("grader called for an unfinished run")
-    results = grade(scenario, EXPECTED, unfinished, ask)
+    results = grade(scenario, EXPECTED, unfinished, "skill", ask)
     assert [r.passed for r in results] == [False, False, False]
     assert all("no result" in r.reason for r in results)
 
@@ -84,13 +84,13 @@ def _passes_all(argv):
 
 
 def test_grade_drops_items_for_another_mode():
-    assert [r.item for r in grade(MIXED_SCENARIO, EXPECTED, TRANSCRIPT, _passes_all, mode="mcp")] == [SHARED]
+    assert [r.item for r in grade(MIXED_SCENARIO, EXPECTED, TRANSCRIPT, "mcp", _passes_all)] == [SHARED]
 
 
 def test_grade_keeps_items_for_its_own_mode():
-    assert [r.item for r in grade(MIXED_SCENARIO, EXPECTED, TRANSCRIPT, _passes_all, mode="skill")] == [SKILL_ONLY, SHARED]
+    assert [r.item for r in grade(MIXED_SCENARIO, EXPECTED, TRANSCRIPT, "skill", _passes_all)] == [SKILL_ONLY, SHARED]
 
 
 def test_an_unfinished_run_does_not_count_items_for_another_mode():
     unfinished = dataclasses.replace(TRANSCRIPT, completed=False)
-    assert [r.item for r in grade(MIXED_SCENARIO, EXPECTED, unfinished, mode="mcp")] == [SHARED]
+    assert [r.item for r in grade(MIXED_SCENARIO, EXPECTED, unfinished, "mcp")] == [SHARED]
