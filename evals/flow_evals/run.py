@@ -13,6 +13,7 @@ from flow_evals.grading import grade_rubric
 from flow_evals.session import read_token, run_agent
 from flow_evals.transcript import Transcript, read_transcript
 
+MODES = ("skill", "mcp")
 DEFAULT_MODELS = ["claude-opus-5-5", "claude-haiku-4-5-20251001"]
 _REPO = Path(__file__).resolve().parents[2]
 _PLUGIN_DIR = _REPO / "plugins" / "flowbio"
@@ -40,14 +41,20 @@ def load_scenario(path: Path, expected: dict) -> dict:
 _NO_RESULT = "agent produced no result"
 
 
-def grade(scenario: dict, expected: dict, transcript: Transcript, ask=None) -> list[ItemResult]:
+def grade(scenario: dict, expected: dict, transcript: Transcript, ask=None, mode: str = "skill") -> list[ItemResult]:
     checks = run_checks(scenario.get("checks", {}), expected, transcript)
-    rubric = scenario.get("expected_behavior", [])
+    rubric = rubric_items(scenario, mode)
     # An unfinished run would pass every "does not…" item on its empty answer.
     if not transcript.completed:
         return ([dataclasses.replace(r, passed=False, reason=_NO_RESULT) for r in checks]
                 + [ItemResult(item, False, "rubric", _NO_RESULT) for item in rubric])
     return checks + grade_rubric(rubric, transcript, ask)
+
+
+def rubric_items(scenario: dict, mode: str) -> list[str]:
+    """The scenario's rubric items graded in `mode`: plain strings, and items marked `only` for that mode."""
+    items = scenario.get("expected_behavior", [])
+    return [i if isinstance(i, str) else i["item"] for i in items if isinstance(i, str) or i["only"] == mode]
 
 
 def summarise(scenario: str, model: str, results: list[ItemResult], transcript: Transcript) -> dict:

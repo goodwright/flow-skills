@@ -1,5 +1,6 @@
 import dataclasses
 import json
+import re
 
 import pytest
 
@@ -70,3 +71,26 @@ def test_grade_fails_every_item_of_a_run_that_never_finished_without_asking_the_
 
 def test_summarise_records_whether_the_run_finished():
     assert summarise("004", "haiku", [], TRANSCRIPT)["completed"] is True
+
+
+SKILL_ONLY = "reads via flow-cli api get"
+SHARED = "reads only"
+MIXED_SCENARIO = {"expected_behavior": [{"item": SKILL_ONLY, "only": "skill"}, SHARED]}
+
+
+def _passes_all(argv):
+    rubric_lines = re.findall(r"^\d+\. ", argv[argv.index("-p") + 1], re.MULTILINE)
+    return json.dumps({"structured_output": {"items": [{"pass": True, "reason": ""}] * len(rubric_lines)}})
+
+
+def test_grade_drops_items_for_another_mode():
+    assert [r.item for r in grade(MIXED_SCENARIO, EXPECTED, TRANSCRIPT, _passes_all, mode="mcp")] == [SHARED]
+
+
+def test_grade_keeps_items_for_its_own_mode():
+    assert [r.item for r in grade(MIXED_SCENARIO, EXPECTED, TRANSCRIPT, _passes_all, mode="skill")] == [SKILL_ONLY, SHARED]
+
+
+def test_an_unfinished_run_does_not_count_items_for_another_mode():
+    unfinished = dataclasses.replace(TRANSCRIPT, completed=False)
+    assert [r.item for r in grade(MIXED_SCENARIO, EXPECTED, unfinished, mode="mcp")] == [SHARED]
