@@ -1,3 +1,4 @@
+import dataclasses
 import json
 import subprocess
 
@@ -59,3 +60,13 @@ def test_grader_timeout_fails_every_item():
     results = grade_rubric(ITEMS, TRANSCRIPT, ask)
     assert [r.passed for r in results] == [False, False]
     assert all("grader" in r.reason for r in results)
+
+
+def test_prompt_lists_flow_tool_calls_only_when_the_agent_made_some():
+    tool_call = 'mcp__flow__list_samples {"owner": "me"}'
+    ask, calls = _grader_says([{"pass": True, "reason": ""}] * 2)
+    grade_rubric(ITEMS, dataclasses.replace(TRANSCRIPT, flow_tool_calls=[tool_call]), ask)
+    grade_rubric(ITEMS, TRANSCRIPT, ask)
+    with_tools, without_tools = (argv[argv.index("-p") + 1] for argv in calls)
+    assert "## Flow tool calls" in with_tools and tool_call in with_tools
+    assert "## Flow tool calls" not in without_tools

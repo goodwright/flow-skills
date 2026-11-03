@@ -123,3 +123,8 @@ def test_flags_a_flow_tool_missing_from_the_tool_list_as_a_write(tmp_path):
     unlisted = "mcp__flow__delete_sample"
     events = [_tool(unlisted), _result("x")]
     assert read_transcript(_write(tmp_path, events), {"list_samples": True}).write_calls == [unlisted]
+
+
+def test_lists_flow_tool_calls_with_their_arguments_for_the_grader(tmp_path):
+    events = [_tool("mcp__flow__list_samples", {"owner": "me"}), _tool("mcp__other__x"), _result("x")]
+    assert read_transcript(_write(tmp_path, events)).flow_tool_calls == ['mcp__flow__list_samples {"owner": "me"}']
