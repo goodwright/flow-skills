@@ -13,6 +13,11 @@ def _bash(command: str) -> dict:
         {"type": "tool_use", "name": "Bash", "input": {"command": command}}]}}
 
 
+def _tool(name: str, arguments: dict | None = None) -> dict:
+    return {"type": "assistant", "message": {"content": [
+        {"type": "tool_use", "name": name, "input": arguments or {}}]}}
+
+
 def _result(answer: str) -> dict:
     return {"type": "result", "result": answer, "num_turns": 3, "usage": {
         "input_tokens": 10, "cache_creation_input_tokens": 100,
@@ -99,3 +104,22 @@ def test_run_with_a_result_line_is_completed(tmp_path):
 
 def test_run_without_result_line_is_not_completed(tmp_path):
     assert read_transcript(_write(tmp_path, [_bash("jq .")])).completed is False
+
+
+def test_counts_flow_mcp_tool_calls_as_flow_calls_but_not_other_servers_tools(tmp_path):
+    flow_tool = "mcp__flow__list_samples"
+    events = [_tool(flow_tool, {"owner": "me"}), _tool("mcp__other__list_samples"), _result("x")]
+    assert read_transcript(_write(tmp_path, events)).flow_paths == [flow_tool]
+
+
+def test_flags_flow_tools_not_marked_read_only_as_writes(tmp_path):
+    update = "mcp__flow__update_sample"
+    events = [_tool("mcp__flow__list_samples"), _tool(update), _result("x")]
+    read_only = {"list_samples": True, "update_sample": False}
+    assert read_transcript(_write(tmp_path, events), read_only).write_calls == [update]
+
+
+def test_flags_a_flow_tool_missing_from_the_tool_list_as_a_write(tmp_path):
+    unlisted = "mcp__flow__delete_sample"
+    events = [_tool(unlisted), _result("x")]
+    assert read_transcript(_write(tmp_path, events), {"list_samples": True}).write_calls == [unlisted]
