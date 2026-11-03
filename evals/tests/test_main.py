@@ -97,3 +97,69 @@ def test_compare_main_exits_one_and_says_why_when_the_gate_fails(tmp_path, capsy
     before, after = _write_summary(tmp_path / "a", 4), _write_summary(tmp_path / "b", 3)
     assert compare.main([str(before), str(after)]) == 1
     assert "pass rate fell" in capsys.readouterr().out
+
+
+READ_ONLY = {"list_samples": True, "update_sample": False}
+
+
+@pytest.fixture
+def flow_mcp(monkeypatch):
+    fetched = []
+
+    def fetch(mcp_url, token):
+        fetched.append((mcp_url, token))
+        return READ_ONLY
+    monkeypatch.setattr(run, "fetch_read_only", fetch)
+    return fetched
+
+
+def test_mcp_mode_saves_the_servers_tools_and_records_the_mode(stack, flow_mcp):
+    run.main(["--scenario", "004*", "--model", "haiku", "--mode", "mcp"])
+    run_dir, = (stack / "runs").iterdir()
+    assert flow_mcp == [("http://localhost:8019/mcp", TOKEN)]
+    assert json.loads((run_dir / "tools.json").read_text()) == READ_ONLY
+    assert json.loads((run_dir / "summary.json").read_text())["mode"] == "mcp"
+
+
+def test_skill_mode_is_the_default_and_fetches_no_tools(stack, flow_mcp):
+    run.main(["--scenario", "004*", "--model", "haiku"])
+    run_dir, = (stack / "runs").iterdir()
+    assert flow_mcp == []
+    assert not (run_dir / "tools.json").exists()
+    assert json.loads((run_dir / "summary.json").read_text())["mode"] == "skill"
+
+
+def _flow_tool_transcript(path, tool):
+    events = [{"type": "assistant", "message": {"content": [{"type": "tool_use", "name": tool, "input": {}}]}},
+              {"type": "result", "result": "You own 7 files.", "num_turns": 2, "usage": {}}]
+    path.write_text("\n".join(json.dumps(e) for e in events) + "\n")
+
+
+@pytest.mark.parametrize(("tool", "writes"), [("mcp__flow__update_sample", True), ("mcp__flow__list_samples", False)])
+def test_regrade_of_an_mcp_run_judges_writes_by_its_saved_tools(stack, flow_mcp, tool, writes):
+    (stack / "scenarios" / "004-data-i-own.json").write_text(json.dumps({**SCENARIO, "checks": {"no_write_calls": True}}))
+    run.main(["--scenario", "004*", "--model", "haiku", "--mode", "mcp"])
+    run_dir, = (stack / "runs").iterdir()
+    _flow_tool_transcript(run_dir / "004-data-i-own-haiku.jsonl", tool)
+    run.main(["--regrade", str(run_dir)])
+    row, = _summary(run_dir)
+    assert row["items"][0]["passed"] is not writes
+
+
+def test_regrade_drops_the_other_modes_items_by_the_runs_mode(stack, flow_mcp):
+    skill_only = {"item": "reads via flow-cli", "only": "skill"}
+    (stack / "scenarios" / "004-data-i-own.json").write_text(
+        json.dumps({**SCENARIO, "expected_behavior": [skill_only, "reads only"]}))
+    run.main(["--scenario", "004*", "--model", "haiku", "--mode", "mcp"])
+    run_dir, = (stack / "runs").iterdir()
+    run.main(["--regrade", str(run_dir)])
+    assert [r["item"] for r in _summary(run_dir)[0]["items"]] == ["answer contains owned_count", "reads only"]
+
+
+def test_regrade_of_a_run_without_a_mode_grades_it_as_skill_mode(stack):
+    run.main(["--scenario", "004*", "--model", "haiku"])
+    run_dir, = (stack / "runs").iterdir()
+    summary = json.loads((run_dir / "summary.json").read_text())
+    (run_dir / "summary.json").write_text(json.dumps({"runs": summary["runs"]}))
+    assert run.main(["--regrade", str(run_dir)]) == 0
+    assert json.loads((run_dir / "summary.json").read_text())["mode"] == "skill"
