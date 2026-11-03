@@ -45,7 +45,7 @@ _NO_RESULT = "agent produced no result"
 
 def grade(scenario: dict, expected: dict, transcript: Transcript, ask=None, mode: str = "skill") -> list[ItemResult]:
     checks = run_checks(scenario.get("checks", {}), expected, transcript)
-    rubric = rubric_items(scenario, mode)
+    rubric = _rubric_items(scenario, mode)
     # An unfinished run would pass every "does not…" item on its empty answer.
     if not transcript.completed:
         return ([dataclasses.replace(r, passed=False, reason=_NO_RESULT) for r in checks]
@@ -53,10 +53,11 @@ def grade(scenario: dict, expected: dict, transcript: Transcript, ask=None, mode
     return checks + grade_rubric(rubric, transcript, ask)
 
 
-def rubric_items(scenario: dict, mode: str) -> list[str]:
+def _rubric_items(scenario: dict, mode: str) -> list[str]:
     """The scenario's rubric items graded in `mode`: plain strings, and items marked `only` for that mode."""
-    items = scenario.get("expected_behavior", [])
-    return [i if isinstance(i, str) else i["item"] for i in items if isinstance(i, str) or i["only"] == mode]
+    entries = [(i, None) if isinstance(i, str) else (i["item"], i["only"])
+               for i in scenario.get("expected_behavior", [])]
+    return [text for text, only in entries if only in (None, mode)]
 
 
 def summarise(scenario: str, model: str, results: list[ItemResult], transcript: Transcript) -> dict:
