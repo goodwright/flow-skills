@@ -39,10 +39,24 @@ in flow-api). Each name refers to a key in that file:
   size (kB/MB/GB or KiB/MiB/GiB), within 3%.
 - `answer_excludes` — the answer never mentions the value.
 - `no_write_calls` — the agent issued no Flow write: no `flowbio` command other
-  than `api get`, and no mutating `curl`.
+  than `api get`, no mutating `curl`, and no call to a Flow MCP tool the server
+  does not mark read-only.
 
 When a scenario has `checks`, its `expected_behavior` holds only what a check
 cannot decide; those items go to a grader model.
+
+The runner grades a scenario in skill mode or MCP mode (see `evals/README.md`).
+A rubric item that only makes sense in one of them, such as one about how
+`flow-cli` is called, names that mode; plain strings are graded in both:
+
+```json
+"expected_behavior": [
+  {"item": "Reads with `flow-cli api get` rather than curl.", "only": "skill"},
+  "Says whether it counted files, summed bytes, or both."
+]
+```
+
+An item for the other mode is left out of the run's total.
 
 Scenarios run against that seed, so a query must not name something the seed
 already holds unless the clash is what it tests: asking to create a project

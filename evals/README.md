@@ -28,16 +28,37 @@ no run-everything default. `--model` (repeatable) overrides the default pair.
 to `http://localhost:8019`. Transcripts and `summary.json` land in
 `runs/<timestamp>/`.
 
-Each agent runs in an empty temporary directory with only `plugins/flowbio`
-loaded, your own settings, plugins and MCP servers left out, and only the skill
+Each agent runs in an empty temporary directory. In skill mode, the default,
+it has only `plugins/flowbio` loaded, your own settings, plugins and MCP servers left out, and only the skill
 itself allowed. The skill pre-approves its own reads, so a write stalls instead
 of running. The token reaches the agent through its environment only. A scenario
 with `"invalid_token": true` gets a token Flow rejects instead, to test how the
 agent handles an expired or revoked key.
 
+## MCP mode
+
+```bash
+uv run run.py --mode mcp --scenario '004*'
+```
+
+`--mode mcp` gives the agent only Flow's MCP server, at `$FLOW_API_URL/mcp`,
+instead of the plugin. Before any agent runs, the runner lists the server's
+tools with the eval token and saves which ones the server marks read-only to
+`runs/<timestamp>/tools.json`; it stops if the server is unreachable or refuses
+the token. Only those read tools are pre-approved, so a write stalls as it does
+in skill mode, and a call to any other Flow tool counts as a write. The token
+reaches the agent through its environment only: the MCP config names
+`${FLOW_API_TOKEN}` for Claude Code to expand. `summary.json` records the mode.
+
+A scenario's rubric item can apply to one mode only; see the scenario README in
+`plugins/flowbio/skills/flow-assistant/evals/`.
+
+## Regrade
+
 `uv run run.py --regrade runs/<timestamp>` grades a past run's transcripts
-again with the current scenarios and checks, without running any agent, so a
-before and an after run can be graded by the same code.
+again with the current scenarios and checks, in the mode the run recorded,
+without running any agent, so a before and an after run can be graded by the
+same code.
 
 `compare.py` exits non-zero when, for any model, the after run has a lower pass
 rate or spends more tokens than the before run, or when the two runs do not hold
