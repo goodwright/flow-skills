@@ -5,8 +5,9 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-# Claude Code names an MCP tool mcp__<server>__<tool>; the runner names Flow's server "flow".
-FLOW_TOOL_PREFIX = "mcp__flow__"
+FLOW_MCP_SERVER = "flow"
+# Claude Code names an MCP tool mcp__<server>__<tool>.
+FLOW_TOOL_PREFIX = f"mcp__{FLOW_MCP_SERVER}__"
 _API_GET_PATH = re.compile(r"\bapi\s+get\s+(/[^\s;|&)]*)")
 # A flowbio or flow-cli subcommand other than `api get` changes remote state; flags such as --version do not.
 _FLOWBIO_WRITE = re.compile(r"\b(?:flowbio|flow-cli)\s+(?!api\s+get\b)[a-z]")
