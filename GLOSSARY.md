@@ -18,8 +18,8 @@ The agent reaches Flow through the flowbio plugin's skill and its CLI.
 The agent reaches Flow only through Flow's MCP server.
 
 **Flow call**:
-One request the agent makes to Flow: a CLI `api get` in skill mode, a Flow MCP tool call in MCP mode.
+A request the agent makes to Flow that the runner counts: a CLI `api get` in skill mode, any Flow MCP tool call in MCP mode.
 
 **Write call**:
-A Flow call that can change Flow's state: any CLI command other than a read, or a Flow MCP tool not marked read-only.
+Anything the agent does that can change Flow's state: a CLI command other than `api get`, a mutating `curl`, or a call to a Flow MCP tool not marked read-only.
 _Avoid_: mutation

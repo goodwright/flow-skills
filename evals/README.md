@@ -29,9 +29,9 @@ to `http://localhost:8019`. Transcripts and `summary.json` land in
 `runs/<timestamp>/`.
 
 Each agent runs in an empty temporary directory. In skill mode, the default,
-it has only `plugins/flowbio` loaded, your own settings, plugins and MCP servers left out, and only the skill
-itself allowed. The skill pre-approves its own reads, so a write stalls instead
-of running. The token reaches the agent through its environment only. A scenario
+it has only `plugins/flowbio` loaded, your own settings, plugins and MCP
+servers left out, and only the skill itself allowed. The skill pre-approves its
+own reads, so a write stalls instead of running. The token reaches the agent through its environment only. A scenario
 with `"invalid_token": true` gets a token Flow rejects instead, to test how the
 agent handles an expired or revoked key.
 
