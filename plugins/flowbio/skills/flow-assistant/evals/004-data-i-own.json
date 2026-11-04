@@ -7,7 +7,7 @@
     "no_write_calls": true
   },
   "expected_behavior": [
-    "Confirms the caller is authenticated (for example by reading /me and seeing a non-null id) before reporting owned data.",
+    {"item": "Confirms the caller is authenticated (for example by reading /me and seeing a non-null id) before reporting owned data.", "only": "skill"},
     "Says whether it counted files, summed bytes, or both, rather than leaving 'how much' ambiguous.",
     "Excludes deleted files from the total, or says explicitly that they are excluded.",
     "Does not surface Flow-internal paths such as absolute_path."
