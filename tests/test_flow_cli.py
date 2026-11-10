@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 
-PLUGIN = Path(__file__).resolve().parents[2] / "plugins" / "flowbio"
+PLUGIN = Path(__file__).resolve().parents[1] / "plugins" / "flowbio"
 LAUNCHER = PLUGIN / "skills" / "flow-assistant" / "scripts" / "flow-cli"
 # The launcher's only external tool. PATH holds just it and the fakes, so a uvx,
 # pipx or flowbio installed on the machine, as pipx is in /usr/bin on Ubuntu, never answers.
