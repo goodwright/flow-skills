@@ -65,9 +65,9 @@ To move to a new `flowbio`, change it there.
 
 Issues and PRs welcome at
 <https://github.com/goodwright/flow-skills>. For changes to the skill
-itself, also update an eval (or add a new one) in
-[flow-evals](https://github.com/goodwright/flow-evals) that demonstrates the
-new behaviour, and add a `CHANGELOG.md` entry under the next version (or
+itself, describe in the PR the behaviour it should produce, so a
+maintainer can update or add an eval for it in the evals repository (private
+for now), and add a `CHANGELOG.md` entry under the next version (or
 `[Unreleased]`) for anything a user would notice.
 
 Skills in `unpublished/` are kept for later work and are not part of any
