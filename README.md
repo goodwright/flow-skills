@@ -65,7 +65,8 @@ To move to a new `flowbio`, change it there.
 
 Issues and PRs welcome at
 <https://github.com/goodwright/flow-skills>. For changes to the skill
-itself, also update an eval (or add a new one) that demonstrates the
+itself, also update an eval (or add a new one) in
+[flow-evals](https://github.com/goodwright/flow-evals) that demonstrates the
 new behaviour, and add a `CHANGELOG.md` entry under the next version (or
 `[Unreleased]`) for anything a user would notice.
 
@@ -75,7 +76,7 @@ plugin, so no install picks them up.
 The skill's `allowed-tools` pre-approves its read commands, and only matches
 them run by the launcher's full path. In a non-interactive run (`claude -p`),
 Claude Code won't load a skill that grants itself tools unless
-`Skill(flowbio:flow-assistant)` is allowed, so the eval runner allows it.
+`Skill(flowbio:flow-assistant)` is allowed, so the flow-evals runner allows it.
 
 ## License
 
