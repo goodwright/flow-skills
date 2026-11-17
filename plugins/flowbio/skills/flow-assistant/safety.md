@@ -92,8 +92,6 @@ In-scope endpoints (all `GET`):
 - `GET /projects/<id>` — single-project detail (description, papers, owner)
 - `GET /projects/<id>/samples` — samples in a project
 - `GET /projects/<id>/executions` — executions in a project
-- `GET /organisms`
-- `GET /organisms/<id>`
 - `GET /me`
 - `GET /users/search`
 - `GET /v2/reference`, `GET /v2/reference/<topic>` — the API's own reference pages
@@ -102,6 +100,7 @@ In-scope endpoints (all `GET`):
   - `GET /v2/sample-types` — the sample types
   - `GET /v2/metadata-attributes` — the metadata attributes, which types they apply to, and their rules
   - `GET /v2/metadata-attributes/<identifier>/options` — the values one attribute takes
+  - `GET /v2/organisms`, `GET /v2/organisms/<id>` — the organisms, and one organism's detail
 - `GET /data/<id>/contents`
 - `GET /data/types`
 - `GET /executions/search`

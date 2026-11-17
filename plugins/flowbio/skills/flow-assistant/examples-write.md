@@ -76,7 +76,7 @@ liver".
 3. **The organism.** Pick the user's from the list by reading the rows:
 
    ```bash
-   flow-cli api get /organisms --json | jq -r '.[] | .id + " | " + .name + " | " + .latin_name'
+   flow-cli api get /v2/organisms --json | jq -r '.[] | .id + " | " + .name + " | " + .latin_name'
    ```
 
 4. **The project.** "My project" needs a working token: without one the search

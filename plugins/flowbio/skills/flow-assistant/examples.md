@@ -314,7 +314,7 @@ organism and pick the user's by reading the rows; never filter the list for the
 user's word, which may be spelled differently here ("Homo sapiens"):
 
 ```bash
-flow-cli api get /organisms --json | jq -r '.[] | .id + " | " + .name + " | " + .latin_name'
+flow-cli api get /v2/organisms --json | jq -r '.[] | .id + " | " + .name + " | " + .latin_name'
 ```
 
 ```bash

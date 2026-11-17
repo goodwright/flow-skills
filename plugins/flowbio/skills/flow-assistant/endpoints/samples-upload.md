@@ -33,7 +33,7 @@ JSON / exit-code contract. This section covers only what is specific to the samp
     Resolve a project name → id via `GET /projects/search` (must be a project
     the user owns).
   - `--organism ID` (optional) — an organism **id**. Resolve a name / latin
-    name → id via `GET /organisms`.
+    name → id via `GET /v2/organisms`.
   - `--metadata KEY=VALUE` (optional, repeatable) — one metadata attribute per
     flag. Keys are attribute `identifier`s from `GET /v2/metadata-attributes`.
 
@@ -53,7 +53,7 @@ JSON / exit-code contract. This section covers only what is specific to the samp
     with `has_options`, check the user's value against
     `GET /v2/metadata-attributes/<identifier>/options`; for `regex_validator`,
     validate what you can locally. The **server is the final authority**.
-  - **Organism** — `GET /organisms`; resolve name / latin name → `id`.
+  - **Organism** — `GET /v2/organisms`; resolve name / latin name → `id`.
   - **Project** — `GET /projects/search`; resolve name → `id`.
   - **Files & names** — confirm `reads1` (and `reads2` if given) exist, and
     that the reads filenames and the sample `name` contain **no spaces**. Tell

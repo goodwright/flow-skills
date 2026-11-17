@@ -187,7 +187,7 @@ error on this API, so identify the shape before writing any `length` or `.count`
 | Path | Shape | Number of items is |
 |---|---|---|
 | `/samples/search`, `/projects/search`, `/executions/search`, `/users/search` | envelope `{count, page, <resource>: [...]}` | `.count` (total across all pages) |
-| `/v2/sample-types`, `/v2/metadata-attributes`, `/data/types`, `/organisms` | flat bare array | `length` |
+| `/v2/sample-types`, `/v2/metadata-attributes`, `/v2/organisms`, `/data/types` | flat bare array | `length` |
 | `/pipelines` | bare array of **categories**, each holding `subcategories`, each holding `pipelines` | `[.[].subcategories[].pipelines[]] \| length` — `length` alone counts categories |
 | `/samples/<id>`, `/projects/<id>`, `/pipelines/<id>`, `/pipelines/versions/<id>`, `/executions/<id>`, `/me` | single object | not a list |
 
@@ -261,6 +261,7 @@ error, and who each operation admits:
 | `/v2/reference/data` | listing data files, filtering them (owned, deleted, scheduled for deletion, size, type…), reading one file |
 | `/v2/reference/samples` | the sample types and metadata attributes a sample can carry and the values they take, the rules for which attribute applies and is required, and editing a sample and its metadata |
 | `/v2/reference/projects` | creating a project and changing its name or description |
+| `/v2/reference/organisms` | the organisms a sample can come from, and the `id` other operations take for one |
 
 Before calling an endpoint of a topic, read its page:
 
@@ -296,7 +297,7 @@ one matching file below before issuing the request.** Do not guess.
 | Data files: contents preview, data types, uploading (`/data/<id>/contents`, `/data/types`) | `endpoints/data.md` |
 | Pipelines, their versions, a version's run schema, **or running a pipeline** | `endpoints/pipelines.md` |
 | Executions: search, or one execution's detail / polling a run (`/executions/search`, `/executions/<id>`) | `endpoints/executions.md` |
-| Organisms (`/organisms`) | `endpoints/organisms.md` |
+| Organisms (`/v2/organisms`, `/v2/organisms/<id>`) | `GET /v2/reference/organisms` — see "Finding out about the API" |
 | Who am I / find a user (`/me`, `/users/search`) | `endpoints/users.md` |
 | Downloading a file's bytes (`/downloads/<data_id>/<filename>`) | `endpoints/downloads.md` |
 | Uploading anything, or running a pipeline (machinery, confirmation gate) | `uploading.md`, `endpoints/samples-upload.md` |
@@ -342,7 +343,7 @@ the user's wording against the `name` column, then use that row's `identifier`.
 | User says | Call this first | Then filter with |
 |---|---|---|
 | a pipeline by name | `/pipelines` | the matched `id` |
-| an organism ("human") | `/organisms` | `--param organism=<id>` |
+| an organism ("human") | `/v2/organisms` — match `name` or `latin_name` | `--param organism=<id>` — the `id`, never the user's word, which the search silently ignores |
 | a sample type ("CLIP", "RNA-Seq") | `/v2/sample-types` | `--param sample_types=<identifier>` |
 | a data type | `/data/types` | `--param data_types=<identifier>` |
 | any other domain attribute (tissue, treatment, target…) | `/v2/metadata-attributes` — find the row whose `name` matches the user's wording, take its `identifier` | `--param "<identifier>=<value>"` |
