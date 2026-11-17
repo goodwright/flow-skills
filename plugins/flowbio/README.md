@@ -8,8 +8,9 @@ behalf.
 
 Its `flow-assistant` skill mostly reads, but it can also make a few
 confirmed changes on Flow: create projects, edit samples and their
-metadata, run pipelines, and upload generic data files, demultiplexed
-samples, and multiplexed reads with an annotation sheet. With it, an agent can answer questions and run
+metadata, import public samples by accession, run pipelines, and upload
+generic data files, demultiplexed samples, and multiplexed reads with an
+annotation sheet. With it, an agent can answer questions and run
 uploads like:
 
 - "What pipelines are available on Flow?"
@@ -18,6 +19,7 @@ uploads like:
   sample X, and what data files did it produce?"
 - "Download the FASTQ for data file 67890."
 - "Upload counts.tsv to Flow as a data file."
+- "Import SRX12345678 into my project as an RNA-Seq sample."
 - "Upload a paired-end RNA-Seq sample with this metadata."
 - "Upload these multiplexed reads with my annotation sheet."
 
@@ -55,8 +57,9 @@ anywhere else.
 How Flow collects, uses and retains your data is set out in its
 [privacy policy](https://app.flow.bio/privacy/).
 
-Every change on Flow (creating a project, editing a sample, running a pipeline,
-uploading) is shown to you and runs only after you confirm it.
+Every change on Flow (creating a project, editing a sample, importing samples,
+running a pipeline, uploading) is shown to you and runs only after you confirm
+it.
 
 The launcher is a POSIX shell script, so the skill needs macOS or Linux (or
 WSL on Windows).
@@ -113,8 +116,8 @@ approval when you send your next message, so the reads for a follow-up question
 prompt.
 
 Do **not** permanently approve `api post` or `api patch`. Those create and edit
-records and run pipelines, and the prompt is the last check that the change is
-the one you confirmed.
+records, import samples and run pipelines, and the prompt is the last check
+that the change is the one you confirmed.
 
 File downloads still use `curl` and keep prompting; that is deliberate — a
 download can be large.
