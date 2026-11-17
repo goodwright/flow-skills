@@ -6,6 +6,15 @@ follow [Semantic Versioning](https://semver.org/).
 The canonical version is `plugins/flowbio/.claude-plugin/plugin.json#version`.
 Bump it on every release.
 
+## [0.21.0] — 2026-11-17
+
+- **Claude can import public samples by accession.** Ask it to import an SRA,
+  ENA or DDBJ run or experiment into one of your private projects. It says
+  what it will import and waits for your yes, then follows the import to the
+  end, checks the samples it created, and tells you how it ended.
+- **Organisms come from Flow's v2 API**, which Flow documents itself, rather
+  than from a page kept in the skill.
+
 ## [0.20.0] — 2026-10-29
 
 - **Breaking: the skill only talks to Flow at app.flow.bio.** `flow-cli` now
