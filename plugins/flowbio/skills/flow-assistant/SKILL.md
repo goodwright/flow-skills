@@ -418,10 +418,11 @@ printf '%s' '{"metadata": {"cell_line": {"value": "HeLa"}}}' | ${CLAUDE_SKILL_DI
   value and `null` clears it.
 - Use identifiers exactly as discovery returned them (Step 4): a sample type
   from `/v2/sample-types`, an attribute and its option values from
-  `/v2/metadata-attributes`. Never guess one.
-- Ids are strings of digits. Send them back exactly as a response gave them.
-- On success the response is the record as it now stands; report what changed
-  from it, not from what you sent.
+  `/v2/metadata-attributes`, an organism from `/v2/organisms`. Never guess one.
+- Send ids back exactly as a response gave them. A record's id is a string of
+  digits; an organism's is a code such as `Hs`.
+- On success the response is what the topic says the operation returns, often
+  the record as it now stands; report from it, not from what you sent.
 - A write needs a token. Without one the CLI sends nothing: it exits `2` with
   "No credentials provided…". Give the authentication guidance below; never
   retry anonymously.
@@ -498,9 +499,7 @@ running:
 - changing a project's name or description, `PATCH /v2/projects/<id>`;
 - changing a sample's name, type, organism, PubMed id or metadata,
   `PATCH /v2/samples/<id>`;
-- importing public samples by accession, `POST /v2/sample-imports` (the
-  samples are the user's and private; the confirmation names each accession,
-  its sample type, organism, project and metadata).
+- importing public samples by accession, `POST /v2/sample-imports`.
 
 The reference describes other writes, such as `PATCH /v2/data/<id>`; reading
 about an operation there does not make it allowed (see `safety.md`).
