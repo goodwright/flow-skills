@@ -65,14 +65,14 @@ private. An empty result from an unauthenticated request means
 
 Flow exposes runtime discovery for the entities and attributes that
 vary per instance: `GET /v2/metadata-attributes` (legal metadata attribute
-identifiers), `GET /organisms` (organism enum), `GET /v2/sample-types`
+identifiers), `GET /v2/organisms` (organism enum), `GET /v2/sample-types`
 (sample-type enum), `GET /me` (authenticated identity),
 `GET /users/search` (user directory).
 
 When the user's question involves these concepts, the agent's first
 move is the discovery endpoint, not the search endpoint:
 
-- "human samples" → `/organisms` (resolve "human" to its `id`) → `/samples/search?organism=<id>`
+- "human samples" → `/v2/organisms` (resolve "human" to its `id`) → `/samples/search?organism=<id>`
 - "rna-seq samples" → `/v2/sample-types` (resolve to identifier) → `/samples/search?sample_types=<identifier>`
 - "samples where tissue is X" → `/v2/metadata-attributes` (does `tissue` exist on this instance? what is its actual identifier?) → `/samples/search?<identifier>=<value>`
 - "samples I own" → `/me` (confirm a non-null `id`) → `/samples/search?owned=true`
