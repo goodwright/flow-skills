@@ -1,6 +1,6 @@
 ---
 name: flow-assistant
-description: Use for questions about data on Flow (flow.bio) — its samples, projects, data files, metadata, organisms, pipelines and executions — and to run a pipeline or upload data there. Queries the live Flow REST API through the flowbio CLI, so answers reflect what is on Flow now.
+description: Use for questions about data on Flow (flow.bio) — its samples, projects, data files, metadata, organisms, pipelines and executions — and to run a pipeline, upload data, or import public samples by accession there. Queries the live Flow REST API through the flowbio CLI, so answers reflect what is on Flow now.
 allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/flow-cli api get *) Bash(jq *)
 ---
 
@@ -8,8 +8,8 @@ allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/flow-cli api get *) Bash(jq *)
 
 Answer questions about Flow by reading its REST API with the `flowbio` CLI's
 `api get` command, and shaping the JSON with `jq`. Make the changes a user asks
-for — create a project, edit a sample or its metadata — with `api post` and
-`api patch`, as "Changing records" below describes.
+for — create a project, edit a sample or its metadata, import public samples —
+with `api post` and `api patch`, as "Changing records" below describes.
 
 **Execute every command yourself with the bash tool.** Never print a command for
 the user to run, never hand back a plan or a list of steps, never delegate to a
@@ -262,6 +262,7 @@ error, and who each operation admits:
 | `/v2/reference/samples` | the sample types and metadata attributes a sample can carry and the values they take, the rules for which attribute applies and is required, and editing a sample and its metadata |
 | `/v2/reference/projects` | creating a project and changing its name or description |
 | `/v2/reference/organisms` | the organisms a sample can come from, and the `id` other operations take for one |
+| `/v2/reference/sample-imports` | importing public samples by accession, and following an import to the samples it created |
 
 Before calling an endpoint of a topic, read its page:
 
@@ -293,6 +294,7 @@ one matching file below before issuing the request.** Do not guess.
 | Editing a sample: its name, type, organism, PubMed id or metadata (`PATCH /v2/samples/<id>`) | `GET /v2/reference/samples`, then "Changing records" |
 | Projects (`/projects/search`, `/projects/<id>`, `/projects/<id>/samples`, `/projects/<id>/executions`) | `endpoints/projects.md` |
 | Creating a project, or changing its name or description (`POST /v2/projects`, `PATCH /v2/projects/<id>`) | `GET /v2/reference/projects`, then "Changing records" |
+| Importing public samples by accession, and following an import (`POST /v2/sample-imports`, `GET /v2/sample-imports`, `GET /v2/sample-imports/<job_id>`) | `GET /v2/reference/sample-imports`, then "Changing records" |
 | Data files: list, search or count them, which are deleted or scheduled for deletion, one file's details (`/v2/data`, `/v2/data/<id>`) | `GET /v2/reference/data` — see "Finding out about the API" |
 | Data files: contents preview, data types, uploading (`/data/<id>/contents`, `/data/types`) | `endpoints/data.md` |
 | Pipelines, their versions, a version's run schema, **or running a pipeline** | `endpoints/pipelines.md` |
@@ -495,7 +497,10 @@ running:
   public, and the confirmation says which);
 - changing a project's name or description, `PATCH /v2/projects/<id>`;
 - changing a sample's name, type, organism, PubMed id or metadata,
-  `PATCH /v2/samples/<id>`.
+  `PATCH /v2/samples/<id>`;
+- importing public samples by accession, `POST /v2/sample-imports` (the
+  samples are the user's and private; the confirmation names each accession,
+  its sample type, organism, project and metadata).
 
 The reference describes other writes, such as `PATCH /v2/data/<id>`; reading
 about an operation there does not make it allowed (see `safety.md`).

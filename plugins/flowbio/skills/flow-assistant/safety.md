@@ -115,6 +115,9 @@ explicit confirmation; see "Changing records" in `SKILL.md`):
 - `PATCH /v2/projects/<id>` — change a project's **name or description**.
 - `PATCH /v2/samples/<id>` — change a sample's **name, type, organism, PubMed id
   or metadata** (set, replace or clear an attribute's value and annotation).
+- `POST /v2/sample-imports` — **import public samples by accession**, creating
+  samples owned by the user and private. The confirmation names each
+  accession, its sample type, organism, project and metadata.
 
 In-scope mutation (performed via `flow-cli api post`, gated behind explicit
 confirmation):
