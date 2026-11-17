@@ -13,7 +13,9 @@ Bump it on every release.
   what it will import and waits for your yes, then follows the import to the
   end, checks the samples it created, and tells you how it ended.
 - **Organisms come from Flow's v2 API**, which Flow documents itself, rather
-  than from a page kept in the skill.
+  than from a page kept in the skill. The skill can no longer list an
+  organism's genome reference files, which only the old organisms endpoint
+  returned.
 
 ## [0.20.0] — 2026-10-29
 
