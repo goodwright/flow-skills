@@ -6,6 +6,18 @@ follow [Semantic Versioning](https://semver.org/).
 The canonical version is `plugins/flowbio/.claude-plugin/plugin.json#version`.
 Bump it on every release.
 
+## [0.23.0] — 2026-11-18
+
+- **CLIP studies are curated by the rules CLIP curators use.** For a CLIP
+  sample's purification target, antibody, cell line and experimental method,
+  the curation skill now follows written guidance:
+  - control targets such as size-matched inputs, IgG and no-crosslink controls;
+  - tag annotations such as `cV5`, given only to the samples pulled down with
+    the anti-tag antibody;
+  - the antibody taken from the sentence naming the assay, in one format;
+  - the cell line taken from the paper rather than GEO's loose descriptions;
+  - the method read from the protocol, not GEO's library strategy.
+
 ## [0.22.0] — 2026-11-18
 
 - **Claude can bring a published study's samples onto Flow.** Give it a
