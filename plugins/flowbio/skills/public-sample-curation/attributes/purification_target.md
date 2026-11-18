@@ -11,10 +11,10 @@ attribute's options, and an annotation in the grammar below.
 annotation are depends on what its antibody pulled down. Cells can express a
 tagged construct that a given pulldown never touches.
 
-## Control libraries
+## CLIP control libraries
 
 A control library takes its own target, never the protein of the pulldown it
-controls:
+controls. The table covers CLIP; a ChIP-Seq input has no row here yet.
 
 | Library | Target | Annotation |
 |---|---|---|

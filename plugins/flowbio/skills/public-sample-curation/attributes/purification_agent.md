@@ -1,7 +1,7 @@
 # Purification Agent
 
-**What it means.** The antibody, or other reagent, that purified the protein
-in the pulldown.
+**What it means.** The antibody, or other reagent, that purified the
+pulldown's target: a protein, or a modification such as m6A.
 
 **How Flow records it.** As written, in one spelling per reagent:
 
@@ -77,6 +77,7 @@ reagent. It means the lookup is unfinished, not that the antibody is a gift.
   size-matched inputs are empty.
 - **GSE228608 (ZBTB48 and FTO):** GEO's `clip antibody:` names anti-FLAG
   (Sigma F3165) for the FTO pulldowns and anti-ZBTB48 (GeneTex GTX118671) for
-  the ZBTB48 pulldowns, and `none (input)` for the inputs.
+  the ZBTB48 pulldowns, `anti-m6A (MBL RN131P)` for the m6A iCLIP samples
+  (`Anti-m6A (MBL RN131P)`), and `none (input)` for the inputs.
 - **E-MTAB-1008 (Nova iCLIP):** the Methods say "an anti-Nova antibody", and
   the Acknowledgements thank Robert B Darnell for sharing it, so `Anti-NOVA`.
