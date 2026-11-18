@@ -81,7 +81,8 @@ which names its accessions.
 ## ENA
 
 The filereport resolves a BioProject, a study, an experiment or a run to its
-runs, one row per run, each with the experiment it belongs to:
+runs, one row per run, each with the experiment it belongs to. Ask for
+exactly these fields; they are all the curation needs:
 
 ```
 https://www.ebi.ac.uk/ena/portal/api/filereport?accession=<accession>&result=read_run&fields=run_accession,experiment_accession,sample_accession,sample_title,library_layout,library_strategy&format=tsv
