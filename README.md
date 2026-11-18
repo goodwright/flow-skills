@@ -78,8 +78,8 @@ plugin, so no install picks them up.
 Each skill's `allowed-tools` pre-approves its read commands, and only matches
 them run by the launcher's full path. In a non-interactive run (`claude -p`),
 Claude Code won't load a skill that grants itself tools unless
-`Skill(flowbio:<skill>)` is allowed, so the flow-evals runner allows every
-skill in the plugin.
+`Skill(flowbio:<skill>)` is allowed, so an eval runner has to allow each
+skill it grades.
 
 ## License
 

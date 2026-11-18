@@ -2,6 +2,9 @@
 # Reads one public URL from the sources this skill curates from. The skill
 # pre-approves fetch, so it must not become a way to send anything elsewhere:
 # one URL, https, on a listed host, and no curl option of the caller's own.
+# -q skips ~/.curlrc, which could make curl follow redirects to other hosts; -g
+# keeps [ ] and { } in the URL from expanding it into several requests; -S
+# reports a failed read on stderr rather than as an empty answer.
 usage="fetch: takes one https URL on www.ncbi.nlm.nih.gov, eutils.ncbi.nlm.nih.gov, ftp.ncbi.nlm.nih.gov, www.ebi.ac.uk or ftp.ebi.ac.uk"
 if [ $# -ne 1 ]; then
   echo "$usage" >&2
@@ -16,4 +19,4 @@ case $1 in
     exit 2
     ;;
 esac
-exec curl -s "$1"
+exec curl -q -sS -g "$1"
