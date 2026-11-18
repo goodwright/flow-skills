@@ -1,6 +1,6 @@
 ---
 name: public-sample-curation
-description: Use when someone wants the samples of a published study on Flow (flow.bio) — from a paper, a GEO or ArrayExpress series, a BioProject or a list of accessions. Finds the study, checks its data is released, resolves it to experiment accessions, and proposes each sample's metadata with the source of every value for the user to approve; flow-assistant then imports what they approved.
+description: Use when someone wants the samples of a published study on Flow (flow.bio) with their metadata worked out from the study — from a paper, a GEO or ArrayExpress series, a BioProject or a list of accessions. Finds the study, checks its data is released, resolves it to experiment accessions, and proposes each sample's metadata with the source of every value for the user to approve; flow-assistant then imports what they approved. An import where the user already gives every value is flow-assistant's alone.
 allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/fetch *) Bash(grep *) Bash(zcat *) Bash(head *) Bash(jq *) Write(./*.tsv)
 ---
 
@@ -21,8 +21,9 @@ command to run or a plan of steps. Keep going until you have a proposal to show.
 
 Every value you propose has one of three statuses, and the review shows which:
 
-- **quoted** — a named source states it. Show the exact text and a link: a GEO
-  field, an SDRF column, a sentence of the paper, a row of a supplementary table.
+- **quoted** — a named source states it. Show the exact text and the URL you
+  read it from: a GEO field, an SDRF column, a sentence of the paper, a row of
+  a supplementary table. A quote without its URL is not quoted.
 - **inferred** — no source states it, but the evidence and general knowledge
   support it. Show your reasoning and flag the value for the user to confirm.
 - **empty** — nothing supports a value. Leave it blank and say what you searched.
@@ -44,6 +45,9 @@ list a long option set whole.
 - If no option fits and user terms are not allowed, leave it **empty** and say
   so.
 
+An attribute that takes an annotation (`allow_annotation`) gets one by the
+same rule: propose it when a source supports it, and leave it empty otherwise.
+
 **When sources disagree, show both.** Quote each, propose the one the evidence
 supports, and flag it for the user. A PubMed id is checked against its paper:
 the paper's title must describe the series. GEO records sometimes link the
@@ -58,6 +62,8 @@ accessions (`SRX`, `ERX`, `DRX`). `sources.md` says how to read each source.
 
 - A run accession (`SRR`, `ERR`, `DRR`) is resolved to its experiment through
   ENA's filereport before anything else.
+- One sample per distinct experiment accession: an experiment with several
+  runs appears once, and Flow refuses an import that names one twice.
 - **Check the data is released.** An embargoed accession looks like a real
   one, and a paper's Data Availability statement is a promise, not a fact. If
   it is not released, stop and say so, with the release date if the source
@@ -67,14 +73,18 @@ accessions (`SRX`, `ERX`, `DRX`). `sources.md` says how to read each source.
 
 ### 2. Read the target from Flow, through flow-assistant
 
-- The sample type, from `/v2/sample-types`.
-- That type's attributes, from `/v2/metadata-attributes`: each one's name,
-  description, whether it is required, whether it has options, allows user
-  terms, takes an annotation, and its `regex_validator`. **This list is what
-  you curate.** Never work from a list of your own.
+- The sample types, from `/v2/sample-types`. Choose each sample's type from
+  the assay the study's records describe (the series design, the extraction
+  protocol), not from GEO's `library_strategy`. A series that mixes assays
+  can need more than one type.
+- Each chosen type's attributes, from `/v2/metadata-attributes?sample_type=…`:
+  each one's name, description, whether it is required, has options, allows
+  user terms, and takes an annotation. **This list is what you curate.** Never
+  work from a list of your own.
 - The organism's `id`, from `/v2/organisms`.
 - The project to import into: the one the user named. If they named none, ask.
-  Never create a project.
+  Never create a project. Check it is private and the user can edit it before
+  you build the review: Flow imports only into such a project.
 
 Whether these samples are already on Flow cannot be checked yet. Say so in the
 review header.
@@ -112,8 +122,10 @@ everything the import will send, so it is the confirmation flow-assistant's
    goes here only when every sample has it; otherwise it gets its own section.
    Then the line "Not checked: whether these samples are already on Flow."
 2. **One section per attribute**, inferred, empty and new-term values first.
-   For each distinct value: the value exactly as it will be sent, which samples
-   have it, its status, and its source (quote and link, or the reasoning).
+   For each distinct value: the value and any annotation exactly as they will
+   be sent, which samples have it, its status, and its source: the quote and
+   its URL, the reasoning, or for an empty value what you searched and any file
+   you could not read.
 3. **The samples**: each sample's name and experiment accession.
 
 Above about 20 samples, also write the full per-sample table to

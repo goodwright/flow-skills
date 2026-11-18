@@ -15,8 +15,9 @@ Bump it on every release.
   that sample type. Each value shows where it came from, a quote and a link,
   or is marked as inferred, with the reasoning, or is left empty when nothing
   supports it. Nothing is imported until you approve the proposal.
-- **The skill reads GEO, ENA, ArrayExpress and Europe PMC** through `fetch`,
-  which reads one URL on those sites' hosts and nothing else. It pre-approves
+- **The skill reads GEO, E-utilities, ENA, ArrayExpress and Europe PMC**
+  through `fetch`, which reads one URL on those sites' hosts and nothing
+  else. It pre-approves
   `fetch`, `grep`, `zcat`, `head` and `jq`, and writing a `.tsv` proposal in
   your working directory, for the turn it loads.
 

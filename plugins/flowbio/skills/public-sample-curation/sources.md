@@ -12,12 +12,14 @@ ${CLAUDE_SKILL_DIR}/scripts/fetch 'https://www.ncbi.nlm.nih.gov/geo/query/acc.cg
   `ftp.ebi.ac.uk`, and nothing else. It reads with plain GET: put every query
   parameter in the URL.
 - **Single-quote the URL.** Unquoted, the shell trips on `?` and `&`.
-- **Percent-encode `[`, `]`, `"` and spaces** in a query: `GSE215250%5BACCN%5D`,
-  `%20`. Unencoded brackets make curl fail.
+- **Percent-encode spaces and `"`** in a query: `%20`, `%22`. Brackets can be
+  written as they are (`GSE215250[ACCN]`).
 - Shape what comes back with `grep`, `zcat`, `head` and `jq` only: they run
   without prompting the user, other tools do not.
-- `fetch` does not follow redirects. An empty answer from a URL that should
-  have one usually means a redirect: find the direct link as below.
+- `fetch` does not follow redirects. A failed read says so on stderr and exits
+  non-zero: report the source as **not read**, never as "nothing found". An
+  empty answer with no error is usually a redirect: find the direct link as
+  below.
 
 ## Search order
 
@@ -43,7 +45,7 @@ instead:
 |---|---|
 | The series: title, status, PubMed id, its samples | `https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=<GSE>&targ=self&form=text&view=brief` |
 | Every sample of the series, in one read | `https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=<GSE>&targ=gsm&form=text&view=brief` |
-| The series matrix (gzipped) | `https://ftp.ncbi.nlm.nih.gov/geo/series/<GSEnnn>/<GSE>/matrix/<GSE>_series_matrix.txt.gz`, read with `\| zcat` |
+| The series matrix (gzipped) | list `https://ftp.ncbi.nlm.nih.gov/geo/series/<GSEnnn>/<GSE>/matrix/` first, then read the file it names with `\| zcat`: `<GSE>_series_matrix.txt.gz`, or one `<GSE>-GPL<n>_series_matrix.txt.gz` per platform |
 | A series' supplementary files | `https://ftp.ncbi.nlm.nih.gov/geo/series/<GSEnnn>/<GSE>/suppl/` |
 
 `<GSEnnn>` is the accession with its last three digits replaced by `nnn`
@@ -62,21 +64,24 @@ rewrite them to `https://ftp.ncbi.nlm.nih.gov/…`.
 - **PubMed id.** `!Series_pubmed_id` can name the wrong paper: check its title
   (below) against the series title.
 
-To find the series for a paper, ask E-utilities, then fall back on the paper's
-own Data Availability text, which names its accessions:
+To find the series for a paper, ask E-utilities for the GEO records linked
+to it, then read each record's `accession`:
 
 ```
 https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?dbfrom=pubmed&db=gds&id=<PMID>&retmode=json
-https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=gds&term=<GSE>%5BACCN%5D&retmode=json
+https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=gds&id=<uid>,<uid>&retmode=json
 ```
 
-An `elink` with no links does not mean there is no series: GEO links a series
-only to the paper its submitter named.
+The links include a SuperSeries beside its SubSeries, and its samples are
+theirs: pick the SubSeries for the assay the user means. An `elink` with no
+links does not mean there is no series: GEO links a series only to the paper
+its submitter named, so fall back on the paper's Data Availability text,
+which names its accessions.
 
 ## ENA
 
 The filereport resolves a BioProject, a study, an experiment or a run to its
-runs and experiments, one row each:
+runs, one row per run, each with the experiment it belongs to:
 
 ```
 https://www.ebi.ac.uk/ena/portal/api/filereport?accession=<accession>&result=read_run&fields=run_accession,experiment_accession,sample_accession,sample_title,library_layout,library_strategy&format=tsv

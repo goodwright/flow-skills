@@ -9,7 +9,7 @@
     {
       "name": "flowbio",
       "source": "./plugins/flowbio",
-      "description": "Query Flow's REST API — pipelines, samples, projects, executions, and data files — run pipelines, plus data-file, demultiplexed-sample, and multiplexed upload.",
+      "description": "Query Flow's REST API — pipelines, samples, projects, executions, and data files — run pipelines, import public samples by accession or curate a published study's samples and their metadata, plus data-file, demultiplexed-sample, and multiplexed upload.",
       "category": "data",
       "tags": ["flow", "bioinformatics", "genomics", "api"]
     }
