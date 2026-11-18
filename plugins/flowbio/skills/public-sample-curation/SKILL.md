@@ -18,6 +18,12 @@ If the user names the accessions and gives the sample type, organism and
 metadata themselves, there is nothing to curate: use flow-assistant to import
 them as asked, and stop here.
 
+**Read every public source with `fetch`, by its full path:**
+`${CLAUDE_SKILL_DIR}/scripts/fetch '<url>'`. It is the one way to reach GEO,
+ENA, ArrayExpress and Europe PMC that runs without stopping for the user's
+permission; `curl`, WebFetch and anything else will stall. `sources.md` gives
+the URL for each source.
+
 **Execute every command yourself with the bash tool.** Never hand the user a
 command to run or a plan of steps. Keep going until you have a proposal to show.
 
