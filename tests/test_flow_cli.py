@@ -1,16 +1,17 @@
 import re
-import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
+
+from fake_bin import fake_bin
 
 
 PLUGIN = Path(__file__).resolve().parents[1] / "plugins" / "flowbio"
 LAUNCHER = PLUGIN / "skills" / "flow-assistant" / "scripts" / "flow-cli"
 # The launcher's only external tool. PATH holds just it and the fakes, so a uvx,
 # pipx or flowbio installed on the machine, as pipx is in /usr/bin on Ubuntu, never answers.
-SCRIPT_TOOLS = ["cat"]
+SCRIPT_TOOLS = ("cat",)
 
 
 def _pinned_version() -> str:
@@ -18,15 +19,7 @@ def _pinned_version() -> str:
 
 
 def _fake_bin(tmp_path: Path, *names: str) -> Path:
-    bin_dir = tmp_path / "bin"
-    bin_dir.mkdir()
-    for tool in SCRIPT_TOOLS:
-        (bin_dir / tool).symlink_to(shutil.which(tool))
-    for name in names:
-        tool = bin_dir / name
-        tool.write_text(f'#!/bin/sh\necho "{name} $*"\n')
-        tool.chmod(0o755)
-    return bin_dir
+    return fake_bin(tmp_path, *names, real_tools=SCRIPT_TOOLS)
 
 
 def _run(command: Path, bin_dir: Path, *args: str) -> subprocess.CompletedProcess:
