@@ -93,7 +93,7 @@ https://www.ebi.ac.uk/ena/portal/api/filereport?accession=<accession>&result=rea
 - An accession that is not released returns no rows, or an error, rather than
   its runs. Say so; do not guess from the accession's format.
 - `library_strategy` is how the submitter filed the library, not what the
-  assay was: read the experimental method from the protocol text instead.
+  assay was.
 
 ## ArrayExpress
 
