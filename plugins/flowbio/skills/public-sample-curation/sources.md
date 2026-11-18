@@ -37,9 +37,9 @@ is shown beside it.
 
 ## GEO
 
-**Never read GEO's HTML accession page.** It sits behind a reCAPTCHA and
-answers with a challenge page that reads as "not found". Read the SOFT text
-instead:
+**Read GEO's accession records only as `form=text`.** The HTML page, and
+`form=xml` too, sit behind a reCAPTCHA and answer with a challenge page that
+reads as "not found". Read the SOFT text instead:
 
 | What | URL |
 |---|---|
