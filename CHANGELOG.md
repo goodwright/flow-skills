@@ -9,11 +9,12 @@ Bump it on every release.
 ## [0.24.0] — 2026-11-18
 
 - **CLIP barcodes are curated per replicate.** The curation skill reads each
-  CLIP sample's 5' barcode from the paper's CLIP Methods. Where the paper
-  lists several barcodes, it matches each replicate to its own from the core
-  in that replicate's supplementary filenames, so no two replicates are given
-  the same barcode by mistake. A barcode given only as lengths is proposed as
-  an all-`N` pattern and flagged for you to confirm.
+  CLIP sample's 5' barcode from its GEO records and the paper's CLIP
+  Methods. Where the paper lists several barcodes, it matches each replicate
+  to its own from the core in that replicate's supplementary filenames, and
+  never gives replicates one pattern by guess. A barcode inferred from lengths
+  alone, or from the eCLIP protocol's randomer, is flagged for you to
+  confirm.
 
 ## [0.23.0] — 2026-11-18
 
