@@ -3,7 +3,7 @@
 **What it means.** The antibody, or other reagent, that purified the protein
 in the pulldown.
 
-**How Flow records it.** Free text, in one spelling per reagent:
+**How Flow records it.** As written, in one spelling per reagent:
 
 `<Host> Anti-<TARGET> (<Vendor> <Catalog>)`, for example
 `Rabbit Anti-PARP13 (Thermo Fisher PA5-31650)`.
@@ -16,11 +16,15 @@ in the pulldown.
 - A tag pulldown that uses no antibody is `Strep/His affinity tag purification`
   (iCLAP).
 
-## Leave it empty
+## Which samples have one
 
-- On a size-matched input, a bead-only control and an IgG control. No antibody
-  purified them. Never copy the pulldown's antibody onto its input.
-- When the search below finds no reagent. Say what you searched.
+- **Empty** on a size-matched input and a bead-only control, which no antibody
+  purified, and on an IgG control, whose non-specific IgG recognises no
+  target. Never copy the pulldown's antibody onto its input.
+- **The antibody that was used** on an `AbControl` (the pulldown run on cells
+  lacking the target, so its antibody names the tag) and on a no-crosslink
+  control (the same pulldown without UV).
+- **Empty** when the search below finds no reagent. Say what was searched.
 
 ## Where to look
 
@@ -28,12 +32,12 @@ in the pulldown.
    anti-PARP13 antibody (Thermo Fisher, PA5-31650)"). This decides it.
 2. The Key Resources or reagents table, only to complete the vendor and
    catalog of the antibody step 1 named.
-3. GEO characteristics: `antibody:`, `clip antibody:`.
+3. GEO characteristics: `clip antibody:`, `antibody:`.
 4. The SDRF's `Factor Value[IMMUNOPRECIPITATE]`. Usually too vague
    ("anti-TIA1 antibody"), so go back to the paper.
 5. Supplementary reagent tables, when steps 1 to 4 name nothing. "The Methods
-   don't say" is not "the paper doesn't say": a supplement you could not open
-   is reported as not read.
+   don't say" is not "the paper doesn't say": a supplement that could not be
+   opened is reported as not read.
 
 The paper usually lists several antibodies for a protein, one for Western
 blots and one for the pulldown. **Never take the first antibody listed for
@@ -56,8 +60,9 @@ likely.
 
 Tissue CLIP and older studies often use an antibody shared between labs, so
 there is no vendor or catalog number. Write the bare form, `Anti-NOVA`, and
-say in the review where it came from ("a gift from Robert B Darnell", from the
-Acknowledgements). Never invent a vendor or catalog number to fill the format.
+keep where it came from ("a gift from Robert B Darnell", from the
+Acknowledgements) in the sample's comments. Never invent a vendor or catalog
+number to fill the format.
 
 A scraped phrase such as `NOVA antibody`, `V5-antibody` or `DHX9-mAb` names no
 reagent. It means the lookup is unfinished, not that the antibody is a gift.
@@ -67,7 +72,11 @@ reagent. It means the lookup is unfinished, not that the antibody is a gift.
 - **GSE215250 (PARP13):** the Methods say "eCLIP was performed … using
   anti-PARP13 antibody (Thermofisher Scientific, PA5-31650)", and the Key
   Resources table lists it as a rabbit polyclonal, so the four pulldowns are
-  `Rabbit Anti-PARP13 (Thermo Fisher PA5-31650)`. The four size-matched inputs
-  are empty.
+  `Rabbit Anti-PARP13 (Thermo Fisher PA5-31650)`. The table lists a ProteinTech
+  anti-PARP13 (16820-1-AP) first; it is not the one the eCLIP used. The four
+  size-matched inputs are empty.
+- **GSE228608 (ZBTB48 and FTO):** GEO's `clip antibody:` names anti-FLAG
+  (Sigma F3165) for the FTO pulldowns and anti-ZBTB48 (GeneTex GTX118671) for
+  the ZBTB48 pulldowns, and `none (input)` for the inputs.
 - **E-MTAB-1008 (Nova iCLIP):** the Methods say "an anti-Nova antibody", and
   the Acknowledgements thank Robert B Darnell for sharing it, so `Anti-NOVA`.
