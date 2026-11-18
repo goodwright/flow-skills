@@ -19,7 +19,8 @@ metadata themselves, there is nothing to curate: use flow-assistant to import
 them as asked, and stop here.
 
 **Read every public source with `fetch`, by its full path:**
-`${CLAUDE_SKILL_DIR}/scripts/fetch '<url>'`. It is the one way to reach GEO,
+`${CLAUDE_SKILL_DIR}/scripts/fetch '<url>'`. It sits in this skill's
+`scripts/`, beside this file, not in flow-assistant's. It is the one way to reach GEO,
 ENA, ArrayExpress and Europe PMC that runs without stopping for the user's
 permission; `curl`, WebFetch and anything else will stall. `sources.md` gives
 the URL for each source.
@@ -109,10 +110,13 @@ is reported as **not read**, never as "no evidence".
 
 ### 4. Propose values
 
-For each attribute in the list from step 2, read
-`${CLAUDE_SKILL_DIR}/attributes/<identifier>.md` if it exists and follow it.
-Otherwise apply the evidence rule using the attribute's name and description
-from Flow. The sample type, organism, PubMed id and sample name are proposed
+**Before proposing anything, read the guidance for every attribute that has
+it.** The files are `${CLAUDE_SKILL_DIR}/attributes/<identifier>.md`, one per
+attribute identifier from step 2; read each with the Read tool. An attribute
+with no file follows the evidence rule, using its name and description from
+Flow. Propose a value for every attribute in the list, with its annotation
+where it takes one: an attribute missing from the proposal is a value the
+user never got to check. The sample type, organism, PubMed id and sample name are proposed
 the same way.
 
 A sample name starts from the source's sample title, with spaces and symbols
