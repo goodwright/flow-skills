@@ -94,10 +94,11 @@ input has none either.
 - **GSE215250 (PARP13 eCLIP):** the target is `ZC3HAV1`, PARP13's gene
   symbol. It is endogenous, so all four pulldowns have an empty annotation.
   The four inputs are `SMInput`.
-- **GSE290281 (V5 eCLIP):** most proteins were pulled down with anti-V5, so
-  `cV5` by the C-terminal default; the Methods state no terminus. RBM10 and
-  RBM22 were pulled down with their own antibodies, so their annotation is
-  empty, although the study is a V5 screen.
+- **GSE228608 (ZBTB48 and FTO iCLIP):** the FTO samples were pulled down
+  with anti-FLAG from cells expressing FLAG-FTO, so `nFLAG`, from the
+  construct's name. ZBTB48 was pulled down with an antibody against ZBTB48
+  itself, so its annotation is empty, although both come from the same
+  Flp-In HEK293 study.
 - **GSE297587 (myc-LARP6):** the titles read `mycLARP6`, so `nMYC`, with an
   alteration prefix for each deletion construct (`dNTR-nMYC`). The myc pulldown
   on untransfected cells is `AbControl`.
