@@ -6,6 +6,20 @@ follow [Semantic Versioning](https://semver.org/).
 The canonical version is `plugins/flowbio/.claude-plugin/plugin.json#version`.
 Bump it on every release.
 
+## [0.22.0] — 2026-11-18
+
+- **Claude can bring a published study's samples onto Flow.** Give it a
+  paper, a GEO or ArrayExpress series, a BioProject or a list of accessions.
+  The new `public-sample-curation` skill finds the study, checks its data is
+  released, and proposes the metadata for every attribute Flow records for
+  that sample type. Each value shows where it came from, a quote and a link,
+  or is marked as inferred, with the reasoning, or is left empty when nothing
+  supports it. Nothing is imported until you approve the proposal.
+- **The skill reads GEO, ENA, ArrayExpress and Europe PMC** through `fetch`,
+  which reads one URL on those sites' hosts and nothing else. It pre-approves
+  `fetch`, `grep`, `zcat`, `head` and `jq`, and writing a `.tsv` proposal in
+  your working directory, for the turn it loads.
+
 ## [0.21.0] — 2026-11-17
 
 - **Claude can import public samples by accession.** Ask it to import an SRA,

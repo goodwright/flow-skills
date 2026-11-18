@@ -26,6 +26,18 @@ uploads like:
 See [`skills/flow-assistant/SKILL.md`](skills/flow-assistant/SKILL.md)
 for the current capabilities.
 
+Its `public-sample-curation` skill takes a published study to samples on
+Flow whose metadata you have checked. It finds the study, checks its data is
+released, resolves it to experiment accessions and proposes a value for every
+attribute Flow records for the sample type. Each value comes with its source
+(a quote and a link), or is marked as an inference with its reasoning, or is
+left empty. You approve the proposal before flow-assistant imports it:
+
+- "Import the samples from the paper with PubMed id 38495826."
+- "Put GSE215250 on Flow, in my PARP13 project."
+
+See [`skills/public-sample-curation/SKILL.md`](skills/public-sample-curation/SKILL.md).
+
 ## Install
 
 In Claude Code:
@@ -51,8 +63,14 @@ running on your own machine if `FLOW_API_URL` names one (`http://localhost…`);
 it refuses any other host. When you have a Flow API key (see
 below), the CLI sends it to that API to authenticate. File downloads use `curl`
 against the same API, with the token from `~/.config/flow/api-token` in a
-request header. Apart from downloading `flowbio` from PyPI, nothing is sent
-anywhere else.
+request header. To curate a public study, the `public-sample-curation` skill
+reads GEO and E-utilities (NCBI), ENA, ArrayExpress and Europe PMC (EMBL-EBI)
+with plain GET requests through
+[`skills/public-sample-curation/scripts/fetch`](skills/public-sample-curation/scripts/fetch),
+which reaches only `www.ncbi.nlm.nih.gov`, `eutils.ncbi.nlm.nih.gov`,
+`ftp.ncbi.nlm.nih.gov`, `www.ebi.ac.uk` and `ftp.ebi.ac.uk`, and sends them no
+credentials. Apart from those reads and downloading `flowbio` from PyPI,
+nothing is sent anywhere else.
 
 How Flow collects, uses and retains your data is set out in its
 [privacy policy](https://app.flow.bio/privacy/).
@@ -109,11 +127,13 @@ Add the token to your windows home folder like so:
 
 ## Permission prompts
 
-In Claude Code, the skill pre-approves its read commands (`flow-cli api get`,
+In Claude Code, the flow-assistant skill pre-approves its read commands (`flow-cli api get`,
 and `jq` to shape the output) for the turn in which it loads, so the first Flow
 question in a conversation runs without prompting. Claude Code clears that
 approval when you send your next message, so the reads for a follow-up question
-prompt.
+prompt. The `public-sample-curation` skill does the same for `fetch`,
+`grep`, `zcat`, `head`, `jq`, and writing a `.tsv` proposal in your working
+directory.
 
 Do **not** permanently approve `api post` or `api patch`. Those create and edit
 records, import samples and run pipelines, and the prompt is the last check

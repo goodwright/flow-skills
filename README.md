@@ -30,11 +30,13 @@ To pick up new releases later, run `/plugin marketplace update`.
 
 ## Install — other agents
 
-The skill itself is just a directory of Markdown files following
+Each skill is just a directory of Markdown files following
 [Anthropic's Agent Skill format](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview).
-Any agent harness that loads skills from a directory can use it
+Any agent harness that loads skills from a directory can use them
 directly. Clone the repo and point your harness at
-`plugins/flowbio/skills/flow-assistant/`:
+`plugins/flowbio/skills/flow-assistant/`, and at
+`plugins/flowbio/skills/public-sample-curation/` too if you want it: it
+reaches Flow only through flow-assistant, so it needs both:
 
 ```sh
 git clone https://github.com/goodwright/flow-skills.git
@@ -73,10 +75,11 @@ for now), and add a `CHANGELOG.md` entry under the next version (or
 Skills in `unpublished/` are kept for later work and are not part of any
 plugin, so no install picks them up.
 
-The skill's `allowed-tools` pre-approves its read commands, and only matches
+Each skill's `allowed-tools` pre-approves its read commands, and only matches
 them run by the launcher's full path. In a non-interactive run (`claude -p`),
 Claude Code won't load a skill that grants itself tools unless
-`Skill(flowbio:flow-assistant)` is allowed, so the flow-evals runner allows it.
+`Skill(flowbio:<skill>)` is allowed, so the flow-evals runner allows every
+skill in the plugin.
 
 ## License
 
