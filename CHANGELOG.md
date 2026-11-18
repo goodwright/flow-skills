@@ -6,6 +6,15 @@ follow [Semantic Versioning](https://semver.org/).
 The canonical version is `plugins/flowbio/.claude-plugin/plugin.json#version`.
 Bump it on every release.
 
+## [0.24.0] — 2026-11-18
+
+- **CLIP barcodes are curated per replicate.** The curation skill reads each
+  CLIP sample's 5' barcode from the paper's CLIP Methods. Where the paper
+  lists several barcodes, it matches each replicate to its own from the core
+  in that replicate's supplementary filenames, so no two replicates are given
+  the same barcode by mistake. A barcode given only as lengths is proposed as
+  an all-`N` pattern and flagged for you to confirm.
+
 ## [0.23.0] — 2026-11-18
 
 - **CLIP studies are curated by the rules CLIP curators use.** For a CLIP
