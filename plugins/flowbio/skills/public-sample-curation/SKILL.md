@@ -1,6 +1,6 @@
 ---
 name: public-sample-curation
-description: Use when someone wants the samples of a published study on Flow (flow.bio) with their metadata worked out from the study — from a paper, a GEO or ArrayExpress series, a BioProject or a list of accessions. Finds the study, checks its data is released, resolves it to experiment accessions, and proposes each sample's metadata with the source of every value for the user to approve; flow-assistant then imports what they approved. An import where the user already gives every value is flow-assistant's alone.
+description: Use when someone wants the samples of a published study on Flow (flow.bio) and the metadata has to be worked out from the study itself — from a paper, a GEO or ArrayExpress series, a BioProject, or accessions whose metadata they don't give. Finds the study, checks its data is released, resolves it to experiment accessions, and proposes each sample's metadata with the source of every value for the user to approve; flow-assistant then imports it. Not for importing accessions the user gives with their sample type, organism and metadata: flow-assistant does that directly.
 allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/fetch *) Bash(grep *) Bash(zcat *) Bash(head *) Bash(jq *) Write(./*.tsv)
 ---
 
@@ -13,6 +13,10 @@ records, each with where it came from. Every Flow read and the import itself go
 through the **flow-assistant** skill: load it (`flowbio:flow-assistant`) before
 the first Flow read and follow its rules for every call to Flow. Never reach
 Flow any other way.
+
+If the user names the accessions and gives the sample type, organism and
+metadata themselves, there is nothing to curate: use flow-assistant to import
+them as asked, and stop here.
 
 **Execute every command yourself with the bash tool.** Never hand the user a
 command to run or a plan of steps. Keep going until you have a proposal to show.
