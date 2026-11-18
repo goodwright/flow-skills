@@ -1,0 +1,19 @@
+#!/bin/sh
+# Reads one public URL from the sources this skill curates from. The skill
+# pre-approves fetch, so it must not become a way to send anything elsewhere:
+# one URL, https, on a listed host, and no curl option of the caller's own.
+usage="fetch: takes one https URL on www.ncbi.nlm.nih.gov, eutils.ncbi.nlm.nih.gov, ftp.ncbi.nlm.nih.gov, www.ebi.ac.uk or ftp.ebi.ac.uk"
+if [ $# -ne 1 ]; then
+  echo "$usage" >&2
+  exit 2
+fi
+# The slash after the host ends the URL's authority, so no port or user@ can follow it.
+case $1 in
+  https://www.ncbi.nlm.nih.gov/* | https://eutils.ncbi.nlm.nih.gov/* | https://ftp.ncbi.nlm.nih.gov/* \
+  | https://www.ebi.ac.uk/* | https://ftp.ebi.ac.uk/*) ;;
+  *)
+    echo "$usage" >&2
+    exit 2
+    ;;
+esac
+exec curl -s "$1"
