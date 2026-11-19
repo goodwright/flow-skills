@@ -76,6 +76,7 @@ unimportable until the user gives it.
   from the two together, and flagged.
 - **GSE303135 (hnRNPH iCLIP2):** GEO's data processing gives only "first 15
   bp" and "15 bp barcode and UMI regions" within a 30 bp minimum, so the text
-  supports 15 `N`, inferred and flagged. The library in fact carries a fixed
-  `ACATCG` at positions 6 to 11 (`NNNNNACATCGNNNN`), which no source states:
-  the reason a length-only barcode is always the user's to confirm.
+  supports 15 `N`, inferred and flagged. In fact each replicate carries its
+  own fixed 6 nt core at positions 6 to 11 (GSM9118554's is `ACATCG`, so
+  `NNNNNACATCGNNNN`), which no source states: the reason a length-only
+  barcode is always the user's to confirm.
